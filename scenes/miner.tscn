@@ -1,0 +1,22 @@
+[gd_scene load_steps=3 format=3 uid="uid://miner0001"]
+
+[ext_resource type="Script" path="res://scenes/miner.gd" id="1"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_1"]
+size = Vector2(50, 30)
+
+[node name="Miner" type="StaticBody2D"]
+collision_layer = 1
+collision_mask = 0
+script = ExtResource("1")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_1")
+
+[node name="Sprite" type="Polygon2D" parent="."]
+color = Color(0.3, 0.3, 0.8, 1)
+polygon = PackedVector2Array(-25, -15, 25, -15, 25, 15, -25, 15)
+
+[node name="Nozzle" type="Polygon2D" parent="."]
+color = Color(0.4, 0.4, 0.9, 1)
+polygon = PackedVector2Array(-8, -15, 8, -15, 5, -28, -5, -28)

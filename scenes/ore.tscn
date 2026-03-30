@@ -1,0 +1,22 @@
+[gd_scene load_steps=4 format=3 uid="uid://ore00001"]
+
+[ext_resource type="Script" path="res://scenes/ore.gd" id="1"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_1"]
+radius = 8.0
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_1"]
+bounce = 0.5
+friction = 0.3
+
+[node name="Ore" type="RigidBody2D"]
+gravity_scale = 1.0
+physics_material_override = SubResource("PhysicsMaterial_1")
+script = ExtResource("1")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_1")
+
+[node name="Sprite" type="Polygon2D" parent="."]
+color = Color(0.85, 0.55, 0.2, 1)
+polygon = PackedVector2Array(-6, -6, 6, -6, 6, 6, -6, 6)
