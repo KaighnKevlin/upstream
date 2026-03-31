@@ -10,6 +10,7 @@ const GRAVITY := 980.0
 
 
 const SpriteLoader = preload("res://scripts/sprite_loader.gd")
+const SFX = preload("res://scripts/sfx.gd")
 
 func _ready() -> void:
 	if has_node("AnimatedSprite2D"):
@@ -38,4 +39,7 @@ func take_damage(amount: int) -> void:
 		tween.tween_property(sprite, "modulate", Color.RED, 0.05)
 		tween.tween_property(sprite, "modulate", Color.WHITE, 0.1)
 	if hp <= 0:
+		SFX.play(get_tree().current_scene, SFX.sfx_enemy_die())
 		queue_free()
+	else:
+		SFX.play(self, SFX.sfx_enemy_hit())

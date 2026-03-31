@@ -6,12 +6,21 @@ extends RigidBody2D
 var _timer: float = 0.0
 
 
+const ObjectSprites = preload("res://scripts/object_sprites.gd")
+
 func _ready() -> void:
-	collision_layer = 2  # same as ore — layer 2
-	collision_mask = 1   # walls only
+	collision_layer = 2
+	collision_mask = 1
 
 	contact_monitor = true
 	max_contacts_reported = 4
+
+	if has_node("Sprite"):
+		$Sprite.queue_free()
+	var spr := Sprite2D.new()
+	spr.texture = ObjectSprites.create_ingot_texture()
+	spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(spr)
 
 
 func _physics_process(delta: float) -> void:

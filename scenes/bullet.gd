@@ -1,11 +1,22 @@
 extends Area2D
 
+const ObjectSprites = preload("res://scripts/object_sprites.gd")
+
 var velocity := Vector2.ZERO
 var damage := 1
 var lifetime := 3.0
 var _timer := 0.0
 
 const HIT_RADIUS := 14.0
+
+
+func _ready() -> void:
+	if has_node("Sprite"):
+		$Sprite.queue_free()
+	var spr := Sprite2D.new()
+	spr.texture = ObjectSprites.create_bullet_texture()
+	spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(spr)
 
 
 func _physics_process(delta: float) -> void:

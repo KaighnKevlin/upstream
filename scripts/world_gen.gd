@@ -7,6 +7,7 @@ const TILE_STONE := 1
 const TILE_IRON := 2
 const TILE_COPPER := 3
 const TILE_DEEP_STONE := 4
+const TILE_GRASS := 5
 
 # World dimensions in tiles
 const WORLD_WIDTH := 150  # tiles
@@ -50,6 +51,10 @@ static func generate(tilemap: TileMapLayer, rng_seed: int = 0) -> void:
 		DIRT_DEPTH, WORLD_HEIGHT)
 	_scatter_ore(tilemap, rng, TILE_COPPER, COPPER_CHANCE, COPPER_VEIN_SIZE,
 		STONE_DEPTH, WORLD_HEIGHT)
+
+	# Place grass on the surface row (first row of dirt)
+	for x in WORLD_WIDTH:
+		tilemap.set_cell(Vector2i(x, SURFACE_ROWS), 0, Vector2i(TILE_GRASS, 0))
 
 	# Carve starter shaft below spawn point (5 tiles wide, 12 deep)
 	var shaft_x := WORLD_WIDTH / 2

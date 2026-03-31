@@ -9,7 +9,10 @@ const TILE_PATHS := {
 	2: "",                                          # IRON - generated
 	3: "res://assets/sprites/tile_copper.png",     # COPPER
 	4: "res://assets/sprites/tile_deepstone.png",  # DEEP_STONE
+	5: "",                                          # GRASS - generated
 }
+
+const TILE_COUNT := 6
 
 
 static func create_tileset() -> TileSet:
@@ -20,18 +23,19 @@ static func create_tileset() -> TileSet:
 	tileset.add_physics_layer(0)
 	tileset.set_physics_layer_collision_layer(0, 1)
 
-	# Build a combined atlas image: 5 tiles in a row
-	var atlas_img := Image.create(TILE_SIZE * 5, TILE_SIZE, false, Image.FORMAT_RGBA8)
+	# Build a combined atlas image
+	var atlas_img := Image.create(TILE_SIZE * TILE_COUNT, TILE_SIZE, false, Image.FORMAT_RGBA8)
 
-	for tile_id in 5:
+	for tile_id in TILE_COUNT:
 		var tile_img: Image
 		var path: String = TILE_PATHS[tile_id]
 
 		if path != "":
 			tile_img = _load_tile_image(path)
-		else:
-			# Generate iron ore: stone base + orange specks
+		elif tile_id == 2:
 			tile_img = _generate_iron_ore()
+		elif tile_id == 5:
+			tile_img = _generate_grass_dirt()
 
 		if tile_img:
 			tile_img.convert(Image.FORMAT_RGBA8)
@@ -45,7 +49,7 @@ static func create_tileset() -> TileSet:
 	atlas.texture_region_size = Vector2i(TILE_SIZE, TILE_SIZE)
 
 	# Create tiles
-	for tile_id in 5:
+	for tile_id in TILE_COUNT:
 		atlas.create_tile(Vector2i(tile_id, 0))
 
 	# Add atlas to tileset, then add physics
@@ -55,7 +59,7 @@ static func create_tileset() -> TileSet:
 		Vector2(-8, -8), Vector2(8, -8),
 		Vector2(8, 8), Vector2(-8, 8),
 	])
-	for tile_id in 5:
+	for tile_id in TILE_COUNT:
 		var tile_data := atlas.get_tile_data(Vector2i(tile_id, 0), 0)
 		tile_data.add_collision_polygon(0)
 		tile_data.set_collision_polygon_points(0, 0, polygon)
@@ -102,6 +106,36 @@ static func _generate_iron_ore() -> Image:
 		var col: Color = iron_colors[i % iron_colors.size()]
 		if pos.x < TILE_SIZE and pos.y < TILE_SIZE:
 			base.set_pixel(pos.x, pos.y, col)
+
+	return base
+
+
+static func _generate_grass_dirt() -> Image:
+	# Dirt base with green grass on top 3 rows
+	var base := _load_tile_image(TILE_PATHS[0])  # dirt
+	if base == null:
+		return _fallback_image(Color(0.3, 0.6, 0.2))
+
+	base.convert(Image.FORMAT_RGBA8)
+
+	var grass_colors := [
+		Color(0.25, 0.55, 0.15),  # dark green
+		Color(0.3, 0.65, 0.2),    # green
+		Color(0.35, 0.7, 0.25),   # light green
+	]
+
+	# Top 3 rows are grass
+	for y in 3:
+		for x in TILE_SIZE:
+			var ci := (x + y) % 3
+			base.set_pixel(x, y, grass_colors[ci])
+
+	# Irregular grass edge on row 3-4
+	var edge_pattern := [3, 2, 4, 3, 2, 3, 4, 2, 3, 4, 2, 3, 3, 4, 2, 3]
+	for x in TILE_SIZE:
+		var depth: int = edge_pattern[x]
+		if depth > 3:
+			base.set_pixel(x, 3, grass_colors[1])
 
 	return base
 

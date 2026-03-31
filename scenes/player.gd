@@ -22,6 +22,8 @@ signal hp_changed(current: int, max_hp: int)
 signal player_died
 
 const SpriteLoader = preload("res://scripts/sprite_loader.gd")
+const LightTextures = preload("res://scripts/light_textures.gd")
+const SFX = preload("res://scripts/sfx.gd")
 
 @onready var _anim: AnimatedSprite2D = $AnimatedSprite2D
 @onready var _pickaxe: Node2D = $Pickaxe
@@ -31,6 +33,14 @@ func _ready() -> void:
 	hp = max_hp
 	_anim.sprite_frames = SpriteLoader.create_goblin_frames()
 	_anim.play("idle")
+
+	# Player light
+	var light := PointLight2D.new()
+	light.texture = LightTextures.create_radial_light(256)
+	light.texture_scale = 3.0
+	light.energy = 1.0
+	light.color = Color(1.0, 0.95, 0.8)
+	add_child(light)
 
 
 func _physics_process(delta: float) -> void:
@@ -144,6 +154,7 @@ func _try_mine_at(world_pos: Vector2) -> void:
 	_mine_timer = mine_cooldown
 	_play_pickaxe_swing(tile_center)
 	tilemap.set_cell(tile_pos, -1)
+	SFX.play(self, SFX.sfx_mine_break())
 
 
 func _play_pickaxe_swing(target_world: Vector2) -> void:

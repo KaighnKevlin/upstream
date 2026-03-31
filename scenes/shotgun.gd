@@ -1,6 +1,7 @@
 extends Node2D
 
 const WeaponSprites = preload("res://scripts/weapon_sprites.gd")
+const SFX = preload("res://scripts/sfx.gd")
 
 @export var pellet_count: int = 5
 @export var spread_angle: float = 30.0  # degrees
@@ -55,6 +56,8 @@ func _fire(dir: Vector2) -> void:
 		bullet.damage = pellet_damage
 		bullet.lifetime = 0.8
 		get_tree().current_scene.add_child(bullet)
+
+	SFX.play(self, SFX.sfx_shotgun())
 
 	# Show gun + muzzle flash
 	visible = true

@@ -1,5 +1,8 @@
 extends Area2D
 
+const ObjectSprites = preload("res://scripts/object_sprites.gd")
+const SFX = preload("res://scripts/sfx.gd")
+
 signal ammo_changed(current: int, max_ammo: int)
 
 @export var max_buffer: int = 20
@@ -15,6 +18,17 @@ func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 	_update_bar()
 
+	# Replace polygon with pixel sprite
+	if has_node("Sprite"):
+		$Sprite.visible = false
+	if has_node("Funnel"):
+		$Funnel.visible = false
+	var spr := Sprite2D.new()
+	spr.texture = ObjectSprites.create_receiver_texture()
+	spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	spr.scale = Vector2(2, 2)
+	add_child(spr)
+
 
 func _on_body_entered(body: Node2D) -> void:
 	# Only accept ingots (RigidBody2D not in "ore" group)
@@ -25,6 +39,7 @@ func _on_body_entered(body: Node2D) -> void:
 		return
 
 	# It's an ingot — accept it
+	SFX.play(self, SFX.sfx_ammo_received())
 	if buffer < max_buffer:
 		buffer += 1
 		ammo_changed.emit(buffer, max_buffer)

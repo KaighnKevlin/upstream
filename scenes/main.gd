@@ -2,6 +2,7 @@ extends Node2D
 
 const WorldGen = preload("res://scripts/world_gen.gd")
 const TileSetBuilder = preload("res://scripts/tileset_builder.gd")
+const ObjectSprites = preload("res://scripts/object_sprites.gd")
 
 @export var dome_max_hp: int = 100
 @export var wave_interval: float = 30.0
@@ -34,6 +35,16 @@ func _ready() -> void:
 
 	# Create boundary walls
 	_create_boundaries()
+
+	# Replace dome polygon with pixel sprite
+	if has_node("DomeVisual"):
+		$DomeVisual.visible = false
+	var dome_spr := Sprite2D.new()
+	dome_spr.texture = ObjectSprites.create_dome_texture()
+	dome_spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	dome_spr.scale = Vector2(5, 3)
+	dome_spr.global_position = Vector2(1200, 55)
+	add_child(dome_spr)
 
 	# Setup game state
 	dome_hp = dome_max_hp

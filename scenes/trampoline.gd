@@ -6,12 +6,17 @@ extends Node2D
 ## Force multiplier applied on bounce.
 @export_range(100, 2000, 10) var bounce_force: float = 700.0
 
+const ObjectSprites = preload("res://scripts/object_sprites.gd")
+const SFX = preload("res://scripts/sfx.gd")
+
 @onready var _area: Area2D = $Area2D
 @onready var _arrow: Polygon2D = $Arrow
 @onready var _sprite: Polygon2D = $Sprite
 @onready var _angle_handle: Polygon2D = $AngleHandle
 @onready var _force_handle: Polygon2D = $ForceHandle
 @onready var _force_line: Polygon2D = $ForceLine
+
+var _pixel_sprite: Sprite2D
 
 enum DragMode { NONE, BODY, ANGLE, FORCE }
 var _selected := false
@@ -29,10 +34,21 @@ const HANDLE_GRAB_RADIUS := 14.0
 func _ready() -> void:
 	_area.body_entered.connect(_on_body_entered)
 	_hide_handles()
+
+	# Add pixel art sprite
+	_pixel_sprite = Sprite2D.new()
+	_pixel_sprite.texture = ObjectSprites.create_trampoline_texture()
+	_pixel_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_pixel_sprite.scale = Vector2(2, 2)
+	add_child(_pixel_sprite)
+	_sprite.visible = false  # hide polygon
+
 	_update_visuals()
 
 
 func _on_body_entered(body: Node2D) -> void:
+	SFX.play(self, SFX.sfx_bounce())
+
 	var angle_rad := deg_to_rad(bounce_angle - 90)
 	var direction := Vector2(cos(angle_rad), sin(angle_rad))
 
@@ -168,6 +184,8 @@ func _hide_handles() -> void:
 func _update_visuals() -> void:
 	# Tilt the platform perpendicular to launch direction
 	_sprite.rotation = deg_to_rad(bounce_angle)
+	if _pixel_sprite:
+		_pixel_sprite.rotation = deg_to_rad(bounce_angle)
 
 	var dir := _launch_dir()
 	var perp := dir.rotated(PI / 2)
