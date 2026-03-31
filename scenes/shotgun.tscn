@@ -1,0 +1,22 @@
+[gd_scene load_steps=2 format=3 uid="uid://shotg0001"]
+
+[ext_resource type="Script" path="res://scenes/shotgun.gd" id="1"]
+
+[node name="Shotgun" type="Node2D"]
+script = ExtResource("1")
+
+; --- Barrel ---
+[node name="Barrel" type="Polygon2D" parent="."]
+color = Color(0.45, 0.42, 0.4, 1)
+polygon = PackedVector2Array(0, -2.5, 18, -2, 18, 2, 0, 2.5)
+
+; --- Stock ---
+[node name="Stock" type="Polygon2D" parent="."]
+color = Color(0.5, 0.35, 0.2, 1)
+polygon = PackedVector2Array(-8, -3, 0, -3, 0, 3, -8, 3)
+
+; --- Muzzle flash (hidden, shown on fire) ---
+[node name="Flash" type="Polygon2D" parent="."]
+position = Vector2(18, 0)
+color = Color(1.0, 0.9, 0.4, 0.8)
+polygon = PackedVector2Array(0, -3, 6, -1, 6, 1, 0, 3)
