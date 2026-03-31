@@ -21,13 +21,16 @@ var _launch_timer := 0.0  # while > 0, player input doesn't override velocity
 signal hp_changed(current: int, max_hp: int)
 signal player_died
 
-@onready var _sprite: Polygon2D = $Sprite
-@onready var _visor: Polygon2D = $Visor
+const SpriteLoader = preload("res://scripts/sprite_loader.gd")
+
+@onready var _anim: AnimatedSprite2D = $AnimatedSprite2D
 @onready var _pickaxe: Node2D = $Pickaxe
 
 
 func _ready() -> void:
 	hp = max_hp
+	_anim.sprite_frames = SpriteLoader.create_goblin_frames()
+	_anim.play("idle")
 
 
 func _physics_process(delta: float) -> void:
@@ -66,20 +69,28 @@ func _physics_process(delta: float) -> void:
 	# Facing direction
 	if input_x > 0:
 		_facing_right = true
-		_sprite.scale.x = 1
-		_visor.scale.x = 1
-		_pickaxe.scale.x = 1
+		_anim.flip_h = false
 	elif input_x < 0:
 		_facing_right = false
-		_sprite.scale.x = -1
-		_visor.scale.x = -1
-		_pickaxe.scale.x = -1
+		_anim.flip_h = true
 
 	# Jump — W or Space
 	if (Input.is_action_just_pressed("jump") or Input.is_action_just_pressed("ui_accept") or Input.is_physical_key_pressed(KEY_W)) and is_on_floor():
 		velocity.y = -jump_force
 
 	move_and_slide()
+
+	# Update animation
+	if not _is_mining:
+		if not is_on_floor():
+			if velocity.y < 0:
+				_anim.play("jump")
+			else:
+				_anim.play("jump")  # fall uses same anim
+		elif abs(velocity.x) > 10:
+			_anim.play("walk")
+		else:
+			_anim.play("idle")
 
 	# Mining cooldown
 	if _mine_timer > 0:
@@ -90,7 +101,7 @@ func _physics_process(delta: float) -> void:
 	if Input.is_key_pressed(KEY_J) and _mine_timer <= 0:
 		_try_directional_mine()
 	elif Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and _mine_timer <= 0:
-		if BuildSystem.current_build == BuildSystem.BuildType.NONE:
+		if not has_node("/root/BuildSystem") or get_node("/root/BuildSystem").current_build == 0:
 			_try_mine_at(get_global_mouse_position())
 
 
@@ -179,8 +190,8 @@ func take_damage(amount: int) -> void:
 
 	# Flash red
 	var tween := create_tween()
-	tween.tween_property(_sprite, "modulate", Color(1, 0.3, 0.3), 0.05)
-	tween.tween_property(_sprite, "modulate", Color.WHITE, 0.15)
+	tween.tween_property(_anim, "modulate", Color(1, 0.3, 0.3), 0.05)
+	tween.tween_property(_anim, "modulate", Color(0.5, 0.7, 1.0), 0.15)  # back to blue tint
 
 	if hp <= 0:
 		player_died.emit()

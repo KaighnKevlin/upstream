@@ -97,8 +97,8 @@ func _input(event: InputEvent) -> void:
 			deselect()
 			return
 
-	# Skip if in build mode
-	if BuildSystem.current_build != BuildSystem.BuildType.NONE:
+	# Skip if in build mode (guard for editor preview where autoloads don't exist)
+	if has_node("/root/BuildSystem") and get_node("/root/BuildSystem").current_build != 0:
 		if _selected:
 			deselect()
 		return
