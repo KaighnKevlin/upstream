@@ -31,6 +31,7 @@ const SFX = preload("res://scripts/sfx.gd")
 
 func _ready() -> void:
 	hp = max_hp
+	add_to_group("player")
 	_anim.sprite_frames = SpriteLoader.create_goblin_frames()
 	_anim.play("idle")
 

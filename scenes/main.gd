@@ -108,12 +108,24 @@ func _spawn_wave() -> void:
 	var count := enemies_per_wave_base + wave_number
 	_wave_label.text = "WAVE %d!" % wave_number
 
+	var surface_y := (WorldGen.SURFACE_ROWS - 1) * WorldGen.TILE_SIZE - 12
+	var spawn_x := WorldGen.WORLD_WIDTH * WorldGen.TILE_SIZE + 40
+
 	for i in count:
 		var enemy := _enemy_scene.instantiate()
 		enemy.add_to_group("enemies")
-		# Spawn off-screen right, on the surface
-		var surface_y := (WorldGen.SURFACE_ROWS - 1) * WorldGen.TILE_SIZE - 12
-		enemy.global_position = Vector2(WorldGen.WORLD_WIDTH * WorldGen.TILE_SIZE + 40 + i * 40, surface_y)
+
+		# One of each type, then fill remainder with slimes
+		var type: int
+		match i:
+			0: type = 0  # SLIME
+			1: type = 1  # GOBLIN
+			2: type = 2  # SKELETON
+			3: type = 3  # WIZARD
+			_: type = i % 4
+
+		enemy.setup(type)
+		enemy.global_position = Vector2(spawn_x + i * 40, surface_y)
 		enemy.direction = -1.0
 		add_child(enemy)
 
@@ -189,6 +201,10 @@ func _trigger_game_over() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _game_over and event is InputEventKey and event.pressed:
-		if event.keycode == KEY_R:
+	if event is InputEventKey and event.pressed:
+		if _game_over and event.keycode == KEY_R:
 			get_tree().reload_current_scene()
+		# Cheat: P to force spawn next wave
+		if not _game_over and event.keycode == KEY_P:
+			_wave_timer = 0.0
+			_spawn_wave()
