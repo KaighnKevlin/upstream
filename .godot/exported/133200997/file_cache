@@ -1,0 +1,14 @@
+res://scenes/bullet.tscn::ff62061282670ef403c772ab8effa750::1774915446::res://.godot/exported/133200997/export-6d8e6ff1e6f20a36e0402d27c623c86c-bullet.scn
+res://scenes/enemy.tscn::eaa7efed2368441bcadc4bf2248242e8::1774969424::res://.godot/exported/133200997/export-a930820ec0ab16db6719aff4daa500f9-enemy.scn
+res://scenes/enemy_bullet.tscn::421cac37d407d8a7c7d016b860484d4f::1774974437::res://.godot/exported/133200997/export-f713053f834f32e17a15d73d96ac4bb3-enemy_bullet.scn
+res://scenes/ingot.tscn::9108ae67590ee20628e225f2c7237182::1774836390::res://.godot/exported/133200997/export-5efbb877f7f5a69fb1091d27b808f0b8-ingot.scn
+res://scenes/laser_smelter.tscn::3f4b93074cd3d82bd804b38d2d1c5c59::1774836390::res://.godot/exported/133200997/export-e7d46e95a10e6c3b4baa96c4676ba08e-laser_smelter.scn
+res://scenes/main.tscn::7f0092db2d962809714b2060287572e1::1774974660::res://.godot/exported/133200997/export-3ad5c15c4f3250da0cc7c1af1770d85f-main.scn
+res://scenes/miner.tscn::4c8316c866c0689735e61ad2d8de4e8d::1774967999::res://.godot/exported/133200997/export-5b7b887aa20d933a4f45c60e981e186d-miner.scn
+res://scenes/ore.tscn::07f5c05061576eec3cb95eb57709820d::1774831272::res://.godot/exported/133200997/export-c77639806e9a803a816175fa50017857-ore.scn
+res://scenes/parallax_bg.tscn::9d1c430c59bf54734d52b653d3ebf132::1774971393::res://.godot/exported/133200997/export-0b5dbed2eb66c7ef560a6c05a8950315-parallax_bg.scn
+res://scenes/player.tscn::ec52051862f999e9782c91f69400d928::1774969936::res://.godot/exported/133200997/export-234fb6894ec6226e856ab7f825500d3d-player.scn
+res://scenes/receiver.tscn::086c835c6af8ee959c7a1a4c8ee5f782::1774836365::res://.godot/exported/133200997/export-8e0a82b2b9b5da1fb8f8d74dacc90333-receiver.scn
+res://scenes/shotgun.tscn::8de654df2749e1b87377f305bd09f033::1774970006::res://.godot/exported/133200997/export-0cf613e79e7cfbab613f0fe1a0ca7a38-shotgun.scn
+res://scenes/trampoline.tscn::fcb3533634f20b4677f549868543fff7::1774914533::res://.godot/exported/133200997/export-1f6f2f095bb252d72ae0993b2e90ccf7-trampoline.scn
+res://scenes/turret.tscn::388da5cb2123294b8d769902ec39c540::1774836448::res://.godot/exported/133200997/export-39a5d02370b65c0577139fa32878e6d6-turret.scn
