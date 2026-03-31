@@ -1,9 +1,10 @@
-[gd_scene load_steps=7 format=3 uid="uid://main00001"]
+[gd_scene load_steps=8 format=3 uid="uid://main00001"]
 
 [ext_resource type="Script" uid="uid://s757gc3c34mv" path="res://scenes/main.gd" id="1"]
 [ext_resource type="PackedScene" uid="uid://recv00001" path="res://scenes/receiver.tscn" id="4"]
 [ext_resource type="PackedScene" path="res://scenes/turret.tscn" id="7"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="8"]
+[ext_resource type="PackedScene" path="res://scenes/parallax_bg.tscn" id="9"]
 
 [sub_resource type="RectangleShape2D" id="DomeFloor"]
 size = Vector2(3200, 10)
@@ -14,16 +15,14 @@ size = Vector2(40, 60)
 [node name="Main" type="Node2D"]
 script = ExtResource("1")
 
-[node name="Background" type="ColorRect" parent="."]
-offset_left = -200.0
-offset_top = -100.0
-offset_right = 2800.0
-offset_bottom = 1400.0
-color = Color(0.06, 0.06, 0.1, 1)
+[node name="ParallaxBg" parent="." instance=ExtResource("9")]
 
-[node name="SkyBg" type="Polygon2D" parent="."]
-color = Color(0.12, 0.14, 0.22, 1)
-polygon = PackedVector2Array(-200, -100, 2800, -100, 2800, 96, -200, 96)
+[node name="Background" type="ColorRect" parent="."]
+offset_left = -400.0
+offset_top = 96.0
+offset_right = 3000.0
+offset_bottom = 1400.0
+color = Color(0.04, 0.04, 0.08, 1)
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]
 
@@ -36,6 +35,7 @@ collision_mask = 0
 shape = SubResource("DomeFloor")
 
 [node name="Sprite" type="Polygon2D" parent="DomePlatform"]
+visible = false
 color = Color(0.28, 0.3, 0.22, 1)
 polygon = PackedVector2Array(-1200, -5, 1200, -5, 1200, 5, -1200, 5)
 
