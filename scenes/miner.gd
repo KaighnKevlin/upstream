@@ -21,14 +21,40 @@ func _physics_process(delta: float) -> void:
 
 
 func _eject_ore() -> void:
-	var ore := _ore_scene.instantiate() as RigidBody2D
-	# Spawn ore just above the miner
-	ore.global_position = global_position + Vector2(0, -30)
+	# Find empty space above the miner to spawn ore
+	var spawn_pos := _find_spawn_pos()
+	if spawn_pos == Vector2.ZERO:
+		return  # no empty space found, skip
 
-	# Calculate direction from angle (0 = up, positive = clockwise)
-	var angle_rad := deg_to_rad(eject_angle - 90)  # -90 because 0 rad = right in Godot
+	var ore := _ore_scene.instantiate() as RigidBody2D
+	ore.global_position = spawn_pos
+
+	var angle_rad := deg_to_rad(eject_angle - 90)
 	var direction := Vector2(cos(angle_rad), sin(angle_rad))
 
-	# Add to scene tree first, then apply impulse
 	get_tree().current_scene.add_child(ore)
 	ore.apply_central_impulse(direction * eject_force)
+
+
+func _find_spawn_pos() -> Vector2:
+	# Look upward from miner position for empty tile
+	var tilemap := _get_tilemap()
+	if tilemap == null:
+		# No tilemap — just spawn above
+		return global_position + Vector2(0, -20)
+
+	var tile_pos := tilemap.local_to_map(tilemap.to_local(global_position))
+	# Check up to 10 tiles above
+	for i in range(1, 10):
+		var check := Vector2i(tile_pos.x, tile_pos.y - i)
+		if tilemap.get_cell_source_id(check) == -1:
+			return tilemap.to_global(tilemap.map_to_local(check))
+
+	return Vector2.ZERO  # no empty space found
+
+
+func _get_tilemap() -> TileMapLayer:
+	var scene := get_tree().current_scene
+	if scene and scene.has_node("TileMapLayer"):
+		return scene.get_node("TileMapLayer") as TileMapLayer
+	return null

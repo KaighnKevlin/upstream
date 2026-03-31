@@ -20,5 +20,5 @@ func _physics_process(delta: float) -> void:
 	if _timer >= lifetime:
 		queue_free()
 	# Despawn if fallen way below the map
-	if global_position.y > 1200:
+	if global_position.y > 1400:
 		queue_free()

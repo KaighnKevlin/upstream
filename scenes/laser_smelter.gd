@@ -1,7 +1,7 @@
 extends Node2D
 
 ## How much velocity the ore retains after passing through (0.0–1.0).
-@export_range(0.1, 0.9, 0.05) var velocity_retention: float = 0.35
+@export_range(0.1, 0.9, 0.05) var velocity_retention: float = 0.6
 
 var _ingot_scene: PackedScene = preload("res://scenes/ingot.tscn")
 

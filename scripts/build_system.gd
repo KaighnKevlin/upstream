@@ -31,7 +31,7 @@ func _input(event: InputEvent) -> void:
 				_set_build(BuildType.MINER)
 			KEY_3:
 				_set_build(BuildType.LASER)
-			KEY_ESCAPE:
+			KEY_ESCAPE, KEY_Q:
 				_set_build(BuildType.NONE)
 
 	# Place building on click

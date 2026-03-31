@@ -92,7 +92,7 @@ func deselect() -> void:
 
 func _input(event: InputEvent) -> void:
 	# Escape always deselects
-	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+	if event is InputEventKey and event.pressed and (event.keycode == KEY_ESCAPE or event.keycode == KEY_Q):
 		if _selected:
 			deselect()
 			return
