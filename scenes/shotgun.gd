@@ -1,5 +1,7 @@
 extends Node2D
 
+const WeaponSprites = preload("res://scripts/weapon_sprites.gd")
+
 @export var pellet_count: int = 5
 @export var spread_angle: float = 30.0  # degrees
 @export var pellet_speed: float = 400.0
@@ -7,7 +9,18 @@ extends Node2D
 @export var fire_cooldown: float = 0.6
 
 var _timer := 0.0
+var _base_pos := Vector2.ZERO
 var _bullet_scene: PackedScene = preload("res://scenes/bullet.tscn")
+
+
+func _ready() -> void:
+	_base_pos = position
+	$Flash.visible = false
+	# Set up pixel art gun sprite
+	var sprite := $GunSprite as Sprite2D
+	sprite.texture = WeaponSprites.create_shotgun_texture()
+	sprite.scale = Vector2(1.4, 1.4)
+	visible = false  # hidden until firing
 
 
 func _physics_process(delta: float) -> void:
@@ -37,14 +50,20 @@ func _fire(dir: Vector2) -> void:
 		var pellet_dir := Vector2.from_angle(base_angle + offset)
 
 		var bullet := _bullet_scene.instantiate()
-		bullet.global_position = global_position + dir * 12
+		bullet.global_position = global_position + dir * 30
 		bullet.velocity = pellet_dir * pellet_speed
 		bullet.damage = pellet_damage
-		bullet.lifetime = 0.8  # short range
-		# Make pellets smaller and white
+		bullet.lifetime = 0.8
 		get_tree().current_scene.add_child(bullet)
 
-	# Recoil animation
+	# Show gun + muzzle flash
+	visible = true
+	$Flash.visible = true
+
 	var tween := create_tween()
-	tween.tween_property(self, "position", position - dir.normalized() * 4, 0.05)
-	tween.tween_property(self, "position", position, 0.1)
+	# Recoil
+	tween.tween_property(self, "position", _base_pos - dir.normalized() * 4, 0.05)
+	tween.tween_property(self, "position", _base_pos, 0.12)
+	# Hide flash quickly, hide gun after delay
+	tween.parallel().tween_callback(func(): $Flash.visible = false).set_delay(0.06)
+	tween.tween_callback(func(): visible = false).set_delay(0.3)
