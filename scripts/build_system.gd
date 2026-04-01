@@ -1,6 +1,6 @@
 extends Node
 
-enum BuildType { NONE, TRAMPOLINE, MINER, LASER }
+enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM }
 
 var current_build: BuildType = BuildType.NONE
 var _ghost: Node2D = null
@@ -10,12 +10,14 @@ var _scenes := {
 	BuildType.TRAMPOLINE: preload("res://scenes/trampoline.tscn"),
 	BuildType.MINER: preload("res://scenes/miner.tscn"),
 	BuildType.LASER: preload("res://scenes/laser_smelter.tscn"),
+	BuildType.UPSTREAM: preload("res://scenes/upstream_shaft.tscn"),
 }
 
 var _ghost_colors := {
 	BuildType.TRAMPOLINE: Color(0.2, 0.85, 0.3, 0.4),
 	BuildType.MINER: Color(0.3, 0.3, 0.8, 0.4),
 	BuildType.LASER: Color(1.0, 0.2, 0.1, 0.4),
+	BuildType.UPSTREAM: Color(0.3, 0.5, 1.0, 0.4),
 }
 
 signal build_mode_changed(build_type: BuildType)
@@ -31,6 +33,8 @@ func _input(event: InputEvent) -> void:
 				_set_build(BuildType.MINER)
 			KEY_3:
 				_set_build(BuildType.LASER)
+			KEY_4:
+				_set_build(BuildType.UPSTREAM)
 			KEY_ESCAPE, KEY_Q:
 				_set_build(BuildType.NONE)
 

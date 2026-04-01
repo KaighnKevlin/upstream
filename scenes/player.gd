@@ -17,6 +17,7 @@ var _is_mining := false
 var _facing_right := true
 var _damage_cooldown := 0.0
 var _launch_timer := 0.0  # while > 0, player input doesn't override velocity
+var in_shaft := false
 
 signal hp_changed(current: int, max_hp: int)
 signal player_died
@@ -91,8 +92,8 @@ func _physics_process(delta: float) -> void:
 		_facing_right = false
 		_anim.flip_h = true
 
-	# Jump — W or Space
-	if (Input.is_action_just_pressed("jump") or Input.is_action_just_pressed("ui_accept") or Input.is_physical_key_pressed(KEY_W)) and is_on_floor():
+	# Jump — W or Space (can jump on floor or inside a shaft)
+	if (Input.is_action_just_pressed("jump") or Input.is_action_just_pressed("ui_accept") or Input.is_physical_key_pressed(KEY_W)) and (is_on_floor() or in_shaft):
 		velocity.y = -jump_force
 
 	move_and_slide()

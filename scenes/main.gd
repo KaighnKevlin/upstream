@@ -176,6 +176,7 @@ var _build_names := {
 	1: "Building: TRAMPOLINE",
 	2: "Building: MINER",
 	3: "Building: LASER",
+	4: "Building: UPSTREAM",
 }
 
 

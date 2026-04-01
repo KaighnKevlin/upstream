@@ -98,7 +98,7 @@ offset_right = 550.0
 offset_bottom = 960.0
 theme_override_colors/font_color = Color(0.6, 0.6, 0.7, 1)
 theme_override_font_sizes/font_size = 14
-text = "[1] Trampoline  [2] Miner  [3] Laser  [RMB] Remove  [Q] Cancel  [J] Mine  [F] Shoot"
+text = "[1] Trampoline  [2] Miner  [3] Laser  [4] Upstream  [RMB] Remove  [Q] Cancel  [J] Mine  [F] Shoot"
 
 [node name="BuildModeLabel" type="Label" parent="CanvasLayer"]
 offset_left = 20.0
