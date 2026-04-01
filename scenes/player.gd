@@ -9,7 +9,7 @@ extends CharacterBody2D
 
 const GRAVITY := 980.0
 const TILE_SIZE := 16
-const ENEMY_DETECT_RADIUS := 18.0
+const ENEMY_DETECT_RADIUS := 28.0
 
 var hp: int
 var _mine_timer := 0.0
@@ -22,6 +22,7 @@ signal hp_changed(current: int, max_hp: int)
 signal player_died
 
 const SpriteLoader = preload("res://scripts/sprite_loader.gd")
+const PlayerSprite = preload("res://scripts/player_sprite.gd")
 const LightTextures = preload("res://scripts/light_textures.gd")
 const SFX = preload("res://scripts/sfx.gd")
 
@@ -32,7 +33,11 @@ const SFX = preload("res://scripts/sfx.gd")
 func _ready() -> void:
 	hp = max_hp
 	add_to_group("player")
-	_anim.sprite_frames = SpriteLoader.create_goblin_frames()
+	var frames := PlayerSprite.create_player_frames()
+	if frames:
+		_anim.sprite_frames = frames
+	else:
+		_anim.sprite_frames = SpriteLoader.create_goblin_frames()
 	_anim.play("idle")
 
 	# Player light
@@ -45,11 +50,9 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	# Enemy contact damage
+	# Damage cooldown
 	if _damage_cooldown > 0:
 		_damage_cooldown -= delta
-	else:
-		_check_enemy_contact()
 
 	# Launch timer (trampoline/knockback)
 	if _launch_timer > 0:
@@ -66,7 +69,11 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_pressed("move_right") or Input.is_action_pressed("ui_right"):
 		input_x += 1.0
 
-	if is_on_floor():
+	if _launch_timer > 0:
+		# During knockback/launch: preserve momentum, allow slight nudging
+		if input_x != 0:
+			velocity.x += input_x * move_speed * 0.3 * delta * 60
+	elif is_on_floor():
 		# On ground: direct control
 		velocity.x = input_x * move_speed
 	else:
@@ -74,7 +81,6 @@ func _physics_process(delta: float) -> void:
 		if input_x != 0:
 			velocity.x = move_toward(velocity.x, input_x * move_speed, 600.0 * delta)
 		else:
-			# Slow air drag when no input — don't kill momentum instantly
 			velocity.x = move_toward(velocity.x, 0, 200.0 * delta)
 
 	# Facing direction
@@ -91,17 +97,21 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 
-	# Update animation
+	# Enemy contact check (after move_and_slide so knockback isn't immediately consumed)
+	if _damage_cooldown <= 0:
+		_check_enemy_contact()
+
+	# Update animation (only switch when animation changes)
 	if not _is_mining:
+		var new_anim: String
 		if not is_on_floor():
-			if velocity.y < 0:
-				_anim.play("jump")
-			else:
-				_anim.play("jump")  # fall uses same anim
+			new_anim = "jump"
 		elif abs(velocity.x) > 10:
-			_anim.play("walk")
+			new_anim = "walk"
 		else:
-			_anim.play("idle")
+			new_anim = "idle"
+		if _anim.animation != new_anim:
+			_anim.play(new_anim)
 
 	# Mining cooldown
 	if _mine_timer > 0:
@@ -184,9 +194,11 @@ func _check_enemy_contact() -> void:
 		if global_position.distance_to(enemy.global_position) < ENEMY_DETECT_RADIUS:
 			var dmg: int = enemy.damage if "damage" in enemy else 10
 			take_damage(dmg)
-			# Knockback away from enemy
-			var knockback: Vector2 = (global_position - enemy.global_position).normalized()
-			velocity = knockback * 300
+			# Knockback: use enemy's actual velocity direction + upward pop
+			var push_x: float = signf(enemy.velocity.x) if abs(enemy.velocity.x) > 1 else -1.0
+			var knockback := Vector2(push_x * 350, -250)
+			velocity = knockback
+			_launch_timer = 0.3  # longer than trampoline so knockback is felt
 			break
 
 
@@ -203,7 +215,7 @@ func take_damage(amount: int) -> void:
 	# Flash red
 	var tween := create_tween()
 	tween.tween_property(_anim, "modulate", Color(1, 0.3, 0.3), 0.05)
-	tween.tween_property(_anim, "modulate", Color(0.5, 0.7, 1.0), 0.15)  # back to blue tint
+	tween.tween_property(_anim, "modulate", Color.WHITE, 0.15)
 
 	if hp <= 0:
 		player_died.emit()

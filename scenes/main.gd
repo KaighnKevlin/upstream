@@ -42,8 +42,8 @@ func _ready() -> void:
 	var dome_spr := Sprite2D.new()
 	dome_spr.texture = ObjectSprites.create_dome_texture()
 	dome_spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	dome_spr.scale = Vector2(5, 3)
-	dome_spr.global_position = Vector2(1200, 55)
+	dome_spr.scale = Vector2(2.5, 1.5)
+	dome_spr.global_position = Vector2(1200, 72)
 	add_child(dome_spr)
 
 	# Setup game state
@@ -108,8 +108,8 @@ func _spawn_wave() -> void:
 	var count := enemies_per_wave_base + wave_number
 	_wave_label.text = "WAVE %d!" % wave_number
 
-	var surface_y := (WorldGen.SURFACE_ROWS - 1) * WorldGen.TILE_SIZE - 12
-	var spawn_x := WorldGen.WORLD_WIDTH * WorldGen.TILE_SIZE + 40
+	var surface_y := 40  # spawn above ground, gravity drops them
+	var spawn_x := WorldGen.WORLD_WIDTH * WorldGen.TILE_SIZE - 30  # just inside right boundary
 
 	for i in count:
 		var enemy := _enemy_scene.instantiate()
@@ -125,7 +125,7 @@ func _spawn_wave() -> void:
 			_: type = i % 4
 
 		enemy.setup(type)
-		enemy.global_position = Vector2(spawn_x + i * 40, surface_y)
+		enemy.global_position = Vector2(spawn_x - i * 20, surface_y)
 		enemy.direction = -1.0
 		add_child(enemy)
 

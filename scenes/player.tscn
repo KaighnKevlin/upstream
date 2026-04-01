@@ -14,10 +14,10 @@ script = ExtResource("1")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_1")
 
-; --- Animated sprite (set up in _ready, scaled 2.5x) ---
+; --- Animated sprite (miner, 30x32 frames) ---
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
-scale = Vector2(2.5, 2.5)
-modulate = Color(0.5, 0.7, 1.0, 1)
+scale = Vector2(1.25, 1.25)
+texture_filter = 0
 
 ; --- Pickaxe (hidden until mining) ---
 [node name="Pickaxe" type="Node2D" parent="."]
