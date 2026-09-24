@@ -92,3 +92,66 @@ def upscale(rows, s, bg=(24, 24, 30, 255)):
 
 def save_scaled(path, rows, s, bg=(24, 24, 30, 255)):
     big = upscale(rows, s, bg); write_png(path, len(big[0]), len(big), big)
+
+
+def write_gif(path, frames, delays_cs, scale=1, bg=(24, 24, 30)):
+    """Animated GIF from equal-size RGBA frames (alpha -> bg), <=255 colours.
+    delays_cs: per-frame delay in 1/100 s."""
+    cols = {bg: 0}
+    idx_frames = []
+    for f in frames:
+        idx = []
+        for row in f:
+            line = []
+            for px in row:
+                c = px[:3] if px[3] > 0 else bg
+                if c not in cols: cols[c] = len(cols)
+                line += [cols[c]] * scale
+            idx += line * scale
+        idx_frames.append(idx)
+    assert len(cols) <= 256, 'too many colours for GIF'
+    h = len(frames[0]) * scale; w = len(frames[0][0]) * scale
+    bits = max(2, (len(cols) - 1).bit_length()); size = 1 << bits
+    pal = sorted(cols, key=cols.get) + [(0, 0, 0)] * (size - len(cols))
+    out = bytearray(b'GIF89a' + struct.pack('<HHBBB', w, h, 0xF0 | (bits - 1), 0, 0))
+    for c in pal: out += bytes(c)
+    out += b'\x21\xFF\x0BNETSCAPE2.0\x03\x01\x00\x00\x00'  # loop forever
+    for idx, d in zip(idx_frames, delays_cs):
+        out += b'\x21\xF9\x04\x00' + struct.pack('<H', d) + b'\x00\x00'
+        out += b'\x2C' + struct.pack('<HHHHB', 0, 0, w, h, 0)
+        out += bytes([bits]) + _lzw(idx, bits) + b'\x00'
+    out += b'\x3B'
+    open(path, 'wb').write(out)
+
+
+def _lzw(data, min_bits):
+    clear = 1 << min_bits; eoi = clear + 1
+    table = {(i,): i for i in range(clear)}
+    nxt = eoi + 1; width = min_bits + 1
+    buf = 0; nbits = 0; outb = bytearray()
+
+    def emit(code):
+        nonlocal buf, nbits
+        buf |= code << nbits; nbits += width
+        while nbits >= 8:
+            outb.append(buf & 255); buf >>= 8; nbits -= 8
+    emit(clear)
+    cur = ()
+    for k in data:
+        cand = cur + (k,)
+        if cand in table:
+            cur = cand; continue
+        emit(table[cur])
+        if nxt < 4096:
+            table[cand] = nxt; nxt += 1
+            if nxt > (1 << width) and width < 12: width += 1
+        else:
+            emit(clear); table = {(i,): i for i in range(clear)}; nxt = eoi + 1; width = min_bits + 1
+        cur = (k,)
+    if cur: emit(table[cur])
+    emit(eoi)
+    if nbits: outb.append(buf & 255)
+    blocks = bytearray()
+    for i in range(0, len(outb), 255):
+        chunk = outb[i:i + 255]; blocks += bytes([len(chunk)]) + chunk
+    return bytes(blocks)
