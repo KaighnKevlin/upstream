@@ -55,6 +55,7 @@ bottom of the log.
 - [x] Ore/ingot flight: tapered speed streaks (dusty tan for ore, hot orange cooling with the bar for ingots), dust puff on hard landings
 - [x] Drill rig v2 (8 frames, 24x28): flywheel + crank + piston, sweeping pressure gauge, funnel that pumps
 - [x] Prospector air poses: rise (arm up, knees tucked), fall x2 (arms out, flapping), land crouch + dust on hard landings
+- [x] Smelter strike: the arc snaps onto the ore from both electrodes, thickens and whitens, light flares; white flash + molten drips
 - [x] HUD: own 5x7 proportional pixel font (gen_font.py -> FontFile at runtime, scripts/pixel_font.gd), brass 9-slice panels, rimmed bars
 
 ## Log
@@ -182,4 +183,8 @@ Lights are additive over a 0.08 CanvasModulate and the framebuffer clips at 1.0,
 - gen_player.py: frames 18 rise, 19-20 fall, 21 land (22 frames total).
 - player_sprite.gd: "rise", "fall" (8 fps loop), "land" when the sheet has them. player.gd: air anim by vertical speed (<-60 rise, >60 fall, else the old "jump" at the apex); _track_landing() records the fastest fall and, on touchdown above 260 px/s, holds "land" for 0.12 s and puffs dust at the feet.
 - playtest: jump_rec.
+
+### Pass 30 — smelter strike
+- laser_smelter.gd: STRIKE_TIME 0.16 s after ore enters: _reroll_arc draws two jagged legs meeting at the ore (_jag helper), re-rolled every 20-40 ms; bolt width 1.5->3, glow 6->12, colour to white-hot, light 0.45 -> 1.35 (a transient flare, allowed by the LIGHT BUDGET). White flash burst + orange molten drips with gravity replace the single spark burst.
+- playtest: smelt_rec.
 

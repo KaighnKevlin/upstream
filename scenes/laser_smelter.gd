@@ -18,6 +18,11 @@ const TIP := 5.5          # electrode tip, px from its centre (tools/art/gen_mac
 var _bolt: Line2D
 var _glow: Line2D
 var _flicker := 0.0
+var _light: PointLight2D
+# While smelting, the arc bends from both electrodes onto the ore
+var _strike_t := 0.0
+var _strike_at := Vector2.ZERO  # local
+const STRIKE_TIME := 0.16
 
 
 func _ready() -> void:
@@ -44,6 +49,7 @@ func _ready() -> void:
 	light.energy = 0.45
 	light.color = Color(0.45, 0.8, 0.9)
 	add_child(light)
+	_light = light
 
 
 func _make_line(width: float, color: Color) -> Line2D:
@@ -56,22 +62,41 @@ func _make_line(width: float, color: Color) -> Line2D:
 
 
 func _reroll_arc() -> void:
-	var a := -HALF_SPAN + TIP
-	var b := HALF_SPAN - TIP
-	var pts := PackedVector2Array([Vector2(a, 0)])
-	var n := 14
-	for i in range(1, n):
-		pts.append(Vector2(lerpf(a, b, float(i) / n), randf_range(-3.5, 3.5)))
-	pts.append(Vector2(b, 0))
+	var a := Vector2(-HALF_SPAN + TIP, 0)
+	var b := Vector2(HALF_SPAN - TIP, 0)
+	var pts := PackedVector2Array()
+	if _strike_t > 0:
+		# two jagged legs meeting at the ore
+		_jag(pts, a, _strike_at, 7, 5.0)
+		_jag(pts, _strike_at, b, 7, 5.0)
+		pts.append(b)
+	else:
+		_jag(pts, a, b, 14, 3.5)
+		pts.append(b)
 	_bolt.points = pts
 	_glow.points = pts
 
 
+func _jag(pts: PackedVector2Array, from: Vector2, to: Vector2, n: int, amp: float) -> void:
+	var normal := (to - from).orthogonal().normalized()
+	pts.append(from)
+	for i in range(1, n):
+		pts.append(from.lerp(to, float(i) / n) + normal * randf_range(-amp, amp))
+
+
 func _process(delta: float) -> void:
 	_flicker -= delta
-	if _flicker <= 0:
-		_flicker = randf_range(0.04, 0.09)
+	var striking := _strike_t > 0
+	_strike_t -= delta
+	if _flicker <= 0 or (striking and _strike_t <= 0):
+		_flicker = randf_range(0.02, 0.04) if _strike_t > 0 else randf_range(0.04, 0.09)
 		_reroll_arc()
+	# the strike runs hot: thicker, whiter bolt and a light flare
+	var k := clampf(_strike_t / STRIKE_TIME, 0.0, 1.0)
+	_bolt.width = 1.5 + 1.5 * k
+	_glow.width = 6.0 + 6.0 * k
+	_bolt.default_color = Color(0.8, 0.95, 0.95, 0.95).lerp(Color(1, 1, 0.95, 1), k)
+	_light.energy = 0.45 + 0.9 * k
 
 
 func _on_body_entered(body: Node2D) -> void:
@@ -83,7 +108,11 @@ func _on_body_entered(body: Node2D) -> void:
 	var pos: Vector2 = body.global_position
 
 	SFX.play(self, SFX.sfx_laser())
-	FX.burst(get_parent(), pos, Color(1.0, 0.6, 0.25), 8, 80.0, 0.3, 1.5, 200.0)
+	_strike_t = STRIKE_TIME
+	_strike_at = to_local(pos)
+	_reroll_arc()
+	FX.burst(get_parent(), pos, Color(1.0, 0.97, 0.85), 6, 120.0, 0.18, 1.5, 0.0)   # white flash
+	FX.burst(get_parent(), pos, Color(1.0, 0.6, 0.25), 10, 70.0, 0.5, 1.5, 420.0)  # molten drips
 
 	# Remove the ore
 	body.queue_free()

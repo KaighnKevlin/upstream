@@ -1165,6 +1165,29 @@ func jump_rec() -> void:
 		await wait(0.03)
 
 
+func smelt_rec() -> void:
+	# Recording: close-up of the arc smelter as ore passes through.
+	main._wave_timer = -9999.0
+	await _build_chain()
+	var laser: Node2D = null
+	for b in root.get_node("BuildSystem")._placed_buildings:
+		if b.has_method("_reroll_arc"):
+			laser = b
+	if laser == null:
+		log_line("no laser")
+		return
+	main.get_node("Player").global_position = laser.global_position + Vector2(-60, -200)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.zoom = Vector2(3, 3)
+	cam.position_smoothing_enabled = false
+	cam.global_position = laser.global_position
+	await wait(0.5)
+	for i in 80:
+		await _grab(Rect2(laser.global_position + Vector2(-100, -45), Vector2(200, 90)), "sm_%03d" % i, -3)
+		await wait(0.02)
+
+
 func banner() -> void:
 	main._wave_timer = -9999.0
 	await wait(0.8)
