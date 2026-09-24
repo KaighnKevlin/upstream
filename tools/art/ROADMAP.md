@@ -38,7 +38,7 @@ bottom of the log.
 - [x] Ore (3 rock+copper chunks, tumble), brass ingot, spring trampoline
 - [x] Miner drill rig (4-frame pump, steam puff), arc smelter (brass electrodes + live lightning)
 - [x] Dome observatory: glass (45% alpha) + brass ribs + riveted plinth with intake grate; cannon on the crown swivels to aim; ammo gauge strip on the rail
-- [ ] HUD (brass frame, pixel font)
+- [x] HUD: own 5x7 proportional pixel font (gen_font.py -> FontFile at runtime, scripts/pixel_font.gd), brass 9-slice panels, rimmed bars
 
 ## Log
 
@@ -65,3 +65,6 @@ bottom of the log.
 - pass 8: gen_player.py prospector, wired in via player_sprite.create_prospector_frames().
   Next: HUD (brass frame, pixel font), upstream lift shaft art, a mining swing animation
   for the prospector (the pickaxe is still the old polygon), titan second attack.
+- pass 9: HUD. Font sizes must be multiples of 10 (integer scaling). Missing glyphs:
+  $&*@\\^`{|}~ (add to gen_font.py G if needed). Next: lift shaft art, prospector
+  pickaxe swing, titan second attack, wave banner.

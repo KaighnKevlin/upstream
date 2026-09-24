@@ -12,8 +12,12 @@ const FX = preload("res://scripts/fx.gd")
 ## player has time to learn miner -> laser -> trampoline before anything attacks.
 @export var wait_for_first_ingot: bool = true
 
-const HUD_BAR_TOP := 696.0
-const HUD_BAR_BOTTOM := 710.0
+const HUD_BAR_TOP := 668.0
+const HUD_BAR_BOTTOM := 680.0
+const PixelFont = preload("res://scripts/pixel_font.gd")
+const HUD_TEXT := Color(0.93, 0.86, 0.66)       # warm brass-cream
+const HUD_TEXT_DIM := Color(0.72, 0.66, 0.52)
+const HUD_SHADOW := Color(0.09, 0.07, 0.05, 0.9)
 
 var dome_hp: int
 var wave_number: int = 0
@@ -81,8 +85,67 @@ func _ready() -> void:
 	else:
 		_wave_label.text = "Get an ingot into the dome to begin"
 	_build_mode_label.text = ""
+	_style_hud()
 
 
+
+
+func _style_hud() -> void:
+	# Brass panels + the pixel font (tools/art/gen_font.py). Font sizes are
+	# multiples of 10 so the bitmap font scales by whole pixels.
+	var hud := $CanvasLayer
+	for spec in [[Vector2(8, 8), Vector2(372, 88)], [Vector2(8, 632), Vector2(508, 80)],
+			[Vector2(530, 632), Vector2(742, 80)]]:
+		var p := NinePatchRect.new()
+		p.texture = preload("res://assets/ui/panel.png")
+		p.patch_margin_left = 8
+		p.patch_margin_top = 8
+		p.patch_margin_right = 8
+		p.patch_margin_bottom = 8
+		p.position = spec[0]
+		p.size = spec[1]
+		hud.add_child(p)
+		hud.move_child(p, 0)
+	var layout := {
+		"AmmoLabel": [Vector2(24, 18), 20, HUD_TEXT],
+		"WaveLabel": [Vector2(24, 42), 20, HUD_TEXT],
+		"BuildModeLabel": [Vector2(24, 66), 20, Color(0.55, 0.88, 0.9)],
+		"PlayerHpLabel": [Vector2(20, 642), 20, HUD_TEXT],
+		"DomeHpLabel": [Vector2(300, 642), 20, HUD_TEXT],
+		"BuildLabel": [Vector2(546, 644), 20, HUD_TEXT_DIM],
+		"Title": [Vector2(1060, 14), 20, HUD_TEXT_DIM],
+		"GameOverLabel": [Vector2(390, 250), 30, Color(0.95, 0.45, 0.3)],
+	}
+	for n in layout:
+		var l := hud.get_node(n) as Label
+		var spec: Array = layout[n]
+		l.position = spec[0]
+		l.add_theme_font_override("font", PixelFont.get_font())
+		l.add_theme_font_size_override("font_size", spec[1])
+		l.add_theme_color_override("font_color", spec[2])
+		l.add_theme_color_override("font_shadow_color", HUD_SHADOW)
+		l.add_theme_constant_override("shadow_offset_x", 2)
+		l.add_theme_constant_override("shadow_offset_y", 2)
+	($CanvasLayer/DomeHpLabel as Label).horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	($CanvasLayer/BuildLabel as Label).text = \
+		"[1] Trampoline  [2] Miner  [3] Laser  [4] Lift\n[RMB] Remove  [Q] Cancel  [J] Mine  [F] Shoot"
+	($CanvasLayer/Title as Label).text = "UPSTREAM"
+	# HP bars: brass rim, dark well, fill on top
+	for bar in [["PlayerHp", 20.0, 140.0], ["DomeHp", 300.0, 500.0]]:
+		var bg := hud.get_node(bar[0] + "Bg") as Polygon2D
+		bg.polygon = _rect_poly(bar[1] - 1, HUD_BAR_TOP - 1, bar[2] + 1, HUD_BAR_BOTTOM + 1)
+		bg.color = Color(0.1, 0.09, 0.07)
+		var rim := Polygon2D.new()
+		rim.polygon = _rect_poly(bar[1] - 3, HUD_BAR_TOP - 3, bar[2] + 3, HUD_BAR_BOTTOM + 3)
+		rim.color = Color(0.66, 0.56, 0.4)
+		hud.add_child(rim)
+		hud.move_child(rim, bg.get_index())
+	_update_hp_bar()
+	_update_player_hp_bar()
+
+
+func _rect_poly(x0: float, y0: float, x1: float, y1: float) -> PackedVector2Array:
+	return PackedVector2Array([Vector2(x0, y0), Vector2(x1, y0), Vector2(x1, y1), Vector2(x0, y1)])
 
 
 func _build_dome() -> void:

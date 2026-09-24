@@ -820,3 +820,14 @@ func dome_rec() -> void:
 	for i in 90:
 		await _grab(Rect2(Vector2(1100, -40), Vector2(420, 150)), "dome_%03d" % i, -2)
 		await wait(0.08)
+
+
+func hud() -> void:
+	await wait(1.0)
+	await tap(KEY_1)
+	await shot("hud")
+	await tap(KEY_Q)
+	main.damage_dome(35)
+	main.get_node("Player").take_damage(40)
+	await wait(0.5)
+	await shot("hud_damaged")
