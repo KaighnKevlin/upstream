@@ -38,11 +38,14 @@ func _ready() -> void:
 
 	# Add pixel art sprite
 	_pixel_sprite = Sprite2D.new()
-	_pixel_sprite.texture = ObjectSprites.create_trampoline_texture()
+	# brass plate on a coil spring (tools/art/gen_items.py); the plate's top
+	# sits 3px into the 22px texture, so shift it onto the pivot
+	_pixel_sprite.texture = preload("res://assets/sprites/trampoline.png")
 	_pixel_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	_pixel_sprite.scale = Vector2(2, 2)
+	_pixel_sprite.offset = Vector2(0, 8)
 	add_child(_pixel_sprite)
 	_sprite.visible = false  # hide polygon
+	_arrow.color = Color(0.45, 0.8, 0.85, 0.6)  # aim hint, in the cores' cyan
 
 	_update_visuals()
 

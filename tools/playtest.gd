@@ -674,7 +674,12 @@ func _grab(region: Rect2, label: String, div: int) -> void:
 	var a := world_to_screen(region.position) * k
 	var b := world_to_screen(region.end) * k
 	var crop := img.get_region(Rect2i(Vector2i(a), Vector2i(b - a)))
-	crop.resize(crop.get_width() / div, crop.get_height() / div, Image.INTERPOLATE_NEAREST)
+	# div > 0: shrink by that factor; div < 0: output -div px per world px
+	# (independent of window size / HiDPI)
+	if div > 0:
+		crop.resize(crop.get_width() / div, crop.get_height() / div, Image.INTERPOLATE_NEAREST)
+	else:
+		crop.resize(int(region.size.x) * -div, int(region.size.y) * -div, Image.INTERPOLATE_NEAREST)
 	crop.save_png("%s/%s.png" % [out_dir, label])
 	Engine.time_scale = ts
 
@@ -777,3 +782,21 @@ func soldier() -> void:
 		await _grab(Rect2(Vector2(mid - 130, -20), Vector2(300, 124)), "soldier_%03d" % i, 3)
 		await wait(0.08)
 	log_line("soldier: player hp %d -> %d" % [hp0, p.hp])
+
+
+func loop_rec() -> void:
+	# Recording: the whole ore loop in one tall shot — miner, laser, both
+	# trampolines, receiver.
+	main._wave_timer = -9999.0
+	await _build_chain()
+	var p: CharacterBody2D = main.get_node("Player")
+	p.global_position = Vector2(1100, 60)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.zoom = Vector2(1.5, 1.5)
+	cam.position_smoothing_enabled = false
+	cam.global_position = Vector2(1224, 245)
+	await wait(2.0)
+	for i in 70:
+		await _grab(Rect2(Vector2(1134, 30), Vector2(180, 420)), "loop_%03d" % i, -2)
+		await wait(0.06)

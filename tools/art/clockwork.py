@@ -21,6 +21,10 @@ BRONZE = [_hex(h) for h in ('29261f', '4b362b', '634c36', '86613c', 'a88f67', 'c
 STEEL = [_hex(h) for h in ('29261f', '353c42', '3a494a', '5f7c83', '709092', '93a29c', 'adc6b8', 'cde3dc')]
 DARK = [_hex(h) for h in ('29261f', '29261f', '353c42', '4b362b', '4f3d43', '605d55')]
 GLOW = [_hex(h) for h in ('5f7c83', '73bac3', '78c6cd', '90bcc4', 'abd3d4', 'cde3dc')]
+ROCK = [_hex(h) for h in ('29261f', '353c42', '4f3d43', '605d55', '738877', '93a29c')]
+# not in the titan palette: pass as render(extra=...) when used
+COPPER_EXTRA = ['5a2410', '9a4a1e', 'd27434', 'f5a55a', 'ffe0a8']
+COPPER = [_hex(h) for h in COPPER_EXTRA]
 OUTLINE = _hex('29261f')
 
 LIGHT = (-0.45, -0.65, 0.62)
@@ -124,10 +128,31 @@ class Figure:
             return _shade((dx * k * 0.7, dy * k * 0.7, 1 - k * 0.3), mat, 0.05, int(x * 3), int(y * 3), emissive)
         self.prims.append((z, fn, (cx - r, cy - r, cx + r, cy + r)))
 
-    def render(self, w, h, origin, outline=True):
+    def box(self, rect, mat, z=0, bevel=1.2, grit=0.06, tilt=0.0):
+        """Bevelled plate/bar: flat top face, edges rounded over `bevel` px.
+        rect = (x0, y0, x1, y1); tilt rotates it about its centre (degrees)."""
+        x0, y0, x1, y1 = rect
+        cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+        hw, hh = (x1 - x0) / 2, (y1 - y0) / 2
+        ct, st = math.cos(math.radians(tilt)), math.sin(math.radians(tilt))
+
+        def fn(x, y):
+            dx, dy = x - cx, y - cy
+            lx, ly = dx * ct + dy * st, -dx * st + dy * ct
+            ex, ey = hw - abs(lx), hh - abs(ly)
+            if ex < 0 or ey < 0: return None
+            nx = 0.0 if ex >= bevel else math.copysign(1 - ex / bevel, lx) * 0.8
+            ny = 0.0 if ey >= bevel else math.copysign(1 - ey / bevel, ly) * 0.8
+            wx, wy = nx * ct - ny * st, nx * st + ny * ct
+            return _shade((wx, wy, math.sqrt(max(0.05, 1 - wx * wx - wy * wy))), mat, grit, int(x * 3), int(y * 3))
+        r = math.hypot(hw, hh)
+        self.prims.append((z, fn, (cx - r, cy - r, cx + r, cy + r)))
+
+    def render(self, w, h, origin, outline=True, extra=()):
         """-> h rows of w RGBA pixels, palette-mapped. origin: where figure
-        (0, 0) lands in the output (e.g. feet at bottom-centre)."""
-        pal = load_palette()
+        (0, 0) lands in the output (e.g. feet at bottom-centre). extra: hex
+        colours to allow beyond the titan palette."""
+        pal = load_palette() + [_hex(c) for c in extra]
         prims = sorted(self.prims, key=lambda p: p[0])
         ox, oy = origin
         out = [[(0, 0, 0, 0)] * w for _ in range(h)]

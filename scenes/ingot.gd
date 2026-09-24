@@ -19,7 +19,7 @@ func _ready() -> void:
 	if has_node("Sprite"):
 		$Sprite.queue_free()
 	var spr := Sprite2D.new()
-	spr.texture = ObjectSprites.create_ingot_texture()
+	spr.texture = preload("res://assets/sprites/ingot.png")  # brass bar (tools/art/gen_items.py)
 	spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(spr)
 

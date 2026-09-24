@@ -20,7 +20,11 @@ func _ready() -> void:
 	if has_node("Sprite"):
 		$Sprite.queue_free()
 	var spr := Sprite2D.new()
-	spr.texture = ObjectSprites.create_ore_texture()
+	# one of three rock-and-copper chunks (tools/art/gen_items.py); it tumbles
+	var atlas := AtlasTexture.new()
+	atlas.atlas = preload("res://assets/sprites/ore.png")
+	atlas.region = Rect2(randi() % 3 * 12, 0, 12, 12)
+	spr.texture = atlas
 	spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(spr)
 

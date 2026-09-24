@@ -35,7 +35,7 @@ bottom of the log.
 - [x] Tesla caster (replaces wizard): hovering orb, twin coils, arcs + discharge, cyan bolt
 - [x] Clockwork soldier (replaces skeleton): shield + spear, walk (8) + thrust (6)
 - [ ] Player miner: redraw to sit with the clockwork world
-- [ ] Ore and ingot look; trampoline redesign (spring-loaded brass plate)
+- [x] Ore (3 rock+copper chunks, tumble), brass ingot, spring trampoline
 - [ ] Dome (brass and glass), turret, receiver, laser, miner building
 - [ ] HUD (brass frame, pixel font)
 
@@ -52,3 +52,7 @@ bottom of the log.
 - pass 4: soldier. Melee generalised: enemy.gd MELEE table (damage, cooldown, reach,
   impact frame, body offset, knockback) drives titan + soldier. SKELETON renamed SOLDIER.
   Player light 1.0 -> 0.7. All asset-pack enemies now replaced.
+- pass 5: gen_items.py (ore/ingot/trampoline); clockwork.box() + render(extra=) for
+  off-palette colours (copper). Trampoline arrow recoloured cyan. playtest loop_rec;
+  _grab(div<0) = fixed px per world px (window size varies between runs).
+  Next: miner building (purple block), laser, dome, receiver bar.
