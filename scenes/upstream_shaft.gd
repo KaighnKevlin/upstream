@@ -22,10 +22,26 @@ func _ready() -> void:
 
 	# Behind player/enemies/ore, but in front of background/tiles
 	z_index = 0
-	var spr := Sprite2D.new()
-	spr.texture = load("res://assets/sprites/upstream-sprite.png")
-	spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	add_child(spr)
+	# Kaighn's shaft, with the stream animated (tools/art/gen_upstream.py)
+	var anim_tex := load("res://assets/sprites/upstream_anim.png") as Texture2D
+	if anim_tex:
+		var spr := AnimatedSprite2D.new()
+		var sf := SpriteFrames.new()
+		sf.set_animation_speed("default", 10.0)
+		for i in 8:
+			var a := AtlasTexture.new()
+			a.atlas = anim_tex
+			a.region = Rect2(i * 48, 0, 48, 128)
+			sf.add_frame("default", a)
+		spr.sprite_frames = sf
+		spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		add_child(spr)
+		spr.play()
+	else:
+		var spr := Sprite2D.new()
+		spr.texture = load("res://assets/sprites/upstream-sprite.png")
+		spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		add_child(spr)
 
 	# Blue glow
 	var light := PointLight2D.new()

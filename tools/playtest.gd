@@ -968,6 +968,35 @@ func skyline() -> void:
 		await shot(spec[2])
 
 
+func shaft_rec() -> void:
+	# Recording: an upstream shaft in a dug pit carries ore up to the surface.
+	main._wave_timer = -9999.0
+	var tm := tilemap()
+	var shading := get_nodes_in_group("tile_shading")[0]
+	for x in range(100, 103):
+		for y in range(6, 14):
+			tm.set_cell(Vector2i(x, y), -1)
+			shading.mark_dirty(Vector2i(x, y))
+	var shaft: Node2D = preload("res://scenes/upstream_shaft.tscn").instantiate()
+	shaft.global_position = Vector2(1624, 96 + 60)
+	main.add_child(shaft)
+	var p: CharacterBody2D = main.get_node("Player")
+	p.global_position = Vector2(1560, 60)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.zoom = Vector2(3, 3)
+	cam.position_smoothing_enabled = false
+	cam.global_position = Vector2(1624, 150)
+	await wait(0.5)
+	for i in 48:
+		if i % 8 == 0 and i < 32:
+			var ore: Node2D = preload("res://scenes/ore.tscn").instantiate()
+			ore.global_position = Vector2(1616 + (i / 8) % 2 * 16, 206)
+			main.add_child(ore)
+		await _grab(Rect2(Vector2(1550, 70), Vector2(150, 150)), "sh_%03d" % i, -3)
+		await wait(0.05)
+
+
 func banner() -> void:
 	main._wave_timer = -9999.0
 	await wait(0.8)

@@ -44,6 +44,7 @@ bottom of the log.
 - [x] Caster death (6): overload flash, thruster cuts, drops and tips over dark
 - [x] Prospector hurt frame (recoil, eyes shut) + death (6, 64x40: reel, topple back, land, bounce, headlamp gutters out)
 - [x] Backdrop: painted night sky + moon, far range, ruined clockwork city (towers, domes, sunk gears, smoking chimneys, lit windows), near ridge with a buried gear and pipe
+- [x] Upstream shaft: Kaighn's drawing kept, stream animated (8 frames, currents + bubbles rising at ~lift speed)
 - [x] HUD: own 5x7 proportional pixel font (gen_font.py -> FontFile at runtime, scripts/pixel_font.gd), brass 9-slice panels, rimmed bars
 
 ## Log
@@ -108,4 +109,10 @@ bottom of the log.
 - gen_background.py (new, stdlib): assets/backgrounds/{sky,moon,far,city,near}.png. All layers tile at 960 (periodic sine noise, wrapped shapes), ordered 4x4 Bayer dithering, moonlit left-facing edges, haze brightening toward each layer's base so the silhouette in front reads.
 - parallax_bg.gd: _build_painted() when the PNGs exist (else the old procedural layers). Motion: stars 0.05, moon 0.03 (untiled, one moon at any zoom; its screen x is roughly position.x * zoom), far 0.1, city 0.2, near 0.35. Sky is 4x1200 at native vertical scale (stretching it 2x made scanline bands).
 - playtest: skyline (zooms 2, 1, 0.5 and an eastern view).
+
+### Pass 18 — upstream shaft animated
+- gen_upstream.py (new): reads upstream-sprite.png (Kaighn's art, left untouched), masks the stream blues, and draws rising current lines + bubbles on top; 12px/frame x 8 = 96px loop = the stream height, so it loops cleanly. A rising dithered light band was tried and dropped (read as a checkerboard stripe).
+- upstream_shaft.gd: AnimatedSprite2D at 10 fps from upstream_anim.png, falls back to the still.
+- playtest: shaft_rec (digs a pit, drops ore in).
+- Not done on purpose: re-skinning it in brass. It's Kaighn's own design; ask before changing its look.
 
