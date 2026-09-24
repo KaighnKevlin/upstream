@@ -12,15 +12,42 @@ const SFX = preload("res://scripts/sfx.gd")
 var _timer := 0.0
 var _base_pos := Vector2.ZERO
 var _bullet_scene: PackedScene = preload("res://scenes/bullet.tscn")
+var _muzzle := 30.0
+var _flash_anim: AnimatedSprite2D
 
 
 func _ready() -> void:
 	_base_pos = position
 	$Flash.visible = false
-	# Set up pixel art gun sprite
 	var sprite := $GunSprite as Sprite2D
-	sprite.texture = WeaponSprites.create_shotgun_texture()
-	sprite.scale = Vector2(1.4, 1.4)
+	var tex := load("res://assets/sprites/blunderbuss.png") as Texture2D
+	if tex:
+		# brass blunderbuss (tools/art/gen_weapons.py): grip at (7, 7) on the pivot
+		sprite.texture = tex
+		sprite.centered = false
+		sprite.offset = Vector2(-7, -7)
+		_muzzle = 27.0
+		var fl := AnimatedSprite2D.new()
+		var sf := SpriteFrames.new()
+		sf.set_animation_speed("default", 24.0)
+		sf.set_animation_loop("default", false)
+		var ftex := load("res://assets/sprites/muzzle_flash.png") as Texture2D
+		for i in 3:
+			var a := AtlasTexture.new()
+			a.atlas = ftex
+			a.region = Rect2(i * 20, 0, 20, 16)
+			sf.add_frame("default", a)
+		fl.sprite_frames = sf
+		fl.centered = false
+		fl.offset = Vector2(0, -8)
+		fl.position = Vector2(_muzzle, -2.5)
+		fl.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		fl.visible = false
+		add_child(fl)
+		_flash_anim = fl
+	else:
+		sprite.texture = WeaponSprites.create_shotgun_texture()
+		sprite.scale = Vector2(1.4, 1.4)
 	visible = false  # hidden until firing
 
 
@@ -32,6 +59,12 @@ func _physics_process(delta: float) -> void:
 	var mouse := get_global_mouse_position()
 	var dir := (mouse - global_position).normalized()
 	rotation = dir.angle()
+	# keep the gun upright when aiming left
+	$GunSprite.flip_v = absf(wrapf(rotation, -PI, PI)) > PI / 2
+	$GunSprite.offset.y = 7 - 12 if $GunSprite.flip_v else -7
+	if _flash_anim:
+		_flash_anim.flip_v = $GunSprite.flip_v
+		_flash_anim.position.y = 2.5 if $GunSprite.flip_v else -2.5
 
 	# Fire with F key
 	if Input.is_key_pressed(KEY_F) and _timer <= 0:
@@ -40,6 +73,11 @@ func _physics_process(delta: float) -> void:
 
 func _fire(dir: Vector2) -> void:
 	_timer = fire_cooldown
+	# turn the prospector to face the shot
+	var owner_body := get_parent()
+	if absf(dir.x) > 0.1 and "_facing_right" in owner_body:
+		owner_body._facing_right = dir.x > 0
+		owner_body.get_node("AnimatedSprite2D").flip_h = dir.x < 0
 
 	var base_angle := dir.angle()
 	var spread_rad := deg_to_rad(spread_angle)
@@ -51,7 +89,7 @@ func _fire(dir: Vector2) -> void:
 		var pellet_dir := Vector2.from_angle(base_angle + offset)
 
 		var bullet := _bullet_scene.instantiate()
-		bullet.global_position = global_position + dir * 30
+		bullet.global_position = global_position + dir * _muzzle
 		bullet.velocity = pellet_dir * pellet_speed
 		bullet.damage = pellet_damage
 		bullet.lifetime = 0.8
@@ -61,7 +99,12 @@ func _fire(dir: Vector2) -> void:
 
 	# Show gun + muzzle flash
 	visible = true
-	$Flash.visible = true
+	if _flash_anim:
+		_flash_anim.visible = true
+		_flash_anim.frame = 0
+		_flash_anim.play()
+	else:
+		$Flash.visible = true
 
 	var tween := create_tween()
 	# Recoil
@@ -69,4 +112,6 @@ func _fire(dir: Vector2) -> void:
 	tween.tween_property(self, "position", _base_pos, 0.12)
 	# Hide flash quickly, hide gun after delay
 	tween.parallel().tween_callback(func(): $Flash.visible = false).set_delay(0.06)
+	if _flash_anim:
+		tween.parallel().tween_callback(func(): _flash_anim.visible = false).set_delay(0.2)
 	tween.tween_callback(func(): visible = false).set_delay(0.3)

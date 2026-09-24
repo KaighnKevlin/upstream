@@ -997,6 +997,33 @@ func shaft_rec() -> void:
 		await wait(0.05)
 
 
+func gun_rec() -> void:
+	# Recording: the prospector fires the blunderbuss at scuttlers, both ways.
+	main._wave_timer = -9999.0
+	main.get_node("Turret").set_physics_process(false)
+	var p: CharacterBody2D = main.get_node("Player")
+	p.global_position = Vector2(1560, 60)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.zoom = Vector2(3, 3)
+	cam.position_smoothing_enabled = false
+	cam.global_position = Vector2(1560, 40)
+	await wait(0.5)
+	for x in [1640, 1480]:
+		var e: Node2D = _spawn(1, Vector2(x, 76))
+		e.speed = 0.0
+	var gun: Node2D = p.get_node("Shotgun")
+	for i in 44:
+		# aim right for the first half, then left (the gun reads the mouse)
+		var aim := Vector2(1700 if i < 22 else 1420, 70)
+		get_root().warp_mouse(main.get_viewport().get_canvas_transform() * aim)
+		if i % 11 == 2:
+			gun._timer = 0.0
+			gun._fire((aim - gun.global_position).normalized())
+		await _grab(Rect2(Vector2(1440, 0), Vector2(240, 100)), "gun_%03d" % i, -3)
+		await wait(0.03)
+
+
 func banner() -> void:
 	main._wave_timer = -9999.0
 	await wait(0.8)

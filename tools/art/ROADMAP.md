@@ -45,6 +45,7 @@ bottom of the log.
 - [x] Prospector hurt frame (recoil, eyes shut) + death (6, 64x40: reel, topple back, land, bounce, headlamp gutters out)
 - [x] Backdrop: painted night sky + moon, far range, ruined clockwork city (towers, domes, sunk gears, smoking chimneys, lit windows), near ridge with a buried gear and pipe
 - [x] Upstream shaft: Kaighn's drawing kept, stream animated (8 frames, currents + bubbles rising at ~lift speed)
+- [x] Blunderbuss (brass, flared bell, steel bands, pressure gauge) + 3-frame muzzle flash/smoke + brass shot sprite (also the turret's rounds)
 - [x] HUD: own 5x7 proportional pixel font (gen_font.py -> FontFile at runtime, scripts/pixel_font.gd), brass 9-slice panels, rimmed bars
 
 ## Log
@@ -115,4 +116,10 @@ bottom of the log.
 - upstream_shaft.gd: AnimatedSprite2D at 10 fps from upstream_anim.png, falls back to the still.
 - playtest: shaft_rec (digs a pit, drops ore in).
 - Not done on purpose: re-skinning it in brass. It's Kaighn's own design; ask before changing its look.
+
+### Pass 19 — blunderbuss
+- gen_weapons.py (new): blunderbuss.png 28x12 (grip at (7,7) = pivot), muzzle_flash.png 3x 20x16 (two burst frames + smoke), shot.png 8x4.
+- shotgun.gd: sprite offset so the grip is the pivot; flip_v when aiming left so it stays upright; AnimatedSprite2D flash at the bell; pellets spawn at the muzzle; the prospector turns to face the shot.
+- bullet.gd: shot sprite rotated along velocity every frame (turret rounds too).
+- playtest: gun_rec (warps the mouse to aim, fires right then left).
 

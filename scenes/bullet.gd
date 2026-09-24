@@ -9,6 +9,7 @@ var damage := 1
 var lifetime := 3.0
 var _timer := 0.0
 var _bounces := 0
+var _spr: Sprite2D
 
 const HIT_RADIUS := 14.0
 const MAX_BOUNCES := 3
@@ -18,9 +19,16 @@ func _ready() -> void:
 	if has_node("Sprite"):
 		$Sprite.queue_free()
 	var spr := Sprite2D.new()
-	spr.texture = ObjectSprites.create_bullet_texture()
+	var shot := load("res://assets/sprites/shot.png") as Texture2D
+	if shot:  # brass slug with a hot trail, pointed along its flight
+		spr.texture = shot
+		spr.offset = Vector2(-2, 0)
+		spr.rotation = velocity.angle()
+	else:
+		spr.texture = ObjectSprites.create_bullet_texture()
 	spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(spr)
+	_spr = spr
 
 
 func _physics_process(delta: float) -> void:
@@ -37,6 +45,8 @@ func _physics_process(delta: float) -> void:
 			return
 
 	position += velocity * delta
+	if _spr:
+		_spr.rotation = velocity.angle()
 	_timer += delta
 	if _timer >= lifetime:
 		queue_free()
