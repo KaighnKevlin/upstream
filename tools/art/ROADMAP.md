@@ -52,6 +52,7 @@ bottom of the log.
 - [x] Soldier idle (6): torso settles on its springs, key ticks, spear tip drifts, visor flickers; standing/attack poses get a planted two-leg stance
 - [x] Cave dressing: cyan crystal clusters (lit), glowing mushrooms (lit), fossil gears, stalactites, roots near the surface, hanging chains
 - [x] Dome cannon v2: breech block with pressure core, cooling fins, muzzle brake; barrel kicks back along its axis, muzzle flash + smoke
+- [x] Ore/ingot flight: tapered speed streaks (dusty tan for ore, hot orange cooling with the bar for ingots), dust puff on hard landings
 - [x] HUD: own 5x7 proportional pixel font (gen_font.py -> FontFile at runtime, scripts/pixel_font.gd), brass 9-slice panels, rimmed bars
 
 ## Log
@@ -153,4 +154,8 @@ bottom of the log.
 - gen_dome.py: cannon_barrel.png 30x10 (pivot (3,5)): breech block + cyan pressure core, 4 cooling fins, band, slotted muzzle brake.
 - turret.gd: BARREL_OFFSET/MUZZLE consts; on fire the barrel snaps to the shot, kicks back 4px along its axis (offset tween, not the old scale pop), plays muzzle_flash.png at the brake, sparks + drifting smoke; rounds spawn at the brake.
 - gen_cave.py: fossil gear is now an upright brass gear with an axle stub and rubble, instead of a mostly-buried one that read as rock.
+
+### Pass 25 — flight trails
+- scripts/flight_trail.gd (new): top-level Line2D child that records the body's position only above min_speed (140), tapers (width curve) and fades (gradient), and shrinks away once the body slows, so resting ore draws nothing.
+- ore.gd: tan trail + a dust puff on hard contacts (speed > 120, 0.25 s cooldown). ingot.gd: orange trail whose modulate cools over 2 s with the glow. Physics untouched.
 

@@ -34,6 +34,12 @@ func _ready() -> void:
 	tween.tween_property(spr, "modulate", Color.WHITE, 2.0)
 	tween.tween_property(glow, "energy", 0.0, 2.0)
 	tween.chain().tween_callback(glow.queue_free)
+	# a hot streak that cools with the bar
+	var trail := preload("res://scripts/flight_trail.gd").new()
+	trail.head_color = Color(1.0, 0.62, 0.25, 0.7)
+	add_child(trail)
+	var cool := trail.create_tween()
+	cool.tween_property(trail, "modulate", Color(0.95, 0.85, 0.6, 0.6), 2.0)
 
 
 func _physics_process(delta: float) -> void:

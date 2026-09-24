@@ -7,6 +7,7 @@ var _timer: float = 0.0
 
 
 const ObjectSprites = preload("res://scripts/object_sprites.gd")
+const FX = preload("res://scripts/fx.gd")
 
 func _ready() -> void:
 	add_to_group("ore")
@@ -28,8 +29,24 @@ func _ready() -> void:
 	spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(spr)
 
+	# dusty streak while it flies, a puff when it lands hard
+	var trail := preload("res://scripts/flight_trail.gd").new()
+	trail.head_color = Color(0.9, 0.68, 0.42, 0.6)
+	add_child(trail)
+	body_entered.connect(_on_impact)
+
+
+var _puff_cooldown := 0.0
+
+func _on_impact(_other: Node) -> void:
+	if _puff_cooldown > 0 or linear_velocity.length() < 120:
+		return
+	_puff_cooldown = 0.25
+	FX.burst(get_parent(), global_position + Vector2(0, 5), Color(0.55, 0.45, 0.35, 0.8), 4, 45.0, 0.35, 1.5)
+
 
 func _physics_process(delta: float) -> void:
+	_puff_cooldown -= delta
 	_timer += delta
 	if _timer >= lifetime:
 		queue_free()
