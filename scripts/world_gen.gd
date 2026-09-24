@@ -8,6 +8,16 @@ const TILE_IRON := 2
 const TILE_COPPER := 3
 const TILE_DEEP_STONE := 4
 const TILE_GRASS := 5
+const TILE_HARD := 6   # ironstone: the starting pickaxe can't break it (nor ore veins)
+
+## Tiles the starting pickaxe bounces off.
+const PICK_PROOF := [TILE_HARD, TILE_IRON, TILE_COPPER]
+
+# Ironstone shelves in staggered bands, so the way down zig-zags instead of
+# going straight (see _generate_ledges).
+const LEDGE_FIRST := SURFACE_ROWS + 5
+const LEDGE_GAP_ROWS := Vector2i(8, 12)
+const LEDGE_HOLE_WIDTH := Vector2i(2, 4)  # gaps between shelves: 2 to 10 tiles
 
 # World dimensions in tiles
 const WORLD_WIDTH := 150  # tiles
@@ -49,6 +59,9 @@ static func generate(tilemap: TileMapLayer, rng_seed: int = 0) -> void:
 
 	# Carve random caverns
 	_generate_caverns(tilemap, rng)
+
+	# Ironstone ledges (before ore, so veins can sit on them)
+	_generate_ledges(tilemap, rng)
 
 	# Generate ore veins
 	_scatter_ore(tilemap, rng, TILE_IRON, IRON_CHANCE, IRON_VEIN_SIZE,
@@ -99,6 +112,34 @@ static func generate_back_wall(wall: TileMapLayer, rng_seed: int = 0) -> void:
 	for y in range(SURFACE_ROWS, WORLD_HEIGHT):
 		for x in WORLD_WIDTH:
 			set_tile(wall, Vector2i(x, y), _get_base_tile(y), rng)
+
+
+static func _generate_ledges(tilemap: TileMapLayer, rng: RandomNumberGenerator) -> void:
+	# Staggered shelves rather than full-width bands: each band row is a run of
+	# segments (10-34 tiles, 1-3 thick, rounded ends, wandering up and down)
+	# with gaps between them. Consecutive bands shift so gaps rarely line up,
+	# so a straight dig down hits ironstone within a band or two.
+	var y := LEDGE_FIRST
+	var offset := 0
+	while y < WORLD_HEIGHT - 4:
+		var x := -rng.randi_range(0, 12) + offset
+		while x < WORLD_WIDTH:
+			var length := rng.randi_range(10, 34)
+			var thick := rng.randi_range(1, 3)
+			var dy := 0
+			for k in length:
+				if rng.randf() < 0.18:
+					dy = clampi(dy + rng.randi_range(-1, 1), -2, 2)
+				# rounded ends: thinner in the first/last 2 tiles
+				var t_here := mini(thick, 1 + mini(k, length - 1 - k))
+				for t in t_here:
+					var cell := Vector2i(x + k, y + dy + t)
+					if cell.x >= 0 and cell.x < WORLD_WIDTH and cell.y < WORLD_HEIGHT \
+							and tilemap.get_cell_source_id(cell) != -1:  # don't fill caverns
+						set_tile(tilemap, cell, TILE_HARD)
+			x += length + rng.randi_range(LEDGE_HOLE_WIDTH.x, LEDGE_HOLE_WIDTH.y + 6)
+		offset = rng.randi_range(5, 17)
+		y += rng.randi_range(LEDGE_GAP_ROWS.x, LEDGE_GAP_ROWS.y)
 
 
 static func _get_base_tile(y: int) -> int:

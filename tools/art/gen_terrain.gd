@@ -11,6 +11,7 @@ extends SceneTree
 ##   rows 0-63    the 64 slices (row = (x % 8) + (y % 8) * 8)
 ##   ore columns also have rows 64-127 (on dirt) and 128-191 (on deep stone);
 ##   rows 0-63 are ore on stone.
+##   column 6 is hard ironstone (the starting pickaxe can't break it).
 
 const T := 16
 const P := 128  # seamless period
@@ -22,6 +23,7 @@ const IRON := 2
 const COPPER := 3
 const DEEP := 4
 const GRASS := 5
+const HARD := 6
 
 # Palettes, dark → light
 const DIRT_PAL := ["2e1c17", "46291f", "5c3727", "663e2b", "8a563b", "a26c4a"]
@@ -31,6 +33,8 @@ const GRASS_PAL := ["1d3b1c", "2c5a26", "3d7a30", "56993a", "7dbb4a"]
 const IRON_PAL := ["2a2230", "8c5a4e", "c0968a", "e6cfc4", "ffffff"]
 const COPPER_PAL := ["5a2410", "9a4a1e", "d27434", "f5a55a", "ffe0a8"]
 const VERDIGRIS := "4fb3a0"
+const HARD_PAL := ["0d0a0a", "1c1412", "2b1e19", "3d2a21", "54392a", "7a5a3e"]
+const RUST := "a0522d"
 
 var rng := RandomNumberGenerator.new()
 
@@ -42,8 +46,10 @@ func _initialize() -> void:
 	var deep := _stone(DEEP_PAL, 112, 23)
 	var bases := [stone, dirt, deep]  # ore row blocks: 0 = stone, 1 = dirt, 2 = deep
 
-	var atlas := Image.create(6 * T, 3 * N * T, false, Image.FORMAT_RGBA8)
+	var hard := _ironstone()
+	var atlas := Image.create(7 * T, 3 * N * T, false, Image.FORMAT_RGBA8)
 	for v in N:
+		_blit_slice(atlas, hard, HARD, v, v)
 		_blit_slice(atlas, dirt, DIRT, v, v)
 		_blit_slice(atlas, stone, STONE, v, v)
 		_blit_slice(atlas, deep, DEEP, v, v)
@@ -60,7 +66,7 @@ func _initialize() -> void:
 	var args := OS.get_cmdline_user_args()
 	if args.size() > 0:
 		_save_previews(args[0], {"dirt": dirt, "stone": stone, "deep": deep,
-			"grass": _grass(dirt), "iron_dirt": _ore(dirt, IRON_PAL, "", 102),
+			"grass": _grass(dirt), "hard": hard, "iron_dirt": _ore(dirt, IRON_PAL, "", 102),
 			"iron_stone": _ore(stone, IRON_PAL, "", 101),
 			"copper_deep": _ore(deep, COPPER_PAL, VERDIGRIS, 203)})
 	quit()
@@ -198,6 +204,53 @@ func _stone(pal: Array, points: int, seed_val: int) -> Image:
 	# A few bright glints
 	for i in 24:
 		img.set_pixel(r.randi_range(0, P - 1), r.randi_range(0, P - 1), _c(pal[4]))
+	return img
+
+
+## Ironstone: dark columnar rock with vertical joints and staggered
+## cross-cracks, each column lit on its left face, rust flecks. Reads as
+## "too hard for this pickaxe" next to the rounded boulders of stone.
+func _ironstone() -> Image:
+	var img := Image.create(P, P, false, Image.FORMAT_RGBA8)
+	var r := RandomNumberGenerator.new()
+	r.seed = 61
+	var grain := _noise_grid(8, 67)
+	# column edges: widths summing to P so it wraps
+	var edges: Array[int] = [0]
+	while edges[-1] < P - 14:
+		edges.append(edges[-1] + r.randi_range(10, 14))
+	edges.append(P)
+	for ci in edges.size() - 1:
+		var x0 := edges[ci]
+		var x1 := edges[ci + 1]
+		# cross joints for this column
+		var joints: Array[int] = []
+		var jy := r.randi_range(0, 12)
+		while jy < P:
+			joints.append(jy)
+			jy += r.randi_range(14, 26)
+		for y in P:
+			for x in range(x0, x1):
+				var fx := float(x - x0) / float(x1 - x0)
+				var idx := 2
+				if x == x0:
+					idx = 0          # joint
+				elif x == x0 + 1:
+					idx = 4          # lit left face
+				elif fx > 0.8:
+					idx = 1          # shadowed right side
+				elif grain.call(x, y) > 0.62:
+					idx = 3
+				for j in joints:
+					if y == j:
+						idx = 0
+					elif y == posmod(j + 1, P) and idx > 1:
+						idx = 3      # lit lip under the crack
+				img.set_pixel(x, y, _c(HARD_PAL[idx]))
+	for i in 40:
+		img.set_pixel(r.randi_range(0, P - 1), r.randi_range(0, P - 1), _c(RUST))
+	for i in 14:
+		img.set_pixel(r.randi_range(0, P - 1), r.randi_range(0, P - 1), _c(HARD_PAL[5]))
 	return img
 
 

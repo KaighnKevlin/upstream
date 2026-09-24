@@ -6,7 +6,7 @@ const ATLAS_PATH := "res://assets/sprites/terrain_atlas.png"
 ## Tile types have SLICES position slices; ore types have three blocks of
 ## them (on stone, dirt, deep stone). See tools/art/gen_terrain.gd.
 const SLICES := 64
-const SLICE_ROWS := {0: SLICES, 1: SLICES, 2: SLICES * 3, 3: SLICES * 3, 4: SLICES, 5: SLICES}
+const SLICE_ROWS := {0: SLICES, 1: SLICES, 2: SLICES * 3, 3: SLICES * 3, 4: SLICES, 5: SLICES, 6: SLICES}
 
 
 ## wall = true builds the darkened, collision-free set used for the back wall

@@ -1342,6 +1342,30 @@ func bounce_lab() -> void:
 		log_line("C player falls on flat, holding S=%s -> bounced=%s" % [hold, up])
 
 
+func ledges() -> void:
+	# Full-bright overview of the underground (ironstone ledges) + a sound sampler.
+	main._wave_timer = -9999.0
+	main.get_node("CanvasModulate").color = Color(1, 1, 1)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(0.55, 0.55)
+	cam.global_position = Vector2(1200, 560)
+	await wait(0.5)
+	await shot("underground")
+	var sfx := preload("res://scripts/sfx.gd")
+	var dir := out_dir + "/sfx"
+	DirAccess.make_dir_recursive_absolute(dir)
+	var sounds := {"mine_hit": sfx.sfx_mine_hit(), "clink": sfx.sfx_clink(), "shotgun": sfx.sfx_shotgun(),
+		"bounce": sfx.sfx_bounce(), "laser": sfx.sfx_laser(), "enemy_hit": sfx.sfx_enemy_hit(),
+		"enemy_die": sfx.sfx_enemy_die(), "turret_fire": sfx.sfx_turret_fire(), "ammo_received": sfx.sfx_ammo_received()}
+	for n in sounds:
+		sounds[n].save_to_wav(dir + "/" + n + ".wav")
+	sfx.sfx_mine_break(0).save_to_wav(dir + "/mine_break_dirt.wav")
+	sfx.sfx_mine_break(1).save_to_wav(dir + "/mine_break_stone.wav")
+	log_line("wrote sounds to " + dir)
+
+
 func banner() -> void:
 	main._wave_timer = -9999.0
 	await wait(0.8)

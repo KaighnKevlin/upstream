@@ -29,6 +29,7 @@ const PlayerSprite = preload("res://scripts/player_sprite.gd")
 const LightTextures = preload("res://scripts/light_textures.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const FX = preload("res://scripts/fx.gd")
+const WorldGen = preload("res://scripts/world_gen.gd")
 
 @onready var _anim: AnimatedSprite2D = $AnimatedSprite2D
 @onready var _pickaxe: Node2D = $Pickaxe
@@ -255,6 +256,9 @@ func _try_mine_at(world_pos: Vector2, start_cooldown := true) -> bool:
 
 	if source_id == -1:
 		return false  # empty tile
+	if tilemap.get_cell_atlas_coords(tile_pos).x in WorldGen.PICK_PROOF:
+		_clink(tilemap, tile_pos, start_cooldown)
+		return false
 
 	# Check range (3 tiles)
 	var tile_center := tilemap.to_global(tilemap.map_to_local(tile_pos))
@@ -272,8 +276,32 @@ func _try_mine_at(world_pos: Vector2, start_cooldown := true) -> bool:
 		(global_position - tile_center).normalized())
 	get_tree().call_group("tile_shading", "mark_dirty", tile_pos)
 	get_tree().call_group("cave_decor", "tile_cleared", tile_pos)
-	SFX.play(self, SFX.sfx_mine_break())
+	# one pick sound per swing, even when a swing clears a whole column
+	var now := Time.get_ticks_msec()
+	if now - _last_dig_sound > 60:
+		_last_dig_sound = now
+		SFX.play(self, SFX.sfx_mine_hit())
+		SFX.play(self, SFX.sfx_mine_break(atlas_coords.x))
 	return true
+
+## The pick glances off ironstone / an ore vein: sparks, a clink, no dig.
+var _clink_cooldown := 0.0
+var _last_dig_sound := 0
+
+func _clink(tilemap: TileMapLayer, tile_pos: Vector2i, start_cooldown: bool) -> void:
+	var at := tilemap.to_global(tilemap.map_to_local(tile_pos))
+	if global_position.distance_to(at) > TILE_SIZE * 3:
+		return
+	if start_cooldown:
+		_mine_timer = mine_cooldown
+	if Time.get_ticks_msec() / 1000.0 < _clink_cooldown:
+		return
+	_clink_cooldown = Time.get_ticks_msec() / 1000.0 + mine_cooldown * 0.9
+	_play_pickaxe_swing(at)
+	var toward := (global_position - at).normalized()
+	FX.burst(get_parent(), at + toward * 7, Color(1.0, 0.85, 0.5), 6, 110.0, 0.18, 1.2, 150.0)
+	SFX.play(self, SFX.sfx_clink())
+
 
 func _play_pickaxe_swing(target_world: Vector2) -> void:
 	_is_mining = true
