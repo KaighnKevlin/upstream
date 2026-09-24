@@ -15,13 +15,16 @@ const TILE_PATHS := {
 const TILE_COUNT := 6
 
 
-static func create_tileset() -> TileSet:
+## wall = true builds the darkened, collision-free set used for the back wall
+## that shows through dug-out space.
+static func create_tileset(wall := false) -> TileSet:
 	var tileset := TileSet.new()
 	tileset.tile_size = Vector2i(TILE_SIZE, TILE_SIZE)
 
 	# Add physics layer for collision
-	tileset.add_physics_layer(0)
-	tileset.set_physics_layer_collision_layer(0, 1)
+	if not wall:
+		tileset.add_physics_layer(0)
+		tileset.set_physics_layer_collision_layer(0, 1)
 
 
 	# Build a combined atlas image
@@ -43,6 +46,9 @@ static func create_tileset() -> TileSet:
 			atlas_img.blit_rect(tile_img, Rect2i(0, 0, TILE_SIZE, TILE_SIZE),
 				Vector2i(tile_id * TILE_SIZE, 0))
 
+	if wall:
+		_darken_for_wall(atlas_img)
+
 	var texture := ImageTexture.create_from_image(atlas_img)
 
 	var atlas := TileSetAtlasSource.new()
@@ -55,6 +61,9 @@ static func create_tileset() -> TileSet:
 
 	# Add atlas to tileset, then add physics
 	tileset.add_source(atlas, 0)
+
+	if wall:
+		return tileset
 
 	var polygon := PackedVector2Array([
 		Vector2(-8, -8), Vector2(8, -8),
@@ -139,6 +148,18 @@ static func _generate_grass_dirt() -> Image:
 			base.set_pixel(x, 3, grass_colors[1])
 
 	return base
+
+
+static func _darken_for_wall(img: Image) -> void:
+	# Darker, desaturated and slightly cool, so walls read as "behind"
+	for y in img.get_height():
+		for x in img.get_width():
+			var c := img.get_pixel(x, y)
+			var grey := c.r * 0.3 + c.g * 0.59 + c.b * 0.11
+			var d := c.lerp(Color(grey, grey, grey, c.a), 0.45) * 0.42
+			d.b += 0.03
+			d.a = c.a
+			img.set_pixel(x, y, d)
 
 
 static func _fallback_image(color: Color) -> Image:

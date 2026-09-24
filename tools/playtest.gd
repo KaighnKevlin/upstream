@@ -30,6 +30,8 @@ func _run() -> void:
 	if seed != 0:
 		tilemap().clear()
 		preload("res://scripts/world_gen.gd").generate(tilemap(), seed)
+		for c in main.get_node("TileShading").get_children():
+			c.queue_redraw()
 		main.get_node("Player").global_position = Vector2(1200, 150)
 	log_line("scenario=%s  godot=%s" % [scenario, Engine.get_version_info().string])
 	await call(scenario)
@@ -142,6 +144,15 @@ func find_ore_near(x: float) -> Vector2i:
 	for cell in tm.get_used_cells():
 		var ac := tm.get_cell_atlas_coords(cell)
 		if ac.x == 2 or ac.x == 3:
+			# need solid rock between the ore and the starter pit, so the
+			# test chain isn't placed into a cavern
+			var clear := true
+			for y in range(19, cell.y):
+				for dx in range(-3, 4):
+					if tm.get_cell_source_id(Vector2i(cell.x + dx, y)) == -1:
+						clear = false
+			if not clear:
+				continue
 			var d := absf(tile_center(cell).x - x) + cell.y * 4.0
 			if d < best_d:
 				best_d = d
@@ -224,6 +235,7 @@ func economy() -> void:
 	var tm := tilemap()
 	for y in range(6, ore.y):
 		tm.set_cell(Vector2i(ore.x, y), -1)
+		get_nodes_in_group("tile_shading")[0].mark_dirty(Vector2i(ore.x, y))
 	p.global_position = ore_pos + Vector2(0, -40)
 	await wait(0.5)
 	await tap(KEY_2)
@@ -328,19 +340,39 @@ func mobility() -> void:
 
 
 func _build_chain() -> void:
-	# Same working chain as economy(): miner → laser → 2 trampolines.
-	var ore := find_ore_near(1200)
-	var ore_pos := tile_center(ore)
+	# Same working chain as economy(): miner → laser → 2 trampolines, on an
+	# ore tile planted under the receiver so the test doesn't depend on the seed.
 	var tm := tilemap()
+	var ore := Vector2i(76, 26)
+	tm.set_cell(ore, 0, Vector2i(2, 0))
+	for y in range(19, ore.y):
+		for dx in range(-3, 4):
+			if tm.get_cell_source_id(Vector2i(ore.x + dx, y)) == -1:
+				tm.set_cell(Vector2i(ore.x + dx, y), 0, Vector2i(0, 0))
+	var ore_pos := tile_center(ore)
 	for y in range(6, ore.y):
 		tm.set_cell(Vector2i(ore.x, y), -1)
+		get_nodes_in_group("tile_shading")[0].mark_dirty(Vector2i(ore.x, y))
 	var p: CharacterBody2D = main.get_node("Player")
 	zoom(0.5)
 	await wait(0.2)
+	var bs := root.get_node("BuildSystem")
 	for step in [[KEY_2, 0], [KEY_3, -48], [KEY_1, -130], [KEY_1, -260]]:
+		var target: Vector2 = ore_pos + Vector2(0, step[1])
+		var n0: int = bs._placed_buildings.size()
 		await tap(step[0])
-		await click_world(ore_pos + Vector2(0, step[1]))
+		await click_world(target)
 		await tap(KEY_Q)
+		# The click goes through the real build path; snap to the exact spot
+		# afterwards, since camera smoothing can shift the click a few px.
+		if bs._placed_buildings.size() > n0:
+			bs._placed_buildings[-1].global_position = target
+		else:
+			# e.g. headless, where there's no mouse to click with
+			var b: Node2D = bs._scenes[{KEY_1: 1, KEY_2: 2, KEY_3: 3}[step[0]]].instantiate()
+			b.global_position = target
+			main.add_child(b)
+			bs._placed_buildings.append(b)
 	# park the player on the surface, off to the left of the dome
 	p.global_position = Vector2(1100, 60)
 	zoom(0.6)
@@ -471,3 +503,40 @@ func verify() -> void:
 	await wait(0.1)
 	await shot("verify_sky_high_zoomed")
 
+
+
+func gallery() -> void:
+	# Representative close-up shots for judging visuals (normal lighting, zoom 1).
+	var p: CharacterBody2D = main.get_node("Player")
+	await tap(KEY_L)
+	await _build_chain()
+	await tap(KEY_L)
+	zoom(1.0)
+	p.global_position = tile_center(Vector2i(76, 26)) + Vector2(-40, -60)
+	await wait(4.0)
+	await shot("gallery_loop")
+	p.global_position = Vector2(1330, 60)
+	await wait(1.5)
+	await shot("gallery_surface_idle")
+	await tap(KEY_P)
+	await wait(9.0)
+	await shot("gallery_wave_arrives")
+	var m := InputEventMouseMotion.new()
+	m.position = world_to_screen(Vector2(1600, 60))
+	Input.parse_input_event(m)
+	root.warp_mouse(m.position)
+	key(KEY_F, true)
+	await wait(0.05)
+	await shot("gallery_shotgun")
+	key(KEY_F, false)
+	await wait(3.0)
+	await shot("gallery_combat")
+	# mining underground
+	p.global_position = Vector2(800, 380)
+	await wait(1.0)
+	key(KEY_J, true)
+	Input.action_press("move_right")
+	await wait(0.6)
+	await shot("gallery_mining")
+	Input.action_release("move_right")
+	key(KEY_J, false)

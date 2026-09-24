@@ -39,7 +39,7 @@ static func generate(tilemap: TileMapLayer, rng_seed: int = 0) -> void:
 		for x in WORLD_WIDTH:
 			var tile := _get_base_tile(y)
 			if tile != TILE_EMPTY:
-				tilemap.set_cell(Vector2i(x, y), 0, Vector2i(tile, 0))
+				set_tile(tilemap, Vector2i(x, y), tile, rng)
 
 	# Carve out the surface (open air)
 	for y in SURFACE_ROWS:
@@ -57,7 +57,7 @@ static func generate(tilemap: TileMapLayer, rng_seed: int = 0) -> void:
 
 	# Place grass on the surface row (first row of dirt)
 	for x in WORLD_WIDTH:
-		tilemap.set_cell(Vector2i(x, SURFACE_ROWS), 0, Vector2i(TILE_GRASS, 0))
+		set_tile(tilemap, Vector2i(x, SURFACE_ROWS), TILE_GRASS, rng)
 
 	# Carve starter shaft below spawn point (5 tiles wide, 12 deep)
 	var shaft_x := WORLD_WIDTH / 2
@@ -76,6 +76,27 @@ static func generate(tilemap: TileMapLayer, rng_seed: int = 0) -> void:
 			for y in range(tread_y - 4, tread_y):
 				tilemap.set_cell(Vector2i(x, y), TILE_EMPTY)
 		step += 1
+
+
+## Places a tile with a random flip, which hides the repeating texture grid.
+## Grass only flips horizontally (its green edge has to stay on top).
+static func set_tile(tilemap: TileMapLayer, cell: Vector2i, tile: int, rng: RandomNumberGenerator) -> void:
+	var alt := 0
+	if rng.randf() < 0.5:
+		alt |= TileSetAtlasSource.TRANSFORM_FLIP_H
+	if tile != TILE_GRASS and rng.randf() < 0.5:
+		alt |= TileSetAtlasSource.TRANSFORM_FLIP_V
+	tilemap.set_cell(cell, 0, Vector2i(tile, 0), alt)
+
+
+## Fills the back wall layer: the plain rock type for each depth, from the
+## grass row down, so dug-out space shows rock behind it instead of void.
+static func generate_back_wall(wall: TileMapLayer, rng_seed: int = 0) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = rng_seed if rng_seed != 0 else 12345
+	for y in range(SURFACE_ROWS, WORLD_HEIGHT):
+		for x in WORLD_WIDTH:
+			set_tile(wall, Vector2i(x, y), _get_base_tile(y), rng)
 
 
 static func _get_base_tile(y: int) -> int:
@@ -151,7 +172,7 @@ static func _carve_cavern(tilemap: TileMapLayer, rng: RandomNumberGenerator,
 static func _place_vein(tilemap: TileMapLayer, rng: RandomNumberGenerator,
 		center: Vector2i, ore_tile: int, size: int) -> void:
 	var placed := [center]
-	tilemap.set_cell(center, 0, Vector2i(ore_tile, 0))
+	set_tile(tilemap, center, ore_tile, rng)
 
 	for i in size - 1:
 		var base: Vector2i = placed[rng.randi() % placed.size()]
@@ -162,5 +183,5 @@ static func _place_vein(tilemap: TileMapLayer, rng: RandomNumberGenerator,
 		if next.x >= 0 and next.x < WORLD_WIDTH and next.y >= SURFACE_ROWS and next.y < WORLD_HEIGHT:
 			var existing := tilemap.get_cell_source_id(next)
 			if existing != -1:  # not empty
-				tilemap.set_cell(next, 0, Vector2i(ore_tile, 0))
+				set_tile(tilemap, next, ore_tile, rng)
 				placed.append(next)

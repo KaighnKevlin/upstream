@@ -40,6 +40,7 @@ func _ready() -> void:
 	# Generate the tilemap world
 	_tilemap.tile_set = TileSetBuilder.create_tileset()
 	WorldGen.generate(_tilemap)
+	_setup_terrain_visuals()
 
 	# Create boundary walls
 	_create_boundaries()
@@ -85,6 +86,55 @@ func _ready() -> void:
 	_build_mode_label.text = ""
 
 
+
+
+func _setup_terrain_visuals() -> void:
+	# Back wall behind the terrain, so tunnels show rock rather than a void
+	var wall := TileMapLayer.new()
+	wall.name = "BackWall"
+	wall.tile_set = TileSetBuilder.create_tileset(true)
+	WorldGen.generate_back_wall(wall)
+	add_child(wall)
+	move_child(wall, _tilemap.get_index())
+
+	# Edge shading + grass tufts on top of the terrain
+	var shading := preload("res://scripts/tile_shading.gd").new()
+	shading.name = "TileShading"
+	add_child(shading)
+	move_child(shading, _tilemap.get_index() + 1)
+	shading.setup(_tilemap, WorldGen.WORLD_WIDTH, WorldGen.WORLD_HEIGHT)
+
+	_add_moonlight()
+
+
+func _add_moonlight() -> void:
+	# A world-wide band of cool light: full strength above ground, fading out a
+	# few tiles below the grass. Without it, enemies walking in outside the dome
+	# light are black silhouettes on a black surface.
+	const SCALE := 5.0
+	const TOP := -250.0
+	const BOTTOM := 250.0
+	var surface_y := float(WorldGen.SURFACE_ROWS * WorldGen.TILE_SIZE)
+	var grad := Gradient.new()
+	grad.set_color(0, Color.WHITE)
+	grad.set_color(1, Color.BLACK)
+	grad.set_offset(0, (surface_y - TOP) / (BOTTOM - TOP))
+	grad.set_offset(1, (surface_y + 6 * WorldGen.TILE_SIZE - TOP) / (BOTTOM - TOP))
+	var tex := GradientTexture2D.new()
+	tex.gradient = grad
+	tex.width = int((WorldGen.WORLD_WIDTH * WorldGen.TILE_SIZE + 400) / SCALE)
+	tex.height = int((BOTTOM - TOP) / SCALE)
+	tex.fill_from = Vector2(0, 0)
+	tex.fill_to = Vector2(0, 1)
+
+	var moon := PointLight2D.new()
+	moon.name = "Moonlight"
+	moon.texture = tex
+	moon.texture_scale = SCALE
+	moon.energy = 0.75
+	moon.color = Color(0.7, 0.78, 1.0)
+	moon.global_position = Vector2(WorldGen.WORLD_WIDTH * WorldGen.TILE_SIZE / 2.0, (TOP + BOTTOM) / 2.0)
+	add_child(moon)
 
 
 func _create_boundaries() -> void:

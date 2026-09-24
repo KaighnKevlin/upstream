@@ -193,6 +193,7 @@ func _try_mine_at(world_pos: Vector2, start_cooldown := true) -> void:
 		_mine_timer = mine_cooldown
 	_play_pickaxe_swing(tile_center)
 	tilemap.set_cell(tile_pos, -1)
+	get_tree().call_group("tile_shading", "mark_dirty", tile_pos)
 	SFX.play(self, SFX.sfx_mine_break())
 
 
