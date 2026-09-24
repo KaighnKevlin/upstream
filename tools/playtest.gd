@@ -32,6 +32,12 @@ func _run() -> void:
 		preload("res://scripts/world_gen.gd").generate(tilemap(), seed)
 		for c in main.get_node("TileShading").get_children():
 			c.queue_redraw()
+		var decor := main.get_node_or_null("CaveDecor")
+		if decor:  # re-dress the regenerated caves
+			for c in decor.get_children():
+				c.free()
+			decor._by_support.clear()
+			decor.setup(tilemap())
 		main.get_node("Player").global_position = Vector2(1200, 150)
 	log_line("scenario=%s  godot=%s" % [scenario, Engine.get_version_info().string])
 	await call(scenario)
@@ -1052,6 +1058,35 @@ func tramp_rec() -> void:
 				main.add_child(ore)
 		await _grab(Rect2(Vector2(1500, -70), Vector2(220, 170)), "tr_%03d" % i, -3)
 		await wait(0.03)
+
+
+func caves() -> void:
+	# Screenshots of the three nearest dressed caves, lights on as in play.
+	main._wave_timer = -9999.0
+	var decor: Node2D = main.get_node("CaveDecor")
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.zoom = Vector2(2.5, 2.5)
+	cam.position_smoothing_enabled = false
+	log_line("cave decor pieces: %d" % decor.get_child_count())
+	var seen := []
+	var lit := decor.get_children().filter(func(c): return c.get_child_count() > 0)  # crystals first
+	for spr in lit + decor.get_children():
+		var pos: Vector2 = spr.global_position
+		var far := true
+		for q in seen:
+			if q.distance_to(pos) < 260:
+				far = false
+		if far:
+			seen.append(pos)
+		if seen.size() >= 3:
+			break
+	for k in seen.size():
+		# the prospector stands a little way off, lamp on, as when exploring
+		main.get_node("Player").global_position = seen[k] + Vector2(-60 if k == 0 else 0, -400 if k == 1 else 0)
+		cam.global_position = seen[k] + Vector2(40, 0)
+		await wait(0.4)
+		await shot("cave_%d" % k)
 
 
 func banner() -> void:

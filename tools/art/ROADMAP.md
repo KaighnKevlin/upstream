@@ -50,6 +50,7 @@ bottom of the log.
 - [x] Upstream shaft: droplet spray over the rim
 - [x] Trampoline v2: base + animated spring/plate (crush, bottom out, overshoot, settle) with a status core; tilts to the launch angle
 - [x] Soldier idle (6): torso settles on its springs, key ticks, spear tip drifts, visor flickers; standing/attack poses get a planted two-leg stance
+- [x] Cave dressing: cyan crystal clusters (lit), glowing mushrooms (lit), fossil gears, stalactites, roots near the surface, hanging chains
 - [x] HUD: own 5x7 proportional pixel font (gen_font.py -> FontFile at runtime, scripts/pixel_font.gd), brass 9-slice panels, rimmed bars
 
 ## Log
@@ -140,4 +141,10 @@ bottom of the log.
 ### Pass 22 — soldier idle + stance
 - gen_soldier.py: breathe (torso-only vertical offset) and soldier_idle.png (6 frames). Non-walking poses used legs at swing 0, so the two legs overlapped into one; now far -16 / near +14 (+ lunge), which also fixes the attack frames.
 - enemy.gd: soldier "idle" replaced by the 6-frame loop at 6 fps (it was the first walk frame).
+
+### Pass 23 — cave dressing
+- gen_cave.py (new): cave_decor.png, 9 cells of 16x16 (floor pieces stand on the cell's bottom edge, ceiling pieces hang from its top).
+- scripts/cave_decor.gd (new, node "CaveDecor" in main): placed once after world gen, so only natural caves get dressed (and not within 10 tiles of the dome shaft). Crystals favour deep rock, roots the top 8 rows. Crystals/mushrooms carry a small cyan PointLight2D, so unexplored caves show pools of light. Each piece is keyed to the tile it stands on / hangs from; player.gd calls tile_cleared on the "cave_decor" group and it fades out.
+- playtest: SEED regen now re-dresses the caves (otherwise pieces float in solid rock); caves scenario.
+- Next: the fossil gear reads as a green lump at game scale; give it more brass and less rock.
 

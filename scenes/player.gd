@@ -246,6 +246,7 @@ func _try_mine_at(world_pos: Vector2, start_cooldown := true) -> bool:
 	FX.tile_break(get_parent(), tilemap, tile_pos, source_id, atlas_coords,
 		(global_position - tile_center).normalized())
 	get_tree().call_group("tile_shading", "mark_dirty", tile_pos)
+	get_tree().call_group("cave_decor", "tile_cleared", tile_pos)
 	SFX.play(self, SFX.sfx_mine_break())
 	return true
 

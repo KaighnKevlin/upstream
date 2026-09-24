@@ -297,6 +297,13 @@ func _setup_terrain_visuals() -> void:
 	move_child(shading, _tilemap.get_index() + 1)
 	shading.setup(_tilemap, WorldGen.WORLD_WIDTH, WorldGen.WORLD_HEIGHT)
 
+	# Crystals, stalactites, roots etc. in the natural caves
+	var decor := preload("res://scripts/cave_decor.gd").new()
+	decor.name = "CaveDecor"
+	add_child(decor)
+	move_child(decor, shading.get_index() + 1)
+	decor.setup(_tilemap)
+
 	_add_moonlight()
 
 
