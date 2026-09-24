@@ -952,6 +952,22 @@ func stomp_rec() -> void:
 		await wait(0.05)
 
 
+func skyline() -> void:
+	# Screenshots of the backdrop from the surface at a few zooms and positions.
+	main._wave_timer = -9999.0
+	var p: CharacterBody2D = main.get_node("Player")
+	p.global_position = Vector2(1300, 60)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	for spec in [[Vector2(1200, -20), 2.0, "sky_z2"], [Vector2(1200, -60), 1.0, "sky_z1"],
+			[Vector2(1700, -20), 2.0, "sky_z2_east"], [Vector2(1200, -60), 0.5, "sky_z05"]]:
+		cam.global_position = spec[0]
+		cam.zoom = Vector2(spec[1], spec[1])
+		await wait(0.4)
+		await shot(spec[2])
+
+
 func banner() -> void:
 	main._wave_timer = -9999.0
 	await wait(0.8)

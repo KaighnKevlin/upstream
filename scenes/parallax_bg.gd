@@ -13,6 +13,62 @@ const TILE_COPIES := 3
 
 
 func _ready() -> void:
+	# Painted layers (tools/art/gen_background.py); fall back to the procedural ones
+	if load("res://assets/backgrounds/city.png") != null:
+		_build_painted()
+		return
+	_build_procedural()
+
+
+func _build_painted() -> void:
+	# Sky: a 4px-wide gradient stretched to cover any zoom, bottom at the horizon
+	var sky_layer := ParallaxLayer.new()
+	sky_layer.motion_scale = Vector2(0, 1)
+	var sky := Sprite2D.new()
+	sky.texture = load("res://assets/backgrounds/sky.png")
+	sky.centered = false
+	sky.scale = Vector2(BG_WIDTH * 12 / 4.0, 1.0)
+	sky.position = Vector2(-BG_WIDTH * 6, SURFACE_Y - 1200 + 40)
+	sky.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	sky_layer.add_child(sky)
+	add_child(sky_layer)
+
+	var stars_layer := ParallaxLayer.new()
+	stars_layer.motion_scale = Vector2(0.05, 1)
+	stars_layer.motion_mirroring = Vector2(BG_WIDTH * TILE_COPIES, 0)
+	var stars := Sprite2D.new()
+	stars.texture = BackgroundGen.create_stars_texture(BG_WIDTH, BG_HEIGHT)
+	stars.centered = false
+	stars.position = Vector2(-BG_WIDTH / 2, SURFACE_Y - BG_HEIGHT)
+	stars.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_add_tiled(stars_layer, stars)
+	add_child(stars_layer)
+
+	# The moon drifts very slowly and is not tiled (one moon at any zoom)
+	var moon_layer := ParallaxLayer.new()
+	moon_layer.motion_scale = Vector2(0.03, 1)
+	var moon := Sprite2D.new()
+	moon.texture = load("res://assets/backgrounds/moon.png")
+	moon.position = Vector2(560, SURFACE_Y - 175)  # screen x is ~ this * zoom
+	moon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	moon_layer.add_child(moon)
+	add_child(moon_layer)
+
+	# name, motion, top of the texture relative to the surface
+	for spec in [["far", 0.1, -205.0], ["city", 0.2, -168.0], ["near", 0.35, -84.0]]:
+		var layer := ParallaxLayer.new()
+		layer.motion_scale = Vector2(spec[1], 1)
+		layer.motion_mirroring = Vector2(BG_WIDTH * TILE_COPIES, 0)
+		var spr := Sprite2D.new()
+		spr.texture = load("res://assets/backgrounds/%s.png" % spec[0])
+		spr.centered = false
+		spr.position = Vector2(-BG_WIDTH / 2, SURFACE_Y + spec[2])
+		spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		_add_tiled(layer, spr)
+		add_child(layer)
+
+
+func _build_procedural() -> void:
 	# Sky gradient: anchored to the surface, stretched wide to cover any zoom
 	var sky_layer := ParallaxLayer.new()
 	sky_layer.motion_scale = Vector2(0, 1)

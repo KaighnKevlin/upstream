@@ -43,6 +43,7 @@ bottom of the log.
 - [x] Soldier death (7): spear slips and falls, kneels as the core gutters, topples onto its shield
 - [x] Caster death (6): overload flash, thruster cuts, drops and tips over dark
 - [x] Prospector hurt frame (recoil, eyes shut) + death (6, 64x40: reel, topple back, land, bounce, headlamp gutters out)
+- [x] Backdrop: painted night sky + moon, far range, ruined clockwork city (towers, domes, sunk gears, smoking chimneys, lit windows), near ridge with a buried gear and pipe
 - [x] HUD: own 5x7 proportional pixel font (gen_font.py -> FontFile at runtime, scripts/pixel_font.gd), brass 9-slice panels, rimmed bars
 
 ## Log
@@ -102,4 +103,9 @@ bottom of the log.
 - gen_fx.py (new): shockwave.png, 5 frames 48x24, a leaning crest of clods + dust skirt + chips, cyan spark early.
 - enemy.gd: STOMP table. A player on the ground 40-150px away (beyond axe reach) triggers it on its own 5s cooldown; impact frame 4 spawns two shockwaves tweened outward, shake, dust. Grounded players in range take 8 and get launched up and away; jumping dodges it.
 - playtest: stomp_rec.
+
+### Pass 17 — backdrop
+- gen_background.py (new, stdlib): assets/backgrounds/{sky,moon,far,city,near}.png. All layers tile at 960 (periodic sine noise, wrapped shapes), ordered 4x4 Bayer dithering, moonlit left-facing edges, haze brightening toward each layer's base so the silhouette in front reads.
+- parallax_bg.gd: _build_painted() when the PNGs exist (else the old procedural layers). Motion: stars 0.05, moon 0.03 (untiled, one moon at any zoom; its screen x is roughly position.x * zoom), far 0.1, city 0.2, near 0.35. Sky is 4x1200 at native vertical scale (stretching it 2x made scanline bands).
+- playtest: skyline (zooms 2, 1, 0.5 and an eastern view).
 
