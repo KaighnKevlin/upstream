@@ -1255,6 +1255,35 @@ func title() -> void:
 	await shot("after_title")
 
 
+func hit_rec() -> void:
+	# Recording: the prospector blasts a titan and a soldier; hit feedback.
+	main._wave_timer = -9999.0
+	main.get_node("Turret").set_physics_process(false)
+	var p: CharacterBody2D = main.get_node("Player")
+	p.global_position = Vector2(1500, 60)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.zoom = Vector2(3, 3)
+	cam.position_smoothing_enabled = false
+	cam.global_position = Vector2(1590, 20)
+	await wait(0.5)
+	var t: Node2D = _spawn(0, Vector2(1660, 76))
+	var s: Node2D = _spawn(2, Vector2(1600, 76))
+	t.speed = 0.0
+	s.speed = 0.0
+	t.hp = 999
+	s.hp = 999
+	var gun: Node2D = p.get_node("Shotgun")
+	for i in 50:
+		var aim := Vector2(1700, 40)
+		get_root().warp_mouse(main.get_viewport().get_canvas_transform() * aim)
+		if i % 8 == 2:
+			gun._timer = 0.0
+			gun._fire((aim - gun.global_position).normalized())
+		await _grab(Rect2(Vector2(1470, -50), Vector2(240, 140)), "hit_%03d" % i, -3)
+		await wait(0.02)
+
+
 func banner() -> void:
 	main._wave_timer = -9999.0
 	await wait(0.8)

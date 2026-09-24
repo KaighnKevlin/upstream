@@ -210,22 +210,47 @@ func _physics_process(delta: float) -> void:
 			$AnimatedSprite2D.play("walk")
 
 
+# where hits land on each body (sparks, chips), relative to the origin
+const HIT_Y := {
+	EnemyType.TITAN: -45.0, EnemyType.SCUTTLER: -10.0, EnemyType.SOLDIER: -16.0,
+	EnemyType.CASTER: -18.0, EnemyType.ORNITHOPTER: 0.0,
+}
+
+
 func take_damage(amount: int) -> void:
 	if _dying:
 		return
 	hp -= amount
-	FX.burst(get_parent(), global_position + Vector2(0, -10), Color(1, 0.9, 0.5), 4, 70.0, 0.25, 1.5)
+	var at := global_position + Vector2(0, HIT_Y.get(enemy_type, -10.0))
+	FX.burst(get_parent(), at, Color(1, 0.9, 0.5), 4, 70.0, 0.25, 1.5)
 	if has_node("AnimatedSprite2D"):
-		var sprite := $AnimatedSprite2D
-		var tween := create_tween()
-		tween.tween_property(sprite, "modulate", Color.RED, 0.05)
-		var restore_color := Color.WHITE
-		tween.tween_property(sprite, "modulate", restore_color, 0.1)
+		_hit_react(amount, at)
 	if hp <= 0:
 		SFX.play(get_tree().current_scene, SFX.sfx_enemy_die())
 		_die()
 	else:
 		SFX.play(self, SFX.sfx_enemy_hit())
+
+
+## Hit feedback: a white flash (a red tint just muddied the bronze), a jolt
+## away from the side it's facing, brass chips on heavier hits, and the
+## titan rocks back a little when it isn't mid-swing.
+func _hit_react(amount: int, at: Vector2) -> void:
+	var sprite := $AnimatedSprite2D as AnimatedSprite2D
+	FX.flash(sprite, Color(2.4, 2.3, 2.1), 0.14)
+	var facing := _facing if MELEE.has(enemy_type) else direction
+	var push := -signf(facing) if facing != 0 else 1.0
+	var jolt := create_tween()
+	jolt.tween_property(sprite, "position:x", push * (1.0 if enemy_type == EnemyType.TITAN else 2.0), 0.04)
+	jolt.tween_property(sprite, "position:x", 0.0, 0.1)
+	if amount >= 2 or randf() < 0.25:
+		FX.debris(get_parent(), at, 1, 120.0, false)
+	if enemy_type == EnemyType.TITAN:
+		var swinging := sprite.animation in ["attack", "sweep", "stomp"] and sprite.is_playing()
+		if not swinging:
+			var rock := create_tween()
+			rock.tween_property(sprite, "rotation", -0.05 * signf(facing), 0.06)
+			rock.tween_property(sprite, "rotation", 0.0, 0.2).set_trans(Tween.TRANS_SINE)
 
 
 func _die() -> void:

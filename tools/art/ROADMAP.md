@@ -208,3 +208,7 @@ Lights are additive over a 0.08 CanvasModulate and the framebuffer clips at 1.0,
 - main.gd _show_title(): pauses the tree, hides the HUD, frames the skyline (camera top_level at (1200,-40), zoom 2) with the dome at the bottom, logo drops in, subtitle, blinking prompt. Input comes through the title Control (focused, PROCESS_MODE_ALWAYS) since main is paused. On start: fade, HUD back, camera restored (smoothing glides it to the player), unpause.
 - Skipped when the game is launched with user args (the playtest harness passes "-- scenario out_dir"), so all scenarios still run unpaused. playtest: title (calls _show_title directly).
 
+### Pass 34 — hit feedback
+- enemy.gd _hit_react(): white flash (FX.flash) instead of the red tint, sprite jolts 1-2px away from its facing, a brass chip (FX.debris x1) on hits of 2+ or 25% of the time, titan rocks back when not mid-swing. HIT_Y per type places sparks/chips on the body. playtest: hit_rec.
+- Art loop stopped here (2026-09-24): work moves to the physics sandbox (trampoline physics, hard rock, miner v3, traps, sound).
+
