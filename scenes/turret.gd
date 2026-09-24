@@ -15,6 +15,7 @@ var _bullet_scene: PackedScene = preload("res://scenes/bullet.tscn")
 var _turret_sprite: Sprite2D
 var _barrel_sprite: Sprite2D
 var _flash: AnimatedSprite2D
+var _empty_lamp: Sprite2D
 const BARREL_OFFSET := Vector2(-3, -5)  # cannon_barrel.png breech at (3, 5)
 const MUZZLE := 24.0                    # breech to the muzzle brake's mouth
 var _aim := -PI / 2
@@ -61,6 +62,17 @@ func setup(ammo_port: Node) -> void:
 	_flash.visible = false
 	_flash.animation_finished.connect(func(): _flash.visible = false)
 	_barrel_sprite.add_child(_flash)
+	# a red lamp over the breech core, shown when it tries to fire empty
+	_empty_lamp = Sprite2D.new()
+	var img := Image.create(3, 3, false, Image.FORMAT_RGBA8)
+	img.fill(Color(1.0, 0.35, 0.2))
+	img.set_pixel(0, 0, Color.TRANSPARENT); img.set_pixel(2, 0, Color.TRANSPARENT)
+	img.set_pixel(0, 2, Color.TRANSPARENT); img.set_pixel(2, 2, Color.TRANSPARENT)
+	_empty_lamp.texture = ImageTexture.create_from_image(img)
+	_empty_lamp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_empty_lamp.position = Vector2(1, 0)  # the core, 1px ahead of the pivot
+	_empty_lamp.modulate.a = 0.0
+	_barrel_sprite.add_child(_empty_lamp)
 
 
 func _physics_process(delta: float) -> void:
@@ -89,9 +101,7 @@ func _physics_process(delta: float) -> void:
 
 	# Try to consume ammo
 	if _ammo_port == null or not _ammo_port.consume_ammo():
-		var tween := create_tween()
-		tween.tween_property(_barrel_sprite, "modulate", Color(1, 0.3, 0.3), 0.1)
-		tween.tween_property(_barrel_sprite, "modulate", Color.WHITE, 0.2)
+		_dry_fire()
 		return
 
 	# Aim the barrel at the target
@@ -121,3 +131,18 @@ func _physics_process(delta: float) -> void:
 	var tip := global_position + Vector2(0, -4) + dir * MUZZLE
 	FX.burst(get_parent(), tip, Color(1, 0.9, 0.5), 5, 90.0, 0.15, 1.5, 0.0)
 	FX.burst(get_parent(), tip, Color(0.75, 0.75, 0.72, 0.6), 4, 20.0, 0.8, 2.5, -40.0)  # smoke
+
+
+## Out of ammo: the core flickers red twice and a wisp of steam escapes,
+## instead of tinting the whole cannon.
+func _dry_fire() -> void:
+	if _empty_lamp == null:
+		return
+	var t := create_tween()
+	for k in 2:
+		t.tween_property(_empty_lamp, "modulate:a", 1.0, 0.06)
+		t.tween_property(_empty_lamp, "modulate:a", 0.15, 0.12)
+	t.tween_property(_empty_lamp, "modulate:a", 0.0, 0.2)
+	var tip := global_position + Vector2(0, -4) + Vector2.from_angle(_barrel_sprite.rotation) * MUZZLE
+	FX.burst(get_parent(), tip, Color(0.8, 0.8, 0.78, 0.5), 2, 12.0, 0.6, 2.0, -30.0)
+

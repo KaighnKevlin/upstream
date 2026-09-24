@@ -171,5 +171,9 @@ Lights are additive over a 0.08 CanvasModulate and the framebuffer clips at 1.0,
 - Rule: ambient + moon + dome + headlamp(surface) <= ~1.1; headlamp(deep) + any one machine/effect light <= ~1.2.
 - Now: moon 0.5, dome 0.3, headlamp 0.2 on the surface ramping to 0.7 over the first 48px underground (player.gd LAMP_*), laser 0.45, upstream 0.4, caster core 0.45, enemy bolt 0.5, hot ingot 0.6, crystals 0.6 / mushrooms 0.4, rig 0.3. Transient flashes (scuttler blast 2.2) left alone on purpose.
 - playtest light_check: stills of soldiers + titan by the dome with the player close, and the rig by the laser. Before/after in the pass notes.
-- The rig still reads pale: that's its own steel/glow palette, not lighting.
+- The rig read pale from its own steel palette: warmed in pass 28.
+
+### Pass 28 — rig palette, cannon dry-fire
+- gen_machines.py miner2: top band DARK, funnel BRONZE with a steel lip, gear hub BRONZE, gauge in a brass bezel with a dimmer face. Reads as brass now instead of pale steel (the laser's cyan light still tints it a bit).
+- turret.gd: firing with no ammo no longer tints the whole cannon red; _dry_fire() flickers a small red lamp over the breech core twice and lets out a wisp of steam at the muzzle.
 
