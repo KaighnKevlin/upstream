@@ -46,31 +46,49 @@ func _ready() -> void:
 	_update_visuals()
 
 
+# Physical bounce: only things landing on the plate's top face bounce; they
+# reflect off it (keeping their slide along the plate) and the spring adds a
+# kick along the normal. Things coming up from underneath pass straight
+# through, so a vertical stack of trampolines no longer lifts anything:
+# ore has to be *landed* on each one. The player can hold S to drop through.
+const RESTITUTION := 0.8      # how much of the incoming normal speed comes back
+const KICK := 0.45            # spring kick = bounce_force * KICK, along the normal
+const SLIDE_KEEP := 0.95      # tangential speed kept
+const MAX_SPEED_K := 1.4      # cap: bounce_force * this (no runaway ping-pong)
+
+
+func bounce_velocity(v: Vector2) -> Vector2:
+	var n := _launch_dir()
+	var vn := v.dot(n)
+	var tangent := v - n * vn
+	var out := tangent * SLIDE_KEEP + n * (-vn * RESTITUTION + bounce_force * KICK)
+	return out.limit_length(bounce_force * MAX_SPEED_K)
+
+
 func _on_body_entered(body: Node2D) -> void:
+	var n := _launch_dir()
+	var v: Vector2
+	if body is RigidBody2D:
+		v = body.linear_velocity
+	elif body is CharacterBody2D and body.has_method("launch"):
+		v = body.velocity
+		if Input.is_key_pressed(KEY_S) or Input.is_action_pressed("ui_down"):
+			return  # dropping through on purpose
+	else:
+		return
+	if v.dot(n) > -15.0:
+		return  # coming from underneath or skimming past: no bounce
+
 	SFX.play(self, SFX.sfx_bounce())
 	if _top:
 		_top.play("bounce")
 	else:
 		FX.pop(_pixel_sprite, Vector2(1.25, 0.55), 0.18)
-
-	var angle_rad := deg_to_rad(bounce_angle - 90)
-	var direction := Vector2(cos(angle_rad), sin(angle_rad))
-
-	# Blend: reflect incoming momentum along trampoline normal + add boost
-	# Result feels like a real bounce — entry angle matters
+	var out := bounce_velocity(v)
 	if body is RigidBody2D:
-		var incoming: Vector2 = body.linear_velocity
-		var along_tramp: float = incoming.dot(direction)
-		# Keep momentum perpendicular to launch dir, replace component along launch dir
-		var perpendicular: Vector2 = incoming - direction * along_tramp
-		var new_vel: Vector2 = direction * bounce_force + perpendicular * 0.4
-		body.linear_velocity = new_vel
-	elif body is CharacterBody2D and body.has_method("launch"):
-		var incoming: Vector2 = body.velocity
-		var along_tramp: float = incoming.dot(direction)
-		var perpendicular: Vector2 = incoming - direction * along_tramp
-		var new_vel: Vector2 = direction * bounce_force + perpendicular * 0.4
-		body.launch(new_vel)
+		body.linear_velocity = out
+	else:
+		body.launch(out)
 
 
 ## Brass plate on a coil spring (tools/art/gen_items.py): a fixed base and
@@ -234,6 +252,7 @@ func _update_visuals() -> void:
 		_pixel_sprite.rotation = deg_to_rad(bounce_angle)
 	if _rig:
 		_rig.rotation = deg_to_rad(bounce_angle)
+	_area.rotation = deg_to_rad(bounce_angle)  # the catch zone lies along the plate
 
 	var dir := _launch_dir()
 	var perp := dir.rotated(PI / 2)

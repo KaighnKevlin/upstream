@@ -11,6 +11,8 @@ const FX = preload("res://scripts/fx.gd")
 ## Hold the first wave until the first ingot lands in the receiver, so a new
 ## player has time to learn miner -> laser -> trampoline before anything attacks.
 @export var wait_for_first_ingot: bool = true
+## Sandbox: no wave timer at all; waves only come when you press P.
+@export var sandbox := true
 
 const HUD_BAR_TOP := 668.0
 const HUD_BAR_BOTTOM := 680.0
@@ -93,6 +95,8 @@ func _ready() -> void:
 		_wave_label.text = "Next wave: %ds" % int(wave_interval)
 	else:
 		_wave_label.text = "Get an ingot into the dome to begin"
+	if sandbox:
+		_wave_label.text = "SANDBOX - press P for a wave"
 	_build_mode_label.text = ""
 	_style_hud()
 	# the playtest harness passes user args (-- scenario out_dir): no title then
@@ -449,7 +453,7 @@ func _add_wall(pos: Vector2, size: Vector2) -> void:
 
 
 func _physics_process(delta: float) -> void:
-	if _game_over or not _waves_started:
+	if _game_over or not _waves_started or sandbox:
 		return
 
 	_wave_timer += delta

@@ -1284,6 +1284,64 @@ func hit_rec() -> void:
 		await wait(0.02)
 
 
+func bounce_lab() -> void:
+	# Trampoline physics checks (numbers in the log) + a recording.
+	main._wave_timer = -9999.0
+	var p: CharacterBody2D = main.get_node("Player")
+	p.global_position = Vector2(1300, 60)
+	var mk := func(pos: Vector2, ang := 0.0) -> Node2D:
+		var t: Node2D = preload("res://scenes/trampoline.tscn").instantiate()
+		t.global_position = pos
+		t.bounce_angle = ang
+		main.add_child(t)
+		t._update_visuals()
+		return t
+	# A: vertical stack, ore shot up from below
+	for y in [40, 0, -40]:
+		mk.call(Vector2(1500, y))
+	var ore: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+	ore.global_position = Vector2(1500, 70)
+	main.add_child(ore)
+	ore.linear_velocity = Vector2(0, -500)
+	var top_y := 99999.0
+	for i in 60:
+		await physics_frame
+		top_y = minf(top_y, ore.global_position.y)
+	log_line("A stack, shot up at 500 from y70: apex y=%.0f (free flight apex ~ %.0f)" % [top_y, 70 - 500 * 500 / (2 * 980.0)])
+	# B: drops onto a flat and a 30-degree trampoline from 120px up
+	var flat: Node2D = mk.call(Vector2(1650, 60))
+	var tilt: Node2D = mk.call(Vector2(1750, 60), 30.0)
+	for t in [flat, tilt]:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.global_position = t.global_position + Vector2(0, -120)
+		main.add_child(o)
+		var hit_v := Vector2.ZERO
+		var peak := 99999.0
+		for i in 90:
+			var before := o.linear_velocity
+			await physics_frame
+			if before.y > 0 and o.linear_velocity.y < 0 and hit_v == Vector2.ZERO:
+				hit_v = before
+				log_line("B angle %d: in %s -> out %s" % [t.bounce_angle, before.round(), o.linear_velocity.round()])
+			if hit_v != Vector2.ZERO:
+				peak = minf(peak, o.global_position.y)
+		log_line("B angle %d: dropped from %.0f above, rebound apex %.0f above the plate" % [t.bounce_angle, 120, t.global_position.y - peak])
+	# C: player falls onto the flat one; then again holding S
+	for hold in [false, true]:
+		p.global_position = flat.global_position + Vector2(0, -110)
+		p.velocity = Vector2.ZERO
+		if hold:
+			Input.action_press("ui_down")
+		var up := false
+		for i in 50:
+			await physics_frame
+			if p.velocity.y < -100:
+				up = true
+		if hold:
+			Input.action_release("ui_down")
+		log_line("C player falls on flat, holding S=%s -> bounced=%s" % [hold, up])
+
+
 func banner() -> void:
 	main._wave_timer = -9999.0
 	await wait(0.8)
