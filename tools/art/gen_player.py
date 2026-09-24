@@ -6,7 +6,7 @@ Writes assets/sprites/prospector.png: one strip of 32x40 frames, facing right,
 feet at (16, 38) so the frame centre is the body centre:
   frames 0-3 idle, 4-11 run, 12-13 jump, 14-16 pickaxe swing (raise, strike,
   follow-through).
-Frame 17 is "hurt" (knocked back, arms flung). prospector_death.png: 6 frames
+Frame 17 is "hurt" (knocked back, arms flung); 18 rise, 19-20 fall, 21 land. prospector_death.png: 6 frames
 of 64x40 (wider so the fall fits; feet at (32, 38), so it lines up with the
 32x40 frames when both are centred): reel, topple back, land, bounce, lie
 with the headlamp flickering out.
@@ -117,7 +117,13 @@ def main():
             build(arms=(-75, 75), bob=0.8),         # strike
             build(arms=(-25, 25), bob=0.6)]         # follow through
     hurt = [build(legs=(-18, 20), bends=(30, 20), arms=(60, -80), bob=0.5, rot=-10, eye=False)]
-    frames = idle + run + jump + mine + hurt
+    # 18 rise (knees tucked, near arm reaching up), 19-20 fall (legs dangling,
+    # arms out, flapping), 21 land (crouch that absorbs the drop)
+    air = [build(legs=(40, 10), bends=(90, 70), arms=(-30, 130), bob=-1.5),
+           build(legs=(-8, 16), bends=(18, 30), arms=(-100, 95), bob=0),
+           build(legs=(-2, 10), bends=(26, 22), arms=(-125, 120), bob=0.3),
+           build(legs=(28, -22), bends=(80, 80), arms=(-35, 45), bob=3.2)]
+    frames = idle + run + jump + mine + hurt + air
     D = (64, 40, (32, 38))
     death = [build(legs=(-18, 20), bends=(30, 20), arms=(60, -80), rot=-18, size=D, eye=False),
              build(legs=(10, 30), bends=(50, 40), arms=(90, -100), rot=-48, shift=(-2, -3), size=D, eye=False),

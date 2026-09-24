@@ -1140,6 +1140,31 @@ func light_check() -> void:
 	await shot("light_rig")
 
 
+func jump_rec() -> void:
+	# Recording: the prospector hops right twice, then drops from high up.
+	main._wave_timer = -9999.0
+	var p: CharacterBody2D = main.get_node("Player")
+	p.global_position = Vector2(1480, 60)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.zoom = Vector2(3, 3)
+	cam.position_smoothing_enabled = false
+	cam.global_position = Vector2(1540, 10)
+	await wait(0.6)
+	Input.action_press("move_right")
+	for i in 70:
+		if i == 2 or i == 22:
+			Input.action_press("jump")
+		if i == 4 or i == 24:
+			Input.action_release("jump")
+		if i == 40:
+			Input.action_release("move_right")
+			p.global_position = Vector2(1560, -80)
+			p.velocity = Vector2.ZERO
+		await _grab(Rect2(Vector2(1440, -70), Vector2(200, 180)), "jp_%03d" % i, -3)
+		await wait(0.03)
+
+
 func banner() -> void:
 	main._wave_timer = -9999.0
 	await wait(0.8)

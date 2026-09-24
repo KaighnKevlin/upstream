@@ -54,6 +54,7 @@ bottom of the log.
 - [x] Dome cannon v2: breech block with pressure core, cooling fins, muzzle brake; barrel kicks back along its axis, muzzle flash + smoke
 - [x] Ore/ingot flight: tapered speed streaks (dusty tan for ore, hot orange cooling with the bar for ingots), dust puff on hard landings
 - [x] Drill rig v2 (8 frames, 24x28): flywheel + crank + piston, sweeping pressure gauge, funnel that pumps
+- [x] Prospector air poses: rise (arm up, knees tucked), fall x2 (arms out, flapping), land crouch + dust on hard landings
 - [x] HUD: own 5x7 proportional pixel font (gen_font.py -> FontFile at runtime, scripts/pixel_font.gd), brass 9-slice panels, rimmed bars
 
 ## Log
@@ -176,4 +177,9 @@ Lights are additive over a 0.08 CanvasModulate and the framebuffer clips at 1.0,
 ### Pass 28 — rig palette, cannon dry-fire
 - gen_machines.py miner2: top band DARK, funnel BRONZE with a steel lip, gear hub BRONZE, gauge in a brass bezel with a dimmer face. Reads as brass now instead of pale steel (the laser's cyan light still tints it a bit).
 - turret.gd: firing with no ammo no longer tints the whole cannon red; _dry_fire() flickers a small red lamp over the breech core twice and lets out a wisp of steam at the muzzle.
+
+### Pass 29 — prospector jump/fall/land
+- gen_player.py: frames 18 rise, 19-20 fall, 21 land (22 frames total).
+- player_sprite.gd: "rise", "fall" (8 fps loop), "land" when the sheet has them. player.gd: air anim by vertical speed (<-60 rise, >60 fall, else the old "jump" at the apex); _track_landing() records the fastest fall and, on touchdown above 260 px/s, holds "land" for 0.12 s and puffs dust at the feet.
+- playtest: jump_rec.
 

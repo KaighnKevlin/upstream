@@ -86,6 +86,9 @@ const LAMP_SURFACE := 0.2
 const SURFACE_Y := 96.0
 var _lamp: PointLight2D
 var _hurt_timer := 0.0
+var _land_timer := 0.0
+var _was_on_floor := true
+var _fall_speed := 0.0
 var _dead := false
 
 
@@ -151,7 +154,9 @@ func _physics_process(delta: float) -> void:
 	if (Input.is_action_just_pressed("jump") or Input.is_action_just_pressed("ui_accept") or Input.is_physical_key_pressed(KEY_W)) and (is_on_floor() or in_shaft):
 		velocity.y = -jump_force
 
+	var vy_before := velocity.y
 	move_and_slide()
+	_track_landing(vy_before, delta)
 
 	# Enemy contact check (after move_and_slide so knockback isn't immediately consumed)
 	if _damage_cooldown <= 0:
@@ -160,10 +165,20 @@ func _physics_process(delta: float) -> void:
 	# Update animation (only switch when animation changes)
 	if not _is_mining:
 		var new_anim: String
-		if _hurt_timer > 0 and _anim.sprite_frames.has_animation("hurt"):
+		var frames := _anim.sprite_frames
+		if _hurt_timer > 0 and frames.has_animation("hurt"):
 			new_anim = "hurt"
 		elif not is_on_floor():
-			new_anim = "jump"
+			if not frames.has_animation("rise"):
+				new_anim = "jump"
+			elif velocity.y < -60:
+				new_anim = "rise"
+			elif velocity.y > 60:
+				new_anim = "fall"
+			else:
+				new_anim = "jump"  # apex
+		elif _land_timer > 0 and frames.has_animation("land"):
+			new_anim = "land"
 		elif abs(velocity.x) > 10:
 			new_anim = "walk"
 		else:
@@ -345,6 +360,20 @@ func _die() -> void:
 		await _anim.animation_finished
 		await get_tree().create_timer(0.6).timeout
 	player_died.emit()
+
+
+## A hard landing: brief crouch and a puff of dust at the feet.
+func _track_landing(vy_before: float, delta: float) -> void:
+	_land_timer -= delta
+	if not is_on_floor():
+		_fall_speed = maxf(_fall_speed, vy_before)
+	elif not _was_on_floor:
+		if _fall_speed > 260.0:
+			_land_timer = 0.12
+			var feet := global_position + Vector2(0, HALF_HEIGHT)
+			FX.burst(get_parent(), feet, Color(0.55, 0.45, 0.35, 0.8), 6, 60.0, 0.35, 1.5)
+		_fall_speed = 0.0
+	_was_on_floor = is_on_floor()
 
 
 func _get_tilemap() -> TileMapLayer:

@@ -22,6 +22,10 @@ static func create_prospector_frames() -> SpriteFrames:
 	sf.set_animation_loop("mine", false)
 	sf.set_animation_loop("jump", false)
 	_add_frames(sf, tex, "hurt", [17], 32, 40, 4.0)
+	if tex.get_width() >= 22 * 32:  # air poses (tools/art/gen_player.py)
+		_add_frames(sf, tex, "rise", [18], 32, 40, 4.0)
+		_add_frames(sf, tex, "fall", [19, 20], 32, 40, 8.0)
+		_add_frames(sf, tex, "land", [21], 32, 40, 4.0)
 	sf.set_animation_loop("hurt", false)
 	var death := load("res://assets/sprites/prospector_death.png") as Texture2D
 	if death:
