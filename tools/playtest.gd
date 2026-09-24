@@ -831,3 +831,31 @@ func hud() -> void:
 	main.get_node("Player").take_damage(40)
 	await wait(0.5)
 	await shot("hud_damaged")
+
+
+func mining_rec() -> void:
+	# Recording: the prospector tunnels right, then left, from a pocket in
+	# solid dirt.
+	main._wave_timer = -9999.0
+	var p: CharacterBody2D = main.get_node("Player")
+	var tm := tilemap()
+	var shading := get_nodes_in_group("tile_shading")[0]
+	for x in range(38, 42):
+		for y in range(17, 20):
+			tm.set_cell(Vector2i(x, y), -1)
+			shading.mark_dirty(Vector2i(x, y))
+	p.global_position = tile_center(Vector2i(40, 18)) + Vector2(0, -2)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.zoom = Vector2(3, 3)
+	cam.position_smoothing_enabled = false
+	await wait(1.0)
+	var i := 0
+	for step in ["move_right", "move_left"]:
+		Input.action_press(step)
+		key(KEY_J, true)
+		for k in 34:
+			await _grab(Rect2(p.global_position + Vector2(-80, -45), Vector2(160, 80)), "mine_%03d" % i, -3)
+			await wait(0.05)
+			i += 1
+		key(KEY_J, false)
+		Input.action_release(step)

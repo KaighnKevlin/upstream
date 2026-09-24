@@ -17,6 +17,9 @@ static func create_prospector_frames() -> SpriteFrames:
 	_add_frames(sf, tex, "walk", [4, 5, 6, 7, 8, 9, 10, 11], 32, 40, 14.0)
 	_add_frames(sf, tex, "jump", [12, 13], 32, 40, 6.0)
 	_add_frames(sf, tex, "attack", [0], 32, 40, 4.0)
+	# pickaxe swing: raise, strike, follow-through — about one mine_cooldown
+	_add_frames(sf, tex, "mine", [14, 15, 16], 32, 40, 16.0)
+	sf.set_animation_loop("mine", false)
 	sf.set_animation_loop("jump", false)
 	return sf
 

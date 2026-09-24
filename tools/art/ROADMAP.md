@@ -69,3 +69,7 @@ bottom of the log.
   $&*@\\^`{|}~ (add to gen_font.py G if needed). Next: lift shaft art, prospector
   pickaxe swing, titan second attack, wave banner.
 - pass 10: titan sweep. MELEE entries can carry vs_player {anim, impact, knock, damage}.
+- pass 11: prospector pickaxe (painted sprite, pivot at the shoulder) + 3-frame swing pose;
+  swing mirrors by facing so it always chops down. Gameplay fix: sideways J-mining clears
+  the full body height (was one tile, so you couldn't enter your own tunnel).
+  Next: lift shaft art, wave banner, maybe a scuttler death, dirt/stone mining crack overlay.

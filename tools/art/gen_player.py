@@ -4,7 +4,11 @@
 
 Writes assets/sprites/prospector.png: one strip of 32x40 frames, facing right,
 feet at (16, 38) so the frame centre is the body centre:
-  frames 0-3 idle, 4-11 run, 12-13 jump.
+  frames 0-3 idle, 4-11 run, 12-13 jump, 14-16 pickaxe swing (raise, strike,
+  follow-through).
+Also assets/sprites/pickaxe.png (24x16): handle along +x from the butt at
+(2, 8) (the pivot, held at the shoulder), head at the far end with the pick
+tip on the +y side so it leads a clockwise swing.
 """
 import math, sys
 from clockwork import *
@@ -72,6 +76,18 @@ def build(legs=(0, 0), bends=(8, 8), arms=(0, 0), bob=0.0, lamp=1.0):
     return fig.render(FW, FH, ORIGIN, extra=SKIN_EXTRA + LAMP_EXTRA)
 
 
+def pickaxe():
+    fig = Figure()
+    fig.capsule((0, 0), (16, 0), 0.9, LEATHER, z=0, grit=0.1)           # wooden handle
+    fig.ellipsoid((15, 0), (1.2, 1.5), BRONZE, z=1)                     # brass ferrule
+    # head: long point on +y (leads the swing), short adze on -y
+    fig.capsule((17, -3.5), (17.5, 0), 1.3, STEEL, z=2)
+    fig.capsule((17.5, 0), (16.5, 4.5), 1.2, STEEL, z=2)
+    fig.capsule((16.5, 4.5), (14.8, 6.8), 0.7, STEEL, z=2.1)             # point
+    fig.box((16, -5.2, 19, -3.4), STEEL, z=2.2, bevel=0.6)               # adze
+    return fig.render(24, 16, (2, 8))
+
+
 def main():
     idle = [build(bob=0.5 * math.sin(i / 4 * math.tau)) for i in range(4)]
     run = []
@@ -83,10 +99,15 @@ def main():
                          arms=(-30 * s, 30 * s), bob=-abs(math.cos(p)) * 1.2 + 0.6))
     jump = [build(legs=(30, -10), bends=(60, 40), arms=(-60, 70), bob=-1),
             build(legs=(10, -20), bends=(25, 30), arms=(-40, 40), bob=0)]
-    frames = idle + run + jump
+    mine = [build(arms=(-150, 150), bob=0.4),      # raise
+            build(arms=(-75, 75), bob=0.8),         # strike
+            build(arms=(-25, 25), bob=0.6)]         # follow through
+    frames = idle + run + jump + mine
     rows = [sum((f[y] for f in frames), []) for y in range(FH)]
     write_png(SPR + 'prospector.png', FW * len(frames), FH, rows)
     print('wrote prospector.png (%d frames)' % len(frames))
+    pk = pickaxe()
+    write_png(SPR + 'pickaxe.png', 24, 16, pk)
     if len(sys.argv) > 1:
         big = side_by_side(frames, 7)
         write_png(sys.argv[1] + '/prospector_preview.png', len(big[0]), len(big), big)

@@ -32,6 +32,7 @@ const FX = preload("res://scripts/fx.gd")
 
 @onready var _anim: AnimatedSprite2D = $AnimatedSprite2D
 @onready var _pickaxe: Node2D = $Pickaxe
+var _pick_sprite: Sprite2D
 
 
 func _ready() -> void:
@@ -46,6 +47,18 @@ func _ready() -> void:
 	else:
 		_anim.sprite_frames = SpriteLoader.create_goblin_frames()
 	_anim.play("idle")
+
+	# Pickaxe: painted sprite (tools/art/gen_player.py) instead of the polygons.
+	# Its pivot is the handle butt, held at the shoulder.
+	for c in _pickaxe.get_children():
+		c.visible = false
+	_pick_sprite = Sprite2D.new()
+	_pick_sprite.texture = preload("res://assets/sprites/pickaxe.png")
+	_pick_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_pick_sprite.centered = false
+	_pick_sprite.offset = Vector2(-2, -8)
+	_pickaxe.add_child(_pick_sprite)
+	_pickaxe.position = Vector2(1, -3)
 
 	# Player light
 	var light := PointLight2D.new()
@@ -173,25 +186,39 @@ func _try_directional_mine() -> void:
 		_mine_timer = mine_cooldown
 		return
 
+	# Straight sideways: the body is ~2.3 tiles tall, so clear the whole
+	# column beside it or the player can't walk into the tunnel.
+	if dir.y == 0:
+		var side_x := global_position.x + dir.x * (HALF_WIDTH + TILE_SIZE / 2.0)
+		var y := global_position.y - HALF_HEIGHT + 1
+		var mined := false
+		while y < global_position.y + HALF_HEIGHT:
+			mined = _try_mine_at(Vector2(side_x, y), false) or mined
+			y += TILE_SIZE
+		mined = _try_mine_at(Vector2(side_x, global_position.y + HALF_HEIGHT - 1), false) or mined
+		if mined:
+			_mine_timer = mine_cooldown
+		return
+
 	var target := global_position + dir.normalized() * TILE_SIZE
 	_try_mine_at(target)
 
 
-func _try_mine_at(world_pos: Vector2, start_cooldown := true) -> void:
+func _try_mine_at(world_pos: Vector2, start_cooldown := true) -> bool:
 	var tilemap := _get_tilemap()
 	if tilemap == null:
-		return
+		return false
 
 	var tile_pos := tilemap.local_to_map(tilemap.to_local(world_pos))
 	var source_id := tilemap.get_cell_source_id(tile_pos)
 
 	if source_id == -1:
-		return  # empty tile
+		return false  # empty tile
 
 	# Check range (3 tiles)
 	var tile_center := tilemap.to_global(tilemap.map_to_local(tile_pos))
 	if global_position.distance_to(tile_center) > TILE_SIZE * 3:
-		return
+		return false
 
 	if start_cooldown:
 		_mine_timer = mine_cooldown
@@ -201,18 +228,28 @@ func _try_mine_at(world_pos: Vector2, start_cooldown := true) -> void:
 	tilemap.set_cell(tile_pos, -1)
 	get_tree().call_group("tile_shading", "mark_dirty", tile_pos)
 	SFX.play(self, SFX.sfx_mine_break())
-
+	return true
 
 func _play_pickaxe_swing(target_world: Vector2) -> void:
 	_is_mining = true
 	_pickaxe.visible = true
 
-	var dir := (target_world - global_position).normalized()
-	var start_angle := dir.angle() - 1.2
-	var end_angle := dir.angle() + 1.2
+	var dir := (target_world - _pickaxe.global_position).normalized()
+	# Chop downward whichever way we face: clockwise facing right,
+	# counter-clockwise facing left (and mirror the head so the point leads).
+	var facing := signf(dir.x) if absf(dir.x) > 0.1 else (1.0 if _facing_right else -1.0)
+	var start_angle := dir.angle() - 1.2 * facing
+	var end_angle := dir.angle() + 1.2 * facing
+	_pick_sprite.flip_v = facing < 0
 
 	_pickaxe.rotation = start_angle
 	_pickaxe.scale = Vector2(1.2, 1.2)
+
+	if _anim.sprite_frames.has_animation("mine"):
+		_anim.flip_h = facing < 0
+		_anim.speed_scale = 1.0
+		_anim.play("mine")
+		_anim.frame = 0
 
 	var tween := create_tween()
 	tween.set_ease(Tween.EASE_OUT)
