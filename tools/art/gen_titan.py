@@ -407,7 +407,8 @@ def render_body(parts, pose):
     remap = PULSE if g == 'pulse' else (DIM[g] if isinstance(g, int) else None)
     B = m_mul(m_tr(bx, by), m_rot(tilt, HIP_C))
     blit_m(canvas, parts['back_leg'], m_mul(m_tr(lx, ly), m_rot(lb, HIP_B)), remap)
-    blit_m(canvas, parts['front_leg'], m_mul(m_tr(lx, ly), m_rot(lf, HIP_F)), remap)
+    fx_, fy_ = pose.get('front_lift', (0, 0))   # knee-up: slide the front leg up under the hip
+    blit_m(canvas, parts['front_leg'], m_mul(m_tr(lx + fx_, ly + fy_), m_rot(lf, HIP_F)), remap)
     free = pose.get('axe_free')
     free_m = None
     if free:  # dropped axe: offset from its resting place, rotated about its middle
@@ -469,6 +470,20 @@ DEATH = [
 ]
 
 
+# stomp: axe raised across the chest, weight back, front leg swings up,
+# slams down (impact frame 4) and the body drops into it, core flaring.
+STOMP = resolve([
+    {'body': (0, 4), 'legs_shift': (0, 2), 'axe_at': ((182, 437), 0)},
+    {'body': (-8, 8), 'legs_shift': (-2, 4), 'legs': (-4, 2), 'axe_at': ((190, 380), -12)},
+    {'body': (-14, 0), 'tilt': -5, 'legs_shift': (-4, 5), 'legs': (-22, -2), 'front_lift': (10, -60), 'axe_at': ((185, 250), -30), 'glow': 'pulse'},
+    {'body': (-16, -4), 'tilt': -9, 'legs_shift': (-5, 5), 'legs': (-30, -4), 'front_lift': (18, -105), 'axe_at': ((185, 215), -36), 'glow': 'pulse'},
+    {'body': (8, 26), 'tilt': 5, 'legs_shift': (4, 12), 'legs': (-8, 6), 'axe_at': ((205, 420), 8), 'glow': 'pulse'},
+    {'body': (8, 24), 'tilt': 4, 'legs_shift': (4, 11), 'legs': (-8, 6), 'axe_at': ((205, 420), 8)},
+    {'body': (4, 14), 'tilt': 2, 'legs_shift': (2, 7), 'legs': (-4, 3), 'axe_at': ((192, 430), 3)},
+    {'body': (0, 6), 'legs_shift': (0, 3), 'axe_at': ((182, 437), 0)},
+])
+
+
 def build_body(poses, parts, pal):
     return [downscale(render_body(parts, p), CW, CH, FW, FH, pal, scale=SCALE) for p in poses]
 
@@ -481,14 +496,19 @@ def main_extra(preview=None):
     death = build_body(DEATH, parts, pal)
     write_png(OUT + 'titan_idle.png', FW * len(idle), FH, strip(idle))
     write_png(OUT + 'titan_death.png', FW * len(death), FH, strip(death))
+    stomp = build_body(STOMP, parts, pal)
+    write_png(OUT + 'titan_stomp.png', FW * len(stomp), FH, strip(stomp))
     print('wrote titan_idle.png (%d), titan_death.png (%d)' % (len(idle), len(death)))
     if preview:
         big = side_by_side(idle, 4); write_png(preview + '/titan_idle_preview.png', len(big[0]), len(big), big)
         big = side_by_side(death, 4); write_png(preview + '/titan_death_preview.png', len(big[0]), len(big), big)
+        big = side_by_side(stomp, 4); write_png(preview + '/titan_stomp_preview.png', len(big[0]), len(big), big)
+        return
         write_gif(preview + '/titan_idle.gif', idle, [14] * len(idle), 4)
         write_gif(preview + '/titan_death.gif', death + [death[-1]], [8, 8, 8, 8, 8, 10, 12, 80, 60], 4)
 
 
 if __name__ == '__main__':
-    main()
+    if os.environ.get('ONLY_EXTRA') is None:
+        main()
     main_extra(sys.argv[1] if len(sys.argv) > 1 else None)

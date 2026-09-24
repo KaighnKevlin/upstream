@@ -38,6 +38,7 @@ bottom of the log.
 - [x] Ore (3 rock+copper chunks, tumble), brass ingot, spring trampoline
 - [x] Miner drill rig (4-frame pump, steam puff), arc smelter (brass electrodes + live lightning)
 - [x] Dome observatory: glass (45% alpha) + brass ribs + riveted plinth with intake grate; cannon on the crown swivels to aim; ammo gauge strip on the rail
+- [x] Titan third attack: stomp (8): axe raised, weight back, knee up, slam; shockwave sprite (gen_fx.py) rolls both ways along the ground
 - [x] Scuttler pounce (6): crouch, tuck-and-leap, core overloads; it leaps onto the dome flank and detonates (blast does the damage)
 - [x] Soldier death (7): spear slips and falls, kneels as the core gutters, topples onto its shield
 - [x] Caster death (6): overload flash, thruster cuts, drops and tips over dark
@@ -95,4 +96,10 @@ bottom of the log.
 - player.gd: take_damage plays hurt for 0.3 s; at 0 hp _die(): input off, slides to a stop, death anim, light dims, then player_died after a beat instead of cutting straight to game over.
 - main.gd: game-over plate names the cause (DOME DESTROYED / PROSPECTOR DOWN); "Waves survived" no longer shows -1.
 - playtest: player_death_rec.
+
+### Pass 16 — titan stomp
+- gen_titan.py: STOMP poses via render_body (tilt, glow pulse); new 'front_lift' pose key slides the front leg up under the hip for a knee-up (a rigid leg rotation alone just kicks forward and hides behind the back leg). ONLY_EXTRA=1 skips re-rendering walk/attack/sweep.
+- gen_fx.py (new): shockwave.png, 5 frames 48x24, a leaning crest of clods + dust skirt + chips, cyan spark early.
+- enemy.gd: STOMP table. A player on the ground 40-150px away (beyond axe reach) triggers it on its own 5s cooldown; impact frame 4 spawns two shockwaves tweened outward, shake, dust. Grounded players in range take 8 and get launched up and away; jumping dodges it.
+- playtest: stomp_rec.
 

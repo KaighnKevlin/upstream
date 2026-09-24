@@ -932,6 +932,26 @@ func player_death_rec() -> void:
 	await shot("player_game_over")
 
 
+func stomp_rec() -> void:
+	# Recording: the prospector keeps just out of axe reach; the titan stomps.
+	main._wave_timer = -9999.0
+	main.get_node("Turret").set_physics_process(false)
+	var p: CharacterBody2D = main.get_node("Player")
+	p.global_position = Vector2(1480, 60)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.zoom = Vector2(3, 3)
+	cam.position_smoothing_enabled = false
+	cam.global_position = Vector2(1560, 30)
+	await wait(0.5)
+	var t: Node2D = _spawn(0, Vector2(1590, 76))
+	t._stomp_cooldown = 0.6
+	t.speed = 0.0
+	for i in 60:
+		await _grab(Rect2(Vector2(1420, -30), Vector2(290, 130)), "st_%03d" % i, -3)
+		await wait(0.05)
+
+
 func banner() -> void:
 	main._wave_timer = -9999.0
 	await wait(0.8)

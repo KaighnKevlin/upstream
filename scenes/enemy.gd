@@ -47,6 +47,11 @@ var _facing := -1.0
 var _chop_cooldown := 0.0
 var _chop_target: Node2D
 var _attack_anim := "attack"
+# Titan stomp: an area attack for a player just beyond axe reach. The
+# shockwave rolls both ways along the ground; being airborne dodges it.
+const STOMP := {"range": 150.0, "min": 40.0, "impact": 4, "damage": 8,
+	"knock": Vector2(140, -330), "cooldown": 5.0}
+var _stomp_cooldown := 2.0
 
 var _bullet_scene: PackedScene = preload("res://scenes/enemy_bullet.tscn")
 
@@ -80,6 +85,7 @@ func _ready() -> void:
 		match enemy_type:
 			EnemyType.TITAN:
 				anim.sprite_frames = _create_titan_frames()
+				_add_strip_anim(anim.sprite_frames, "stomp", "res://assets/sprites/titan_stomp.png", 120, 120, 8, 10.0)
 				anim.offset.y = -49
 				anim.frame_changed.connect(_on_melee_frame)
 				# Bigger collision box for titan (new shape, don't modify shared one)
@@ -359,11 +365,20 @@ func _shoot_at(target: Node2D) -> void:
 func _melee_process(delta: float) -> void:
 	var anim := $AnimatedSprite2D as AnimatedSprite2D
 	_chop_cooldown -= delta
+	_stomp_cooldown -= delta
 	var swinging := anim.animation == _attack_anim and anim.is_playing()
 	var m: Dictionary = MELEE[enemy_type]
 	var target := _melee_target(m)
+	var stomp_at := _stomp_target() if not swinging else null
 	if swinging:
 		velocity.x = 0
+	elif stomp_at and not (target and target.is_in_group("player")):
+		velocity.x = 0
+		_facing = signf(stomp_at.global_position.x - global_position.x)
+		_stomp_cooldown = STOMP.cooldown
+		_chop_cooldown = maxf(_chop_cooldown, 0.6)
+		_attack_anim = "stomp"
+		anim.play("stomp")
 	elif target:
 		velocity.x = 0
 		_facing = signf(target.global_position.x - global_position.x)
@@ -386,6 +401,58 @@ func _melee_process(delta: float) -> void:
 	anim.offset.x = m.body_offset if _facing > 0 else -m.body_offset
 
 
+func _stomp_target() -> Node2D:
+	if enemy_type != EnemyType.TITAN or _stomp_cooldown > 0 \
+			or not $AnimatedSprite2D.sprite_frames.has_animation("stomp"):
+		return null
+	var player := get_tree().current_scene.get_node_or_null("Player") as CharacterBody2D
+	if player == null or not player.is_on_floor():
+		return null
+	var dx := absf(player.global_position.x - global_position.x)
+	if dx > STOMP.min and dx < STOMP.range and absf(player.global_position.y - global_position.y) < 40:
+		return player
+	return null
+
+
+func _on_stomp() -> void:
+	var ground := global_position + Vector2(_facing * 10, 10)
+	FX.shake(self, 7.0, 0.35)
+	FX.burst(get_parent(), ground, Color(0.55, 0.45, 0.35), 24, 140.0, 0.6, 2.5)
+	FX.burst(get_parent(), ground + Vector2(0, -4), Color(0.7, 0.95, 1.0), 8, 180.0, 0.25, 1.5, 0.0)
+	SFX.play(self, SFX.sfx_mine_break())
+	var tex := preload("res://assets/sprites/shockwave.png")
+	for dir in [-1.0, 1.0]:
+		var w := AnimatedSprite2D.new()
+		var sf := SpriteFrames.new()
+		sf.set_animation_speed("default", 12.0)
+		sf.set_animation_loop("default", false)
+		for i in 5:
+			var a := AtlasTexture.new()
+			a.atlas = tex
+			a.region = Rect2(i * 48, 0, 48, 24)
+			sf.add_frame("default", a)
+		w.sprite_frames = sf
+		w.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		w.flip_h = dir < 0
+		w.z_index = 2
+		# frame bottom on the ground surface (the titan's feet are ~8px below its origin)
+		w.global_position = Vector2(ground.x + dir * 26, global_position.y - 4)
+		get_parent().add_child(w)
+		w.play()
+		var t := w.create_tween()
+		t.tween_property(w, "global_position:x", ground.x + dir * STOMP.range, 0.42)
+		t.parallel().tween_property(w, "modulate:a", 0.0, 0.42).set_delay(0.18)
+		t.tween_callback(w.queue_free)
+	# the wave catches anyone standing on the ground in range
+	var player := get_tree().current_scene.get_node_or_null("Player") as CharacterBody2D
+	if player and player.is_on_floor() \
+			and absf(player.global_position.x - global_position.x) < STOMP.range \
+			and absf(player.global_position.y - global_position.y) < 40:
+		var away := signf(player.global_position.x - global_position.x)
+		player.take_damage(STOMP.damage)
+		player.launch(Vector2(away * STOMP.knock.x, STOMP.knock.y))
+
+
 func _melee_target(m: Dictionary) -> Node2D:
 	var scene := get_tree().current_scene
 	var player := scene.get_node_or_null("Player") as Node2D
@@ -400,6 +467,10 @@ func _melee_target(m: Dictionary) -> Node2D:
 
 func _on_melee_frame() -> void:
 	var anim := $AnimatedSprite2D as AnimatedSprite2D
+	if _attack_anim == "stomp":
+		if not _dying and anim.animation == "stomp" and anim.frame == STOMP.impact:
+			_on_stomp()
+		return
 	var m: Dictionary = MELEE[enemy_type]
 	if _attack_anim != "attack":
 		m = m.merged(m.vs_player, true)  # the variant's impact frame, knockback, damage
