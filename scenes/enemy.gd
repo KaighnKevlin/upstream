@@ -1,6 +1,6 @@
 extends CharacterBody2D
 
-enum EnemyType { TITAN, SCUTTLER, SKELETON, WIZARD }
+enum EnemyType { TITAN, SCUTTLER, SKELETON, CASTER }
 
 @export var enemy_type: EnemyType = EnemyType.TITAN
 @export var speed: float = 60.0
@@ -25,7 +25,7 @@ const DEATH_COLORS := {
 	EnemyType.TITAN: Color(0.62, 0.48, 0.32),
 	EnemyType.SCUTTLER: Color(0.72, 0.58, 0.35),
 	EnemyType.SKELETON: Color(0.92, 0.9, 0.96),
-	EnemyType.WIZARD: Color(0.62, 0.32, 0.92),
+	EnemyType.CASTER: Color(0.55, 0.85, 0.9),
 }
 
 var _dying := false
@@ -51,7 +51,7 @@ const TYPE_STATS := {
 	EnemyType.TITAN:    [25.0,  15, 30, 1.0],  # slow, tanky; chops for TITAN_CHOP_DAMAGE
 	EnemyType.SCUTTLER: [100.0, 2,  5,  1.0],  # small, fast clockwork beetle
 	EnemyType.SKELETON: [30.0,  8,  20, 2.2],
-	EnemyType.WIZARD:   [35.0,  4,  0,  2.0],
+	EnemyType.CASTER:   [35.0,  4,  0,  1.0],  # hovering tesla sentinel, shoots bolts
 }
 
 
@@ -88,9 +88,17 @@ func _ready() -> void:
 				anim.offset.y = -3
 			EnemyType.SKELETON:
 				anim.sprite_frames = _create_skeleton_frames()
-			EnemyType.WIZARD:
-				anim.sprite_frames = _create_skeleton_frames()
-				anim.modulate = Color(0.6, 0.3, 0.9)  # purple tint
+			EnemyType.CASTER:
+				anim.sprite_frames = _strip_frames("res://assets/sprites/caster_hover.png", 40, 46, 6, 9.0)
+				_add_strip_anim(anim.sprite_frames, "attack", "res://assets/sprites/caster_attack.png", 40, 46, 6, 12.0)
+				anim.offset.y = -8
+				# its core and coils light it up
+				var glow := PointLight2D.new()
+				glow.texture = preload("res://scripts/light_textures.gd").create_radial_light(128)
+				glow.color = Color(0.5, 0.85, 0.95)
+				glow.energy = 0.7
+				glow.position = Vector2(0, -20)
+				add_child(glow)
 		anim.play("walk")
 
 
@@ -107,7 +115,7 @@ func _physics_process(delta: float) -> void:
 		return
 
 	# Wizard stops at range and shoots
-	if enemy_type == EnemyType.WIZARD:
+	if enemy_type == EnemyType.CASTER:
 		var target := _find_nearest_target()
 		if target and global_position.distance_to(target.global_position) < _shoot_range:
 			_stopped = true
@@ -126,9 +134,13 @@ func _physics_process(delta: float) -> void:
 
 	if has_node("AnimatedSprite2D"):
 		# the new clockwork sprites face right; the old sheets face left
-		$AnimatedSprite2D.flip_h = (direction < 0) if enemy_type == EnemyType.SCUTTLER else (direction > 0)
-		if enemy_type == EnemyType.WIZARD and _stopped:
-			$AnimatedSprite2D.play("idle")
+		var faces_right := enemy_type == EnemyType.SCUTTLER or enemy_type == EnemyType.CASTER
+		$AnimatedSprite2D.flip_h = (direction < 0) if faces_right else (direction > 0)
+		if enemy_type == EnemyType.CASTER:
+			# hovers: keep the hover loop going unless mid-discharge
+			var a := $AnimatedSprite2D as AnimatedSprite2D
+			if not (a.animation == "attack" and a.is_playing()):
+				a.play("walk")
 		elif is_on_floor() and abs(velocity.x) > 5:
 			$AnimatedSprite2D.play("walk")
 
@@ -224,9 +236,10 @@ func _find_nearest_target() -> Node2D:
 func _shoot_at(target: Node2D) -> void:
 	SFX.play(self, SFX.sfx_enemy_hit())
 
-	var dir: Vector2 = (target.global_position - global_position).normalized()
+	var eye := global_position + Vector2(0, -18)
+	var dir: Vector2 = (target.global_position - eye).normalized()
 	var bullet := _bullet_scene.instantiate()
-	bullet.global_position = global_position + dir * 10
+	bullet.global_position = eye + dir * 10
 	bullet.velocity = dir * 200.0
 	bullet.damage = 8
 	get_tree().current_scene.add_child(bullet)
@@ -291,6 +304,19 @@ func _on_titan_frame() -> void:
 			_chop_target.launch(Vector2(_facing * 260, -240))
 	elif get_tree().current_scene.has_method("damage_dome"):
 		get_tree().current_scene.damage_dome(TITAN_CHOP_DAMAGE)
+
+
+func _add_strip_anim(sf: SpriteFrames, anim_name: String, path: String, fw: int, fh: int,
+		count: int, fps: float, loop := false) -> void:
+	var tex := load(path) as Texture2D
+	sf.add_animation(anim_name)
+	sf.set_animation_speed(anim_name, fps)
+	sf.set_animation_loop(anim_name, loop)
+	for i in count:
+		var atlas := AtlasTexture.new()
+		atlas.atlas = tex
+		atlas.region = Rect2(i * fw, 0, fw, fh)
+		sf.add_frame(anim_name, atlas)
 
 
 ## SpriteFrames from a horizontal strip: "walk" (all frames) and "idle" (first).

@@ -197,7 +197,7 @@ func _spawn_wave() -> void:
 			0: type = 0  # TITAN
 			1: type = 1  # SCUTTLER
 			2: type = 2  # SKELETON
-			3: type = 3  # WIZARD
+			3: type = 3  # CASTER
 			_: type = i % 4
 
 		enemy.setup(type)

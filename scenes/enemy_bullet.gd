@@ -9,18 +9,26 @@ const HIT_RADIUS := 16.0
 
 
 func _ready() -> void:
-	# Purple projectile sprite
+	# Tesla bolt: a cyan spark ball with a glow (from the clockwork caster)
 	var spr := Sprite2D.new()
-	var img := Image.create(6, 6, false, Image.FORMAT_RGBA8)
-	var purple := Color(0.7, 0.2, 0.9)
-	var purple_hi := Color(0.9, 0.4, 1.0)
-	for y in 6:
-		for x in 6:
-			if Vector2(x, y).distance_to(Vector2(2.5, 2.5)) < 3:
-				img.set_pixel(x, y, purple if (x + y) % 2 == 0 else purple_hi)
+	var img := Image.create(7, 7, false, Image.FORMAT_RGBA8)
+	for y in 7:
+		for x in 7:
+			var d := Vector2(x, y).distance_to(Vector2(3, 3))
+			if d < 1.5:
+				img.set_pixel(x, y, Color(0.8, 0.89, 0.86))
+			elif d < 3.2 and (x + y) % 2 == 0:
+				img.set_pixel(x, y, Color(0.45, 0.73, 0.76))
 	spr.texture = ImageTexture.create_from_image(img)
 	spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(spr)
+	var tween := spr.create_tween().set_loops()
+	tween.tween_property(spr, "rotation", PI / 2, 0.06)
+	var glow := PointLight2D.new()
+	glow.texture = preload("res://scripts/light_textures.gd").create_radial_light(64)
+	glow.color = Color(0.45, 0.8, 0.9)
+	glow.energy = 0.8
+	add_child(glow)
 
 
 func _physics_process(delta: float) -> void:

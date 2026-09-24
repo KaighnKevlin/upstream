@@ -32,7 +32,8 @@ bottom of the log.
 - [x] Titan idle (6, core pulses) + death (8: buckle, pitch forward, axe drops, core fades)
 - [ ] Titan second attack (sweep / ground slam)
 - [x] Scuttler (replaces goblin): bronze beetle, gear, headlamp core, wind-up key
-- [ ] Clockwork soldier (replaces skeleton), tesla caster (replaces wizard)
+- [x] Tesla caster (replaces wizard): hovering orb, twin coils, arcs + discharge, cyan bolt
+- [ ] Clockwork soldier (replaces skeleton)
 - [ ] Player miner: redraw to sit with the clockwork world
 - [ ] Ore and ingot look; trampoline redesign (spring-loaded brass plate)
 - [ ] Dome (brass and glass), turret, receiver, laser, miner building
@@ -46,3 +47,5 @@ bottom of the log.
   chops; death plays the collapse, holds, then fades.
 - pass 2: clockwork.py painter; scuttler walk (6) replaces the goblin in game
   (EnemyType.GOBLIN renamed SCUTTLER).
+- pass 3: clockwork.bolt() lightning; tesla caster hover (6) + attack (6), self-lit;
+  enemy bolt restyled cyan with glow. WIZARD renamed CASTER.

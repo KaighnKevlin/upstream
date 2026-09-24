@@ -732,3 +732,24 @@ func parade() -> void:
 	for i in 60:
 		await _grab(Rect2(Vector2(1540, -44), Vector2(340, 150)), "parade_%03d" % i, 4)
 		await wait(0.08)
+
+
+func caster() -> void:
+	# Recording: a tesla caster hovers in, stops at range and shoots the player.
+	main._wave_timer = -9999.0
+	main.get_node("Turret").set_physics_process(false)
+	var p: CharacterBody2D = main.get_node("Player")
+	p.global_position = Vector2(1560, 60)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.zoom = Vector2(3, 3)
+	cam.position_smoothing_enabled = false
+	cam.global_position = Vector2(1720, 40)
+	await wait(0.8)
+	var c := _spawn(3, Vector2(1905, 76))
+	await wait(0.3)
+	var hp0: int = p.hp
+	for i in 80:
+		await _grab(Rect2(Vector2(1540, -24), Vector2(360, 128)), "caster_%03d" % i, 3)
+		await wait(0.08)
+	log_line("caster: player hp %d -> %d" % [hp0, p.hp])

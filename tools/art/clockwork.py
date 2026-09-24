@@ -164,3 +164,35 @@ def _outline(img):
                     add.append((x, y)); break
     for x, y in add:
         img[y][x] = OUTLINE + (255,)
+
+
+def bolt(fig, a, b, seed, z=20, jag=1.6, segs=6, width=0.45):
+    """Jagged lightning between a and b, drawn as thin emissive segments."""
+    import random
+    r = random.Random(seed)
+    pts = [a]
+    for k in range(1, segs):
+        t = k / segs
+        px = a[0] + (b[0] - a[0]) * t; py = a[1] + (b[1] - a[1]) * t
+        # offset perpendicular to the bolt
+        dx, dy = b[0] - a[0], b[1] - a[1]; L = math.hypot(dx, dy) or 1
+        o = (r.random() - 0.5) * 2 * jag
+        pts.append((px - dy / L * o, py + dx / L * o))
+    pts.append(b)
+    for p, q in zip(pts, pts[1:]):
+        fig.capsule_glow(p, q, width, z)
+
+
+def _capsule_glow(self, a, b, r, z):
+    ax, ay = a; bx, by = b
+    vx, vy = bx - ax, by - ay; L2 = vx * vx + vy * vy or 1e-9
+
+    def fn(x, y):
+        t = max(0.0, min(1.0, ((x - ax) * vx + (y - ay) * vy) / L2))
+        d = math.hypot(x - (ax + vx * t), y - (ay + vy * t)) / r
+        if d > 1: return None
+        return _ramp(GLOW, 1.0 - d * 0.5)
+    self.prims.append((z, fn, (min(ax, bx) - r, min(ay, by) - r, max(ax, bx) + r, max(ay, by) + r)))
+
+
+Figure.capsule_glow = _capsule_glow
