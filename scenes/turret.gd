@@ -14,6 +14,9 @@ var _timer: float = 0.0
 var _bullet_scene: PackedScene = preload("res://scenes/bullet.tscn")
 var _turret_sprite: Sprite2D
 var _barrel_sprite: Sprite2D
+var _flash: AnimatedSprite2D
+const BARREL_OFFSET := Vector2(-3, -5)  # cannon_barrel.png breech at (3, 5)
+const MUZZLE := 24.0                    # breech to the muzzle brake's mouth
 var _aim := -PI / 2
 
 @onready var _barrel: Polygon2D = $Barrel
@@ -35,10 +38,29 @@ func setup(ammo_port: Node) -> void:
 	_barrel_sprite.texture = preload("res://assets/sprites/cannon_barrel.png")
 	_barrel_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_barrel_sprite.centered = false
-	_barrel_sprite.offset = Vector2(-3, -4)  # pivot at the breech
+	_barrel_sprite.offset = BARREL_OFFSET  # pivot at the breech
 	_barrel_sprite.position = Vector2(0, -4)
 	_barrel_sprite.rotation = -PI / 2
 	add_child(_barrel_sprite)
+	# muzzle flash at the brake (reuses the blunderbuss flash)
+	_flash = AnimatedSprite2D.new()
+	var sf := SpriteFrames.new()
+	sf.set_animation_speed("default", 24.0)
+	sf.set_animation_loop("default", false)
+	var ftex := preload("res://assets/sprites/muzzle_flash.png")
+	for i in 3:
+		var a := AtlasTexture.new()
+		a.atlas = ftex
+		a.region = Rect2(i * 20, 0, 20, 16)
+		sf.add_frame("default", a)
+	_flash.sprite_frames = sf
+	_flash.centered = false
+	_flash.offset = Vector2(0, -8)
+	_flash.position = Vector2(MUZZLE, 0)
+	_flash.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_flash.visible = false
+	_flash.animation_finished.connect(func(): _flash.visible = false)
+	_barrel_sprite.add_child(_flash)
 
 
 func _physics_process(delta: float) -> void:
@@ -80,12 +102,22 @@ func _physics_process(delta: float) -> void:
 
 	# Spawn bullet
 	var bullet := _bullet_scene.instantiate()
-	bullet.global_position = global_position + Vector2(0, -4) + dir * 20  # muzzle
+	bullet.global_position = global_position + Vector2(0, -4) + dir * MUZZLE
 	bullet.velocity = dir * bullet_speed
 	bullet.damage = damage_per_shot
 	get_tree().current_scene.add_child(bullet)
 
 	# Muzzle flash (on the visible pixel sprite; the polygon barrel is hidden)
-	FX.flash(_barrel_sprite, Color(2.0, 1.8, 1.0), 0.1)
-	FX.pop(_barrel_sprite, Vector2(0.8, 1.0), 0.12)  # recoil
-	FX.burst(get_parent(), global_position + dir * 12, Color(1, 0.9, 0.5), 5, 90.0, 0.15, 1.5, 0.0)
+	# snap onto the shot so the flash and recoil line up with the bullet
+	_barrel_sprite.rotation = _aim
+	FX.flash(_barrel_sprite, Color(1.6, 1.5, 1.1), 0.08)
+	_flash.visible = true
+	_flash.frame = 0
+	_flash.play()
+	# recoil: the barrel kicks back along its axis and runs out again
+	var kick := create_tween()
+	kick.tween_property(_barrel_sprite, "offset", BARREL_OFFSET - Vector2(4, 0), 0.04)
+	kick.tween_property(_barrel_sprite, "offset", BARREL_OFFSET, 0.18).set_ease(Tween.EASE_OUT)
+	var tip := global_position + Vector2(0, -4) + dir * MUZZLE
+	FX.burst(get_parent(), tip, Color(1, 0.9, 0.5), 5, 90.0, 0.15, 1.5, 0.0)
+	FX.burst(get_parent(), tip, Color(0.75, 0.75, 0.72, 0.6), 4, 20.0, 0.8, 2.5, -40.0)  # smoke

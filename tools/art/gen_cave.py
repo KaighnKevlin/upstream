@@ -35,9 +35,13 @@ def crystals(seed):
 
 
 def fossil_gear():
+    """An old brass gear standing upright in the floor, rubble at its foot."""
     fig = Figure()
-    fig.gear((0, 16.5), 7.0, 11, 8, BRONZE, z=0)
-    fig.ellipsoid((0, 16.5), (8, 2.2), ROCK, z=1)         # rock it's sunk in
+    fig.disc((0, 10.5), 5.6, DARK, z=0)                              # shadowed hub face
+    fig.gear((0, 10.5), 5.4, 10, 14, BRONZE, z=1)
+    fig.sphere((0, 10.5), 1.3, STEEL, z=2)                           # axle stub
+    fig.ellipsoid((0, 16), (7.5, 1.4), ROCK, z=3)                    # rubble at its foot
+    fig.sphere((-5, 15), 1.2, ROCK, z=3.1)
     return fig.render(C, C, (8, 0))
 
 

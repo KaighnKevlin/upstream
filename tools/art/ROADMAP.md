@@ -51,6 +51,7 @@ bottom of the log.
 - [x] Trampoline v2: base + animated spring/plate (crush, bottom out, overshoot, settle) with a status core; tilts to the launch angle
 - [x] Soldier idle (6): torso settles on its springs, key ticks, spear tip drifts, visor flickers; standing/attack poses get a planted two-leg stance
 - [x] Cave dressing: cyan crystal clusters (lit), glowing mushrooms (lit), fossil gears, stalactites, roots near the surface, hanging chains
+- [x] Dome cannon v2: breech block with pressure core, cooling fins, muzzle brake; barrel kicks back along its axis, muzzle flash + smoke
 - [x] HUD: own 5x7 proportional pixel font (gen_font.py -> FontFile at runtime, scripts/pixel_font.gd), brass 9-slice panels, rimmed bars
 
 ## Log
@@ -146,5 +147,10 @@ bottom of the log.
 - gen_cave.py (new): cave_decor.png, 9 cells of 16x16 (floor pieces stand on the cell's bottom edge, ceiling pieces hang from its top).
 - scripts/cave_decor.gd (new, node "CaveDecor" in main): placed once after world gen, so only natural caves get dressed (and not within 10 tiles of the dome shaft). Crystals favour deep rock, roots the top 8 rows. Crystals/mushrooms carry a small cyan PointLight2D, so unexplored caves show pools of light. Each piece is keyed to the tile it stands on / hangs from; player.gd calls tile_cleared on the "cave_decor" group and it fades out.
 - playtest: SEED regen now re-dresses the caves (otherwise pieces float in solid rock); caves scenario.
-- Next: the fossil gear reads as a green lump at game scale; give it more brass and less rock.
+- Fossil gear redone in pass 24 (upright brass gear, rubble at the foot).
+
+### Pass 24 — cannon, fossil gear
+- gen_dome.py: cannon_barrel.png 30x10 (pivot (3,5)): breech block + cyan pressure core, 4 cooling fins, band, slotted muzzle brake.
+- turret.gd: BARREL_OFFSET/MUZZLE consts; on fire the barrel snaps to the shot, kicks back 4px along its axis (offset tween, not the old scale pop), plays muzzle_flash.png at the brake, sparks + drifting smoke; rounds spawn at the brake.
+- gen_cave.py: fossil gear is now an upright brass gear with an axle stub and rubble, instead of a mostly-buried one that read as rock.
 

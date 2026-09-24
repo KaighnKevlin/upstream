@@ -7,7 +7,7 @@ All in world px around the dome centre on the ground (0, 0) = (1200, 96):
   dome_glass.png  152x46  glass hemisphere (drawn translucent in game); centre (0, -34)
   dome_ribs.png   152x46  brass ribs + crown ring, same placement as the glass
   cannon_base.png 20x12   pedestal on the crown; centre (0, -60)
-  cannon_barrel.png 22x8  barrel pointing right, pivot at its left-middle (x=3)
+  cannon_barrel.png 30x10 barrel pointing right, pivot at the breech (3, 5)
 """
 import math, sys
 from clockwork import *
@@ -77,12 +77,17 @@ def cannon_base():
 
 def cannon_barrel():
     fig = Figure()
-    fig.capsule((0, 0), (16, 0), 2.2, BRONZE, z=0)
-    for x in (5, 10):
-        fig.ellipsoid((x, 0), (0.9, 2.8), STEEL, z=1)                         # bands
-    fig.ellipsoid((17, 0), (1.4, 3.0), STEEL, z=1.2)                          # muzzle
-    fig.disc((18, 0), 1.3, DARK, z=1.3)
-    return fig.render(22, 8, (3, 4))
+    fig.box((-2.5, -3.6, 5, 3.6), BRONZE, z=0, bevel=1.4)                    # breech block
+    fig.sphere((1.2, 0), 1.3, GLOW, z=0.5, emissive=True)                    # pressure core
+    fig.capsule((4, 0), (22, 0), 2.3, BRONZE, z=1)                           # barrel
+    for k in range(4):                                                        # cooling fins
+        fig.ellipsoid((7 + k * 2.2, 0), (0.7, 3.4), STEEL, z=1.5)
+    fig.ellipsoid((17, 0), (0.8, 2.9), STEEL, z=1.5)                          # band
+    fig.box((22, -3.4, 26, 3.4), STEEL, z=2, bevel=1.0)                       # muzzle brake
+    for y in (-2.0, 2.0):
+        fig.box((23.2, y - 0.5, 24.8, y + 0.5), DARK, z=2.1, bevel=0.2, grit=0.0)  # vent slots
+    fig.disc((26.2, 0), 1.3, DARK, z=2.2)
+    return fig.render(30, 10, (3, 5))
 
 
 def main():
@@ -110,7 +115,7 @@ def main():
         put(parts['dome_ribs'], ox, oy - 34)
         put(parts['dome_base'], ox, oy - 4)
         put(parts['cannon_base'], ox, oy - 60)
-        put(parts['cannon_barrel'], ox + 8, oy - 63)
+        put(parts['cannon_barrel'], ox + 12, oy - 63)
         big = side_by_side([canvas], 5)
         write_png(sys.argv[1] + '/dome_preview.png', len(big[0]), len(big), big)
 
