@@ -10,6 +10,8 @@ extends CharacterBody2D
 const GRAVITY := 980.0
 const TILE_SIZE := 16
 const ENEMY_DETECT_RADIUS := 28.0
+const HALF_HEIGHT := 18.0
+const HALF_WIDTH := 12.0
 
 var hp: int
 var _mine_timer := 0.0
@@ -83,6 +85,9 @@ func _physics_process(delta: float) -> void:
 		# During knockback/launch: very little player control
 		if input_x != 0:
 			velocity.x += input_x * move_speed * 0.1 * delta * 60
+		# Ground friction, so a knockback doesn't slide you across the map
+		if is_on_floor():
+			velocity.x = move_toward(velocity.x, 0, 2500.0 * delta)
 	elif is_on_floor():
 		# On ground: direct control
 		velocity.x = input_x * move_speed
@@ -151,12 +156,24 @@ func _try_directional_mine() -> void:
 		# No direction held — mine in facing direction
 		dir.x = 1 if _facing_right else -1
 
-	# Target the adjacent tile in that direction
+	# Straight down: the body (24px) is wider than a tile, so clear every tile
+	# under the feet (plus a pixel of margin, or a tile corner still catches it).
+	if dir.x == 0 and dir.y > 0:
+		var feet_y := global_position.y + HALF_HEIGHT + TILE_SIZE / 2.0
+		var left := global_position.x - HALF_WIDTH - 1
+		var right := global_position.x + HALF_WIDTH + 1
+		var x := left
+		while x < right + TILE_SIZE:
+			_try_mine_at(Vector2(minf(x, right), feet_y), false)
+			x += TILE_SIZE
+		_mine_timer = mine_cooldown
+		return
+
 	var target := global_position + dir.normalized() * TILE_SIZE
 	_try_mine_at(target)
 
 
-func _try_mine_at(world_pos: Vector2) -> void:
+func _try_mine_at(world_pos: Vector2, start_cooldown := true) -> void:
 	var tilemap := _get_tilemap()
 	if tilemap == null:
 		return
@@ -172,7 +189,8 @@ func _try_mine_at(world_pos: Vector2) -> void:
 	if global_position.distance_to(tile_center) > TILE_SIZE * 3:
 		return
 
-	_mine_timer = mine_cooldown
+	if start_cooldown:
+		_mine_timer = mine_cooldown
 	_play_pickaxe_swing(tile_center)
 	tilemap.set_cell(tile_pos, -1)
 	SFX.play(self, SFX.sfx_mine_break())
@@ -208,7 +226,7 @@ func _check_enemy_contact() -> void:
 			var push_x: float = signf(global_position.x - enemy.global_position.x)
 			if push_x == 0:
 				push_x = 1.0
-			var knockback := Vector2(push_x * 700, -500)
+			var knockback := Vector2(push_x * 320, -260)
 			velocity = knockback
 			_launch_timer = 1.0
 			break

@@ -36,7 +36,8 @@ func _on_body_entered(body: Node2D) -> void:
 	body.queue_free()
 
 	# Spawn an ingot with reduced velocity
+	# Deferred: adding a physics body inside a body_entered callback errors
 	var ingot := _ingot_scene.instantiate() as RigidBody2D
-	ingot.global_position = pos
-	get_tree().current_scene.add_child(ingot)
+	ingot.position = pos
 	ingot.linear_velocity = vel * velocity_retention
+	get_tree().current_scene.add_child.call_deferred(ingot)

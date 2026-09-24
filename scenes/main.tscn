@@ -66,9 +66,9 @@ position = Vector2(1200, 66)
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
 [node name="Title" type="Label" parent="CanvasLayer"]
-offset_left = 600.0
+offset_left = 1070.0
 offset_top = 10.0
-offset_right = 790.0
+offset_right = 1260.0
 offset_bottom = 30.0
 theme_override_colors/font_color = Color(0.5, 0.5, 0.6, 1)
 theme_override_font_sizes/font_size = 14
@@ -93,43 +93,43 @@ text = "Next wave: 30s"
 
 [node name="BuildLabel" type="Label" parent="CanvasLayer"]
 offset_left = 20.0
-offset_top = 940.0
+offset_top = 660.0
 offset_right = 550.0
-offset_bottom = 960.0
+offset_bottom = 680.0
 theme_override_colors/font_color = Color(0.6, 0.6, 0.7, 1)
 theme_override_font_sizes/font_size = 14
 text = "[1] Trampoline  [2] Miner  [3] Laser  [4] Upstream  [RMB] Remove  [Q] Cancel  [J] Mine  [F] Shoot"
 
 [node name="BuildModeLabel" type="Label" parent="CanvasLayer"]
 offset_left = 20.0
-offset_top = 920.0
+offset_top = 640.0
 offset_right = 300.0
-offset_bottom = 940.0
+offset_bottom = 660.0
 theme_override_colors/font_color = Color(0.3, 1, 0.5, 1)
 theme_override_font_sizes/font_size = 16
 
 [node name="PlayerHpLabel" type="Label" parent="CanvasLayer"]
 offset_left = 20.0
-offset_top = 960.0
+offset_top = 680.0
 offset_right = 140.0
-offset_bottom = 975.0
+offset_bottom = 695.0
 theme_override_colors/font_color = Color(0.5, 0.7, 0.9, 1)
 theme_override_font_sizes/font_size = 14
 text = "PLAYER HP"
 
 [node name="PlayerHpBg" type="Polygon2D" parent="CanvasLayer"]
 color = Color(0.2, 0.2, 0.2, 1)
-polygon = PackedVector2Array(20, 976, 140, 976, 140, 990, 20, 990)
+polygon = PackedVector2Array(20, 696, 140, 696, 140, 710, 20, 710)
 
 [node name="PlayerHpFill" type="Polygon2D" parent="CanvasLayer"]
 color = Color(0.2, 0.6, 0.9, 1)
-polygon = PackedVector2Array(20, 976, 140, 976, 140, 990, 20, 990)
+polygon = PackedVector2Array(20, 696, 140, 696, 140, 710, 20, 710)
 
 [node name="DomeHpLabel" type="Label" parent="CanvasLayer"]
 offset_left = 300.0
-offset_top = 960.0
+offset_top = 680.0
 offset_right = 500.0
-offset_bottom = 975.0
+offset_bottom = 695.0
 theme_override_colors/font_color = Color(0.7, 0.7, 0.8, 1)
 theme_override_font_sizes/font_size = 14
 text = "DOME HP"
@@ -137,17 +137,17 @@ horizontal_alignment = 1
 
 [node name="DomeHpBg" type="Polygon2D" parent="CanvasLayer"]
 color = Color(0.2, 0.2, 0.2, 1)
-polygon = PackedVector2Array(300, 976, 500, 976, 500, 990, 300, 990)
+polygon = PackedVector2Array(300, 696, 500, 696, 500, 710, 300, 710)
 
 [node name="DomeHpFill" type="Polygon2D" parent="CanvasLayer"]
 color = Color(0.2, 0.8, 0.3, 1)
-polygon = PackedVector2Array(300, 976, 500, 976, 500, 990, 300, 990)
+polygon = PackedVector2Array(300, 696, 500, 696, 500, 710, 300, 710)
 
 [node name="GameOverLabel" type="Label" parent="CanvasLayer"]
-offset_left = 200.0
-offset_top = 400.0
-offset_right = 600.0
-offset_bottom = 500.0
+offset_left = 390.0
+offset_top = 260.0
+offset_right = 890.0
+offset_bottom = 400.0
 theme_override_colors/font_color = Color(1, 0.3, 0.2, 1)
 theme_override_font_sizes/font_size = 28
 text = "DOME DESTROYED"

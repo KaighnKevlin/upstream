@@ -7,11 +7,18 @@ const ObjectSprites = preload("res://scripts/object_sprites.gd")
 @export var dome_max_hp: int = 100
 @export var wave_interval: float = 30.0
 @export var enemies_per_wave_base: int = 3
+## Hold the first wave until the first ingot lands in the receiver, so a new
+## player has time to learn miner -> laser -> trampoline before anything attacks.
+@export var wait_for_first_ingot: bool = true
+
+const HUD_BAR_TOP := 696.0
+const HUD_BAR_BOTTOM := 710.0
 
 var dome_hp: int
 var wave_number: int = 0
 var _wave_timer: float = 0.0
 var _game_over := false
+var _waves_started := false
 
 var _enemy_scene: PackedScene = preload("res://scenes/enemy.tscn")
 
@@ -70,7 +77,11 @@ func _ready() -> void:
 	_update_hp_bar()
 	_update_player_hp_bar()
 	_ammo_label.text = "Ammo: 0/%d" % _receiver.max_buffer
-	_wave_label.text = "Next wave: %ds" % int(wave_interval)
+	_waves_started = not wait_for_first_ingot
+	if _waves_started:
+		_wave_label.text = "Next wave: %ds" % int(wave_interval)
+	else:
+		_wave_label.text = "Get an ingot into the dome to begin"
 	_build_mode_label.text = ""
 
 
@@ -103,7 +114,7 @@ func _add_wall(pos: Vector2, size: Vector2) -> void:
 
 
 func _physics_process(delta: float) -> void:
-	if _game_over:
+	if _game_over or not _waves_started:
 		return
 
 	_wave_timer += delta
@@ -154,6 +165,9 @@ func _on_enemy_reached_dome(body: Node2D) -> void:
 
 func _on_ammo_changed(current: int, max_ammo: int) -> void:
 	_ammo_label.text = "Ammo: %d/%d" % [current, max_ammo]
+	if not _waves_started and current > 0:
+		_waves_started = true
+		_wave_timer = 0.0
 
 
 func _on_build_mode_changed(build_type: int) -> void:
@@ -172,8 +186,8 @@ func _update_player_hp_bar() -> void:
 	var ratio := float(_player.hp) / float(_player.max_hp)
 	var fill_w := 120.0 * ratio
 	_player_hp_fill.polygon = PackedVector2Array([
-		Vector2(20, 976), Vector2(20 + fill_w, 976),
-		Vector2(20 + fill_w, 990), Vector2(20, 990),
+		Vector2(20, HUD_BAR_TOP), Vector2(20 + fill_w, HUD_BAR_TOP),
+		Vector2(20 + fill_w, HUD_BAR_BOTTOM), Vector2(20, HUD_BAR_BOTTOM),
 	])
 	if ratio > 0.5:
 		_player_hp_fill.color = Color(0.2, 0.6, 0.9, 1)
@@ -196,8 +210,8 @@ func _update_hp_bar() -> void:
 	var ratio := float(dome_hp) / float(dome_max_hp)
 	var fill_w := 200.0 * ratio
 	_hp_bar_fill.polygon = PackedVector2Array([
-		Vector2(300, 976), Vector2(300 + fill_w, 976),
-		Vector2(300 + fill_w, 990), Vector2(300, 990),
+		Vector2(300, HUD_BAR_TOP), Vector2(300 + fill_w, HUD_BAR_TOP),
+		Vector2(300 + fill_w, HUD_BAR_BOTTOM), Vector2(300, HUD_BAR_BOTTOM),
 	])
 	if ratio > 0.5:
 		_hp_bar_fill.color = Color(0.2, 0.8, 0.3, 1)
@@ -219,6 +233,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_tree().reload_current_scene()
 		# Cheat: P to force spawn next wave
 		if not _game_over and event.keycode == KEY_P:
+			_waves_started = true
 			_wave_timer = 0.0
 			_spawn_wave()
 		# Cheat: L to toggle lighting (see underground)

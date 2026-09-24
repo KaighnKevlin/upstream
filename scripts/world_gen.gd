@@ -65,6 +65,18 @@ static func generate(tilemap: TileMapLayer, rng_seed: int = 0) -> void:
 		for x in range(shaft_x - 2, shaft_x + 3):
 			tilemap.set_cell(Vector2i(x, y), TILE_EMPTY)
 
+	# Staircase up the left wall so the player can walk out of the pit:
+	# 2-tile treads, 1-tile risers, 4 tiles of headroom.
+	var floor_y := SURFACE_ROWS + 12
+	var step := 0
+	while floor_y - step > SURFACE_ROWS:
+		var tread_y := floor_y - step
+		for dx in 2:
+			var x := shaft_x - 3 - step * 2 - dx
+			for y in range(tread_y - 4, tread_y):
+				tilemap.set_cell(Vector2i(x, y), TILE_EMPTY)
+		step += 1
+
 
 static func _get_base_tile(y: int) -> int:
 	if y < SURFACE_ROWS:
@@ -118,7 +130,8 @@ static func _carve_cavern(tilemap: TileMapLayer, rng: RandomNumberGenerator,
 				var dist := float(dx * dx) / float(width * width + 1) + float(dy * dy) / float(blob_radius * blob_radius + 1)
 				if dist <= 1.0:
 					var tile := Vector2i(pos.x + dx, pos.y + dy)
-					if tile.x >= 2 and tile.x < WORLD_WIDTH - 2 and tile.y > SURFACE_ROWS + 4 and tile.y < WORLD_HEIGHT - 2:
+					var near_spawn := absi(tile.x - WORLD_WIDTH / 2) <= 16 and tile.y <= SURFACE_ROWS + 16
+					if tile.x >= 2 and tile.x < WORLD_WIDTH - 2 and tile.y > SURFACE_ROWS + 4 and tile.y < WORLD_HEIGHT - 2 and not near_spawn:
 						if tile not in carved:
 							tilemap.set_cell(tile, TILE_EMPTY)
 							carved[tile] = true
