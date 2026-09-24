@@ -1,6 +1,6 @@
 extends Node
 
-enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM }
+enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, PLATE, SPIKES }
 
 var current_build: BuildType = BuildType.NONE
 var _ghost: Node2D = null
@@ -11,6 +11,9 @@ var _scenes := {
 	BuildType.MINER: preload("res://scenes/miner.tscn"),
 	BuildType.LASER: preload("res://scenes/laser_smelter.tscn"),
 	BuildType.UPSTREAM: preload("res://scenes/upstream_shaft.tscn"),
+	BuildType.HOPPER: preload("res://scenes/hopper.tscn"),
+	BuildType.PLATE: preload("res://scenes/pressure_plate.tscn"),
+	BuildType.SPIKES: preload("res://scenes/spikes.tscn"),
 }
 
 var _ghost_colors := {
@@ -18,6 +21,9 @@ var _ghost_colors := {
 	BuildType.MINER: Color(0.3, 0.3, 0.8, 0.4),
 	BuildType.LASER: Color(1.0, 0.2, 0.1, 0.4),
 	BuildType.UPSTREAM: Color(0.3, 0.5, 1.0, 0.4),
+	BuildType.HOPPER: Color(1.0, 0.85, 0.5, 0.5),
+	BuildType.PLATE: Color(1.0, 0.85, 0.5, 0.5),
+	BuildType.SPIKES: Color(1.0, 0.85, 0.5, 0.5),
 }
 
 signal build_mode_changed(build_type: BuildType)
@@ -35,6 +41,12 @@ func _input(event: InputEvent) -> void:
 				_set_build(BuildType.LASER)
 			KEY_4:
 				_set_build(BuildType.UPSTREAM)
+			KEY_5:
+				_set_build(BuildType.HOPPER)
+			KEY_6:
+				_set_build(BuildType.PLATE)
+			KEY_7:
+				_set_build(BuildType.SPIKES)
 			KEY_ESCAPE, KEY_Q:
 				_set_build(BuildType.NONE)
 
@@ -70,6 +82,7 @@ func _set_build(build_type: BuildType) -> void:
 	# Create ghost preview
 	if build_type != BuildType.NONE:
 		_ghost = _scenes[build_type].instantiate()
+		_ghost.set_meta("ghost", true)  # buildings skip physics setup for ghosts
 		_ghost.modulate = _ghost_colors[build_type]
 		# Disable all processing on ghost
 		_ghost.set_physics_process(false)
@@ -92,6 +105,14 @@ func _can_place(pos: Vector2) -> bool:
 			if atlas_coords.x != 2 and atlas_coords.x != 3:
 				return false
 			if tilemap.get_cell_source_id(tile_pos + Vector2i(0, -1)) != -1:
+				return false
+	elif current_build == BuildType.PLATE or current_build == BuildType.SPIKES:
+		# on a floor: empty cell with solid ground just below
+		if tilemap:
+			var tile_pos := tilemap.local_to_map(tilemap.to_local(pos))
+			if tilemap.get_cell_source_id(tile_pos) != -1:
+				return false
+			if tilemap.get_cell_source_id(tile_pos + Vector2i(0, 1)) == -1:
 				return false
 	else:
 		# Trampolines and lasers: must be in empty space (no solid tile)

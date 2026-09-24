@@ -31,6 +31,9 @@ const DEATH_COLORS := {
 
 var _dying := false
 const POUNCE_RANGE := 78.0
+const CLIMB_SPEED := {
+	EnemyType.TITAN: 16.0, EnemyType.SCUTTLER: 42.0, EnemyType.SOLDIER: 26.0, EnemyType.CASTER: 30.0,
+}
 
 # Melee types walk up to the dome (or the player), stop and swing; damage
 # lands on the impact frame of the "attack" animation. body_offset: how far
@@ -94,7 +97,9 @@ func _ready() -> void:
 				var titan_shape := RectangleShape2D.new()
 				titan_shape.size = Vector2(40, 60)
 				$CollisionShape2D.shape = titan_shape
-				$CollisionShape2D.position.y = -38
+				# enemies stand on real ground now (the old invisible platform sat
+				# 19px higher); shapes moved down so sprites keep their place
+				$CollisionShape2D.position.y = -19
 			EnemyType.SCUTTLER:
 				anim.sprite_frames = _strip_frames("res://assets/sprites/scuttler_walk.png", 44, 36, 6, 14.0)
 				_add_strip_anim(anim.sprite_frames, "pounce", "res://assets/sprites/scuttler_pounce.png", 44, 36, 6, 12.0)
@@ -165,6 +170,10 @@ func _physics_process(delta: float) -> void:
 		velocity.y += GRAVITY * delta
 	else:
 		velocity.y = 0
+	# Walked into a wall (a pit side, a ledge): claw up it, slowly. Pits and
+	# spikes slow enemies down; they don't hold them forever.
+	if is_on_wall() and not _dying:
+		velocity.y = -CLIMB_SPEED.get(enemy_type, 25.0)
 
 	# Melee types walk until something is in reach, then attack
 	if MELEE.has(enemy_type):

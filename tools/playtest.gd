@@ -1421,6 +1421,68 @@ func tapper_rec() -> void:
 	await shot("tapper_depleted")
 
 
+func trap_rec() -> void:
+	# Hopper + plate on the path, spiked pit beyond; a soldier walks into both.
+	main._wave_timer = -9999.0
+	main.get_node("Turret").set_physics_process(false)
+	main.get_node("CanvasModulate").color = Color(0.5, 0.5, 0.58)
+	var tm := tilemap()
+	var shading := get_nodes_in_group("tile_shading")[0]
+	for x in range(94, 98):          # pit: 4 wide, 3 deep, just west of the plate
+		for y in range(6, 9):
+			tm.set_cell(Vector2i(x, y), -1)
+			shading.mark_dirty(Vector2i(x, y))
+	var sp: Node2D = preload("res://scenes/spikes.tscn").instantiate()
+	sp.global_position = tm.to_global(tm.map_to_local(Vector2i(95, 8)))
+	main.add_child(sp)
+	var sp2: Node2D = preload("res://scenes/spikes.tscn").instantiate()
+	sp2.global_position = tm.to_global(tm.map_to_local(Vector2i(96, 8)))
+	main.add_child(sp2)
+	var hop: Node2D = preload("res://scenes/hopper.tscn").instantiate()
+	hop.global_position = Vector2(1680, 22)
+	main.add_child(hop)
+	var plate: Node2D = preload("res://scenes/pressure_plate.tscn").instantiate()
+	plate.global_position = Vector2(1680, 88)
+	main.add_child(plate)
+	var p: CharacterBody2D = main.get_node("Player")
+	p.global_position = Vector2(1300, 60)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.zoom = Vector2(2.6, 2.6)
+	cam.position_smoothing_enabled = false
+	cam.global_position = Vector2(1650, 30)
+	for k in 6:  # load the hopper
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.global_position = Vector2(1676 + (k % 2) * 8, -80 - k * 14)
+		main.add_child(o)
+	await wait(2.5)
+	log_line("hopper holds %d ore, plate linked=%s" % [hop.stored_count(), plate._hopper == hop])
+	var s: Node2D = _spawn(2, Vector2(1790, 76))
+	s.hp = 40
+	var i := 0
+	var dumped_at := -1
+	var min_y := 0.0
+	while i < 120 and is_instance_valid(s):
+		if dumped_at < 0 and hop._open:
+			dumped_at = i
+			log_line("dump at frame %d, soldier hp %d" % [i, s.hp])
+		await _grab(Rect2(Vector2(1500, -40), Vector2(300, 150)), "trap_%03d" % i, -3)
+		await wait(0.05)
+		min_y = maxf(min_y, s.global_position.y)
+		if i % 10 == 0:
+			log_line("  f%d soldier %s floor=%s wall=%s | plate %s overlaps=%s" % [i, s.global_position.round(), s.is_on_floor(), s.is_on_wall(), plate.global_position, plate._area.get_overlapping_bodies().map(func(b): return b.name)])
+		i += 1
+	for k in 16:
+		if not is_instance_valid(s):
+			break
+		await wait(0.5)
+		log_line("  +%.1fs soldier %s wall=%s hp %d" % [k * 0.5, s.global_position.round(), s.is_on_wall(), s.hp])
+	if is_instance_valid(s):
+		log_line("soldier end: hp %d, x %.0f, deepest y %.0f (surface 96), climbed out=%s" % [s.hp, s.global_position.x, min_y, s.global_position.y < 100 and s.global_position.x < 1500])
+	else:
+		log_line("soldier destroyed")
+
+
 func banner() -> void:
 	main._wave_timer = -9999.0
 	await wait(0.8)
