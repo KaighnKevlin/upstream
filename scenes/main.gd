@@ -50,20 +50,14 @@ func _ready() -> void:
 	# Replace dome polygon with pixel sprite
 	if has_node("DomeVisual"):
 		$DomeVisual.visible = false
-	var dome_spr := Sprite2D.new()
-	dome_spr.texture = ObjectSprites.create_dome_texture()
-	dome_spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	dome_spr.scale = Vector2(2.5, 1.5)
-	dome_spr.global_position = Vector2(1200, 72)
-	add_child(dome_spr)
-	_dome_sprite = dome_spr
+	_build_dome()
 
 	# Large light on the dome so surface is always visible
 	var LightTextures := preload("res://scripts/light_textures.gd")
 	var dome_light := PointLight2D.new()
 	dome_light.texture = LightTextures.create_radial_light(256)
 	dome_light.texture_scale = 5.0
-	dome_light.energy = 0.55  # stacks with the moonlight; higher washes sprites out
+	dome_light.energy = 0.4  # stacks with the moonlight; higher washes sprites out
 	dome_light.color = Color(0.9, 0.9, 1.0)
 	dome_light.global_position = Vector2(1200, 20)
 	dome_light.shadow_enabled = true
@@ -89,6 +83,27 @@ func _ready() -> void:
 	_build_mode_label.text = ""
 
 
+
+
+func _build_dome() -> void:
+	# Brass-and-glass observatory (tools/art/gen_dome.py): translucent glass,
+	# brass ribs, riveted plinth with the intake grate over the shaft. The
+	# cannon on the crown is the Turret, moved up there.
+	var root := Node2D.new()
+	root.name = "DomeArt"
+	root.position = Vector2(1200, 96)  # centre of the dome on the ground
+	add_child(root)
+	for spec in [["dome_glass", Vector2(0, -34), 0.45], ["dome_ribs", Vector2(0, -34), 1.0],
+			["dome_base", Vector2(0, -4), 1.0]]:
+		var s := Sprite2D.new()
+		s.texture = load("res://assets/sprites/%s.png" % spec[0])
+		s.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		s.position = spec[1]
+		s.modulate.a = spec[2]
+		root.add_child(s)
+	_dome_sprite = root.get_child(1)  # the ribs flash when the dome is hit
+	_turret.position = Vector2(1200, 36)
+	_turret.z_index = 1
 
 
 func _setup_terrain_visuals() -> void:

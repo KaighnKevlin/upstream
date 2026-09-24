@@ -800,3 +800,23 @@ func loop_rec() -> void:
 	for i in 70:
 		await _grab(Rect2(Vector2(1124, 30), Vector2(200, 420)), "loop_%03d" % i, -2)
 		await wait(0.06)
+
+
+func dome_rec() -> void:
+	# Recording: the dome cannon swivelling onto an incoming wave.
+	var p: CharacterBody2D = main.get_node("Player")
+	main._wave_timer = -9999.0
+	await _build_chain()
+	p.global_position = Vector2(1100, 60)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.zoom = Vector2(2, 2)
+	cam.position_smoothing_enabled = false
+	cam.global_position = Vector2(1300, 40)
+	await wait(4.0)  # let some ammo arrive
+	_spawn(1, Vector2(1560, 76))
+	_spawn(1, Vector2(1600, 76))
+	_spawn(2, Vector2(1640, 76))
+	for i in 90:
+		await _grab(Rect2(Vector2(1100, -40), Vector2(420, 150)), "dome_%03d" % i, -2)
+		await wait(0.08)

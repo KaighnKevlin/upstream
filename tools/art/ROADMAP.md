@@ -37,7 +37,7 @@ bottom of the log.
 - [ ] Player miner: redraw to sit with the clockwork world
 - [x] Ore (3 rock+copper chunks, tumble), brass ingot, spring trampoline
 - [x] Miner drill rig (4-frame pump, steam puff), arc smelter (brass electrodes + live lightning)
-- [ ] Dome (brass and glass), turret, receiver
+- [x] Dome observatory: glass (45% alpha) + brass ribs + riveted plinth with intake grate; cannon on the crown swivels to aim; ammo gauge strip on the rail
 - [ ] HUD (brass frame, pixel font)
 
 ## Log
@@ -59,3 +59,6 @@ bottom of the log.
   Next: miner building (purple block), laser, dome, receiver bar.
 - pass 6: gen_machines.py (miner, electrode). Laser is now an arc: Line2D bolt + glow
   re-rolled every 40-90ms, cyan light. Next: dome, turret, receiver, then the player.
+- pass 7: gen_dome.py. Turret moved onto the crown (1200, 36); receiver sprite hidden,
+  the plinth grate stands in for it. Dome light 0.55 -> 0.4. Next: the player miner,
+  then the HUD (brass frame, pixel font), then the upstream lift shaft art.
