@@ -57,6 +57,7 @@ bottom of the log.
 - [x] Prospector air poses: rise (arm up, knees tucked), fall x2 (arms out, flapping), land crouch + dust on hard landings
 - [x] Smelter strike: the arc snaps onto the ore from both electrodes, thickens and whitens, light flares; white flash + molten drips
 - [x] Ornithopter (new enemy, from wave 3): brass flier, membrane wings (6-frame wingbeat), gear drive, bomb clamp; drops fused bombs on the dome each pass
+- [x] Ornithopter crash: wings sputter, smoke trail, noses over into a dive, bursts into gears on impact
 - [x] HUD: own 5x7 proportional pixel font (gen_font.py -> FontFile at runtime, scripts/pixel_font.gd), brass 9-slice panels, rimmed bars
 
 ## Log
@@ -196,4 +197,8 @@ Lights are additive over a 0.08 CanvasModulate and the framebuffer clips at 1.0,
 - scenes/bomb.gd (new, code-only Node2D): gravity, bursts on the dome's glass (rough ellipse over DomeZone -> damage_dome) or on terrain.
 - main.gd: fliers = (wave-1)/2 extra per wave (wave 3: 1, wave 5: 2...), added to the banner roster; waves 1-2 unchanged.
 - playtest: flier_rec, wave3_check.
+
+### Pass 32 — ornithopter crash
+- enemy.gd _flier_crash(): wing anim at 0.35x, ballistic fall (gravity 420, keeps 0.8 of its speed), sprite rotation follows the velocity (nose-down), smoke puff every 50 ms, stops on the first solid tile (or off the map / 4 s) and bursts: sparks, dust, debris, shake.
+- playtest: flier_crash_rec.
 

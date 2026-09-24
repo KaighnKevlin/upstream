@@ -243,6 +243,9 @@ func _die() -> void:
 	if enemy_type == EnemyType.CASTER and $AnimatedSprite2D.sprite_frames.has_animation("death"):
 		_caster_die()
 		return
+	if enemy_type == EnemyType.ORNITHOPTER:
+		_flier_crash()
+		return
 	var body_y := -10.0
 	# the mechanism comes apart
 	var bits := {EnemyType.SCUTTLER: 5, EnemyType.SOLDIER: 7, EnemyType.CASTER: 6}
@@ -309,6 +312,38 @@ func _caster_die() -> void:
 	var tween := create_tween()
 	tween.tween_property(sprite, "modulate:a", 0.0, 0.5)
 	tween.tween_callback(queue_free)
+
+
+## Shot down: wings stall, it trails smoke, noses over and spirals into the
+## ground (or off the map), then bursts into gears.
+func _flier_crash() -> void:
+	var sprite := $AnimatedSprite2D as AnimatedSprite2D
+	sprite.speed_scale = 0.35  # wings sputter
+	FX.burst(get_parent(), global_position, Color(1.0, 0.75, 0.35), 10, 110.0, 0.3, 1.5)
+	var vel := Vector2(direction * speed * 0.8, -40.0)
+	var tm := get_tree().current_scene.get_node_or_null("TileMapLayer") as TileMapLayer
+	var smoke_t := 0.0
+	var t := 0.0
+	while t < 4.0:
+		var dt := get_physics_process_delta_time()
+		await get_tree().physics_frame
+		t += dt
+		vel.y += 420.0 * dt
+		global_position += vel * dt
+		# nose over toward the direction of travel
+		sprite.rotation = lerp_angle(sprite.rotation, vel.angle() if direction > 0 else vel.angle() - PI, 0.12)
+		smoke_t -= dt
+		if smoke_t <= 0:
+			smoke_t = 0.05
+			FX.burst(get_parent(), global_position, Color(0.35, 0.33, 0.32, 0.7), 1, 10.0, 0.7, 3.0, -30.0)
+		var hit_ground := tm and tm.get_cell_source_id(tm.local_to_map(tm.to_local(global_position + Vector2(0, 6)))) != -1
+		if hit_ground or global_position.y > 1400:
+			break
+	FX.burst(get_parent(), global_position, Color(1.0, 0.75, 0.35), 16, 150.0, 0.4, 2.0)
+	FX.burst(get_parent(), global_position, Color(0.55, 0.45, 0.35), 12, 90.0, 0.6, 2.5)
+	FX.debris(get_parent(), global_position + Vector2(0, -6), 6, 180.0, false)
+	FX.shake(self, 3.0, 0.15)
+	queue_free()
 
 
 ## Crouch, leap in an arc onto the dome's flank, overload and burst.

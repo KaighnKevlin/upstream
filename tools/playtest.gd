@@ -1222,6 +1222,25 @@ func wave3_check() -> void:
 	await shot("wave3")
 
 
+func flier_crash_rec() -> void:
+	# Recording: an ornithopter is shot down and crashes.
+	main._wave_timer = -9999.0
+	main.get_node("Turret").set_physics_process(false)
+	main.get_node("Player").global_position = Vector2(1100, 60)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.zoom = Vector2(3, 3)
+	cam.position_smoothing_enabled = false
+	cam.global_position = Vector2(1560, 10)
+	await wait(0.5)
+	var f: Node2D = _spawn(4, Vector2(1680, -30))
+	for i in 60:
+		if i == 12 and is_instance_valid(f):
+			f.take_damage(99)
+		await _grab(Rect2(Vector2(1440, -80), Vector2(240, 180)), "fc_%03d" % i, -3)
+		await wait(0.03)
+
+
 func banner() -> void:
 	main._wave_timer = -9999.0
 	await wait(0.8)
