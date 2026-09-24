@@ -63,7 +63,7 @@ func _ready() -> void:
 	var dome_light := PointLight2D.new()
 	dome_light.texture = LightTextures.create_radial_light(256)
 	dome_light.texture_scale = 5.0
-	dome_light.energy = 1.0
+	dome_light.energy = 0.55  # stacks with the moonlight; higher washes sprites out
 	dome_light.color = Color(0.9, 0.9, 1.0)
 	dome_light.global_position = Vector2(1200, 20)
 	dome_light.shadow_enabled = true
@@ -134,7 +134,7 @@ func _add_moonlight() -> void:
 	moon.name = "Moonlight"
 	moon.texture = tex
 	moon.texture_scale = SCALE
-	moon.energy = 0.75
+	moon.energy = 0.6
 	moon.color = Color(0.7, 0.78, 1.0)
 	moon.global_position = Vector2(WorldGen.WORLD_WIDTH * WorldGen.TILE_SIZE / 2.0, (TOP + BOTTOM) / 2.0)
 	add_child(moon)

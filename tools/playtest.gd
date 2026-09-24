@@ -51,6 +51,9 @@ func wait(sec: float) -> void:
 
 
 func shot(label: String) -> void:
+	if DisplayServer.get_name() == "headless":
+		log_line("shot %s (skipped, headless)  %s" % [label, status()])
+		return
 	var ts := Engine.time_scale
 	Engine.time_scale = 0.0  # freeze the game while grabbing
 	await process_frame
@@ -581,3 +584,41 @@ func fx() -> void:
 	p.global_position = Vector2(1250, 60)
 	await wait(2.0)
 	await shot("fx_receiver")
+
+
+func titan() -> void:
+	# A titan walks in, reaches the dome and chops. Burst-captures frames.
+	var p: CharacterBody2D = main.get_node("Player")
+	main._wave_timer = -9999.0
+	main.get_node("Turret").set_physics_process(false)  # let it live
+	p.global_position = Vector2(1200, 150)
+	zoom(2.0)
+	var t := _spawn(0, Vector2(1420, 40))
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	# frame the dome's right side
+	cam.top_level = true
+	cam.global_position = Vector2(1300, 30)
+	cam.reset_smoothing()
+	await wait(1.2)
+	for i in 8:
+		await shot("titan_walk_%d" % i)
+		await wait(0.12)
+	var hp0: int = main.dome_hp
+	var chops := 0
+	var dome_log := []
+	while chops < 2 and is_instance_valid(t):
+		await wait(0.05)
+		var anim: AnimatedSprite2D = t.get_node("AnimatedSprite2D")
+		if anim.animation == "attack" and anim.is_playing():
+			chops += 1
+			for f in 9:
+				await shot("titan_chop%d_f%d" % [chops, anim.frame])
+				await wait(0.085)
+			dome_log.append(main.dome_hp)
+			await wait(0.3)
+	log_line("titan at x=%.0f  dome %d -> %s after %d chops" % [t.global_position.x, hp0, dome_log, chops])
+	# chop the player too
+	p.global_position = Vector2(t.global_position.x - 40, 60)
+	var php: int = p.hp
+	await wait(2.5)
+	log_line("player next to titan: hp %d -> %d" % [php, p.hp])

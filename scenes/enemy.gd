@@ -30,11 +30,25 @@ const DEATH_COLORS := {
 
 var _dying := false
 
+# Titan: walks up to the dome (or the player) and chops with its axe; damage
+# lands on the impact frame of the attack animation.
+const TITAN_CHOP_DAMAGE := 12
+const TITAN_CHOP_COOLDOWN := 1.6
+const TITAN_REACH_DOME := 105.0
+const TITAN_REACH_PLAYER := 58.0
+const TITAN_IMPACT_FRAME := 5
+# Frames are 120px wide with the body 12px left of centre, leaving room for
+# the axe in front (tools/art/gen_titan.py).
+const TITAN_BODY_OFFSET := 12.0
+var _facing := -1.0
+var _chop_cooldown := 0.0
+var _chop_target: Node2D
+
 var _bullet_scene: PackedScene = preload("res://scenes/enemy_bullet.tscn")
 
 # Stats per type: [speed, hp, damage, scale]
 const TYPE_STATS := {
-	EnemyType.TITAN:    [25.0,  15, 30, 1.0],  # slow, tanky, hard-hitting, already 64x96
+	EnemyType.TITAN:    [25.0,  15, 30, 1.0],  # slow, tanky; chops for TITAN_CHOP_DAMAGE
 	EnemyType.GOBLIN:   [100.0, 2,  5,  1.8],
 	EnemyType.SKELETON: [30.0,  8,  20, 2.2],
 	EnemyType.WIZARD:   [35.0,  4,  0,  2.0],
@@ -62,8 +76,8 @@ func _ready() -> void:
 		match enemy_type:
 			EnemyType.TITAN:
 				anim.sprite_frames = _create_titan_frames()
-				anim.offset.y = -34
-				anim.flip_h = true
+				anim.offset.y = -49
+				anim.frame_changed.connect(_on_titan_frame)
 				# Bigger collision box for titan (new shape, don't modify shared one)
 				var titan_shape := RectangleShape2D.new()
 				titan_shape.size = Vector2(40, 60)
@@ -86,6 +100,12 @@ func _physics_process(delta: float) -> void:
 	else:
 		velocity.y = 0
 
+	# Titan walks until something is in axe reach, then chops
+	if enemy_type == EnemyType.TITAN:
+		_titan_process(delta)
+		move_and_slide()
+		return
+
 	# Wizard stops at range and shoots
 	if enemy_type == EnemyType.WIZARD:
 		var target := _find_nearest_target()
@@ -105,10 +125,7 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 	if has_node("AnimatedSprite2D"):
-		if enemy_type == EnemyType.TITAN:
-			$AnimatedSprite2D.flip_h = direction < 0  # titan sprite faces right by default
-		else:
-			$AnimatedSprite2D.flip_h = direction > 0
+		$AnimatedSprite2D.flip_h = direction > 0
 		if enemy_type == EnemyType.WIZARD and _stopped:
 			$AnimatedSprite2D.play("idle")
 		elif is_on_floor() and abs(velocity.x) > 5:
@@ -201,7 +218,85 @@ func _shoot_at(target: Node2D) -> void:
 		$AnimatedSprite2D.play("attack")
 
 
+func _titan_process(delta: float) -> void:
+	var anim := $AnimatedSprite2D as AnimatedSprite2D
+	_chop_cooldown -= delta
+	var swinging := anim.animation == "attack" and anim.is_playing()
+	var target := _titan_target()
+	if swinging:
+		velocity.x = 0
+	elif target:
+		velocity.x = 0
+		_facing = signf(target.global_position.x - global_position.x)
+		if _chop_cooldown <= 0:
+			_chop_target = target
+			_chop_cooldown = TITAN_CHOP_COOLDOWN
+			anim.play("attack")
+		else:
+			anim.play("idle")
+	else:
+		velocity.x = speed * direction
+		_facing = signf(direction)
+		anim.play("walk")
+	# sprite faces right; keep the body (not the frame centre) on the origin
+	anim.flip_h = _facing < 0
+	anim.offset.x = TITAN_BODY_OFFSET if _facing > 0 else -TITAN_BODY_OFFSET
+
+
+func _titan_target() -> Node2D:
+	var scene := get_tree().current_scene
+	var player := scene.get_node_or_null("Player") as Node2D
+	if player and absf(player.global_position.x - global_position.x) < TITAN_REACH_PLAYER \
+			and absf(player.global_position.y - global_position.y) < 60:
+		return player
+	var dome := scene.get_node_or_null("DomeZone") as Node2D
+	if dome and absf(dome.global_position.x - global_position.x) < TITAN_REACH_DOME:
+		return dome
+	return null
+
+
+func _on_titan_frame() -> void:
+	var anim := $AnimatedSprite2D as AnimatedSprite2D
+	if _dying or anim.animation != "attack" or anim.frame != TITAN_IMPACT_FRAME:
+		return
+	# the blade hits the ground ~40px in front of the body
+	var hit := global_position + Vector2(_facing * 42, 10)
+	FX.burst(get_parent(), hit, Color(0.55, 0.45, 0.35), 16, 120.0, 0.5, 2.5)
+	FX.burst(get_parent(), hit + Vector2(0, -6), Color(0.85, 0.95, 1.0), 6, 160.0, 0.2, 1.5, 0.0)
+	FX.shake(self, 5.0, 0.25)
+	SFX.play(self, SFX.sfx_mine_break())
+	if not is_instance_valid(_chop_target):
+		return
+	if _chop_target.has_method("take_damage"):
+		_chop_target.take_damage(TITAN_CHOP_DAMAGE)
+	elif get_tree().current_scene.has_method("damage_dome"):
+		get_tree().current_scene.damage_dome(TITAN_CHOP_DAMAGE)
+
+
 func _create_titan_frames() -> SpriteFrames:
+	var walk := load("res://assets/sprites/titan_walk.png") as Texture2D
+	var attack := load("res://assets/sprites/titan_attack.png") as Texture2D
+	if walk == null or attack == null:
+		return _create_titan_frames_old()
+	var sf := SpriteFrames.new()
+	sf.remove_animation("default")
+	var fw := 120
+	var fh := 120
+	for spec in [["walk", walk, 8, 8.0, true], ["idle", walk, 1, 4.0, true],
+			["attack", attack, 8, 11.0, false]]:
+		sf.add_animation(spec[0])
+		sf.set_animation_speed(spec[0], spec[3])
+		sf.set_animation_loop(spec[0], spec[4])
+		for i in spec[2]:
+			var atlas := AtlasTexture.new()
+			atlas.atlas = spec[1]
+			atlas.region = Rect2(i * fw, 0, fw, fh)
+			atlas.filter_clip = true
+			sf.add_frame(spec[0], atlas)
+	return sf
+
+
+func _create_titan_frames_old() -> SpriteFrames:
 	var tex := load("res://assets/sprites/titan-walking-sheet.png") as Texture2D
 	if tex == null:
 		return SpriteLoader.create_slime_frames()
