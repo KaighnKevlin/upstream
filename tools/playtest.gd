@@ -1188,6 +1188,40 @@ func smelt_rec() -> void:
 		await wait(0.02)
 
 
+func flier_rec() -> void:
+	# Recording: an ornithopter flies over the dome, bombs it, comes about.
+	main._wave_timer = -9999.0
+	main.get_node("Turret").set_physics_process(false)
+	var p: CharacterBody2D = main.get_node("Player")
+	p.global_position = Vector2(1100, 60)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.zoom = Vector2(2, 2)
+	cam.position_smoothing_enabled = false
+	cam.global_position = Vector2(1240, 10)
+	await wait(0.5)
+	var hp0: int = main.dome_hp
+	var f: Node2D = _spawn(4, Vector2(1420, -40))
+	for i in 110:
+		await _grab(Rect2(Vector2(1060, -80), Vector2(380, 180)), "fl_%03d" % i, -2)
+		await wait(0.04)
+	log_line("flier: dome hp %d -> %d, flier alive=%s" % [hp0, main.dome_hp, is_instance_valid(f)])
+
+
+func wave3_check() -> void:
+	# Force waves 1-3 quickly and report the roster, to catch spawn errors.
+	main._wave_timer = -9999.0
+	for w in 3:
+		await tap(KEY_P)
+		await wait(0.5)
+	var counts := {}
+	for e in get_nodes_in_group("enemies"):
+		counts[e.enemy_type] = counts.get(e.enemy_type, 0) + 1
+	log_line("after 3 waves: %s (4 = ornithopter)" % [counts])
+	await wait(4.0)
+	await shot("wave3")
+
+
 func banner() -> void:
 	main._wave_timer = -9999.0
 	await wait(0.8)

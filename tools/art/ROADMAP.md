@@ -56,6 +56,7 @@ bottom of the log.
 - [x] Drill rig v2 (8 frames, 24x28): flywheel + crank + piston, sweeping pressure gauge, funnel that pumps
 - [x] Prospector air poses: rise (arm up, knees tucked), fall x2 (arms out, flapping), land crouch + dust on hard landings
 - [x] Smelter strike: the arc snaps onto the ore from both electrodes, thickens and whitens, light flares; white flash + molten drips
+- [x] Ornithopter (new enemy, from wave 3): brass flier, membrane wings (6-frame wingbeat), gear drive, bomb clamp; drops fused bombs on the dome each pass
 - [x] HUD: own 5x7 proportional pixel font (gen_font.py -> FontFile at runtime, scripts/pixel_font.gd), brass 9-slice panels, rimmed bars
 
 ## Log
@@ -187,4 +188,12 @@ Lights are additive over a 0.08 CanvasModulate and the framebuffer clips at 1.0,
 ### Pass 30 — smelter strike
 - laser_smelter.gd: STRIKE_TIME 0.16 s after ore enters: _reroll_arc draws two jagged legs meeting at the ore (_jag helper), re-rolled every 20-40 ms; bolt width 1.5->3, glow 6->12, colour to white-hot, light 0.45 -> 1.35 (a transient flare, allowed by the LIGHT BUDGET). White flash burst + orange molten drips with gravity replace the single spark burst.
 - playtest: smelt_rec.
+
+### Pass 31 — ornithopter
+- clockwork.py: Figure.poly(points, mat, shade) flat polygon primitive (membranes, fins).
+- gen_ornithopter.py (new): ornithopter.png 6x 48x32 (body centre (22,18), wing tip swings +/-13px, body lifts on the downstroke), bomb.png 2x 10x12 (fuse spark flicker).
+- enemy.gd: EnemyType.ORNITHOPTER [speed 55, hp 3, dmg 6/bomb]; collision off, _flyer_process(): holds ~FLY_ALTITUDE (-30) with a slow bob, drops a bomb within 26px of the dome (2.4 s cooldown), comes about 110px past it. Turret and bullets target it like any enemy.
+- scenes/bomb.gd (new, code-only Node2D): gravity, bursts on the dome's glass (rough ellipse over DomeZone -> damage_dome) or on terrain.
+- main.gd: fliers = (wave-1)/2 extra per wave (wave 3: 1, wave 5: 2...), added to the banner roster; waves 1-2 unchanged.
+- playtest: flier_rec, wave3_check.
 

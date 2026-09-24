@@ -1,6 +1,6 @@
 extends CharacterBody2D
 
-enum EnemyType { TITAN, SCUTTLER, SOLDIER, CASTER }
+enum EnemyType { TITAN, SCUTTLER, SOLDIER, CASTER, ORNITHOPTER }
 
 @export var enemy_type: EnemyType = EnemyType.TITAN
 @export var speed: float = 60.0
@@ -26,6 +26,7 @@ const DEATH_COLORS := {
 	EnemyType.SCUTTLER: Color(0.72, 0.58, 0.35),
 	EnemyType.SOLDIER: Color(0.92, 0.9, 0.96),
 	EnemyType.CASTER: Color(0.55, 0.85, 0.9),
+	EnemyType.ORNITHOPTER: Color(0.72, 0.58, 0.35),
 }
 
 var _dying := false
@@ -61,6 +62,7 @@ const TYPE_STATS := {
 	EnemyType.SCUTTLER: [100.0, 2,  5,  1.0],  # small, fast clockwork beetle
 	EnemyType.SOLDIER:  [30.0,  8,  20, 1.0],  # shield-and-spear automaton
 	EnemyType.CASTER:   [35.0,  4,  0,  1.0],  # hovering tesla sentinel, shoots bolts
+	EnemyType.ORNITHOPTER: [55.0, 3, 6, 1.0],  # flier; damage is per bomb
 }
 
 
@@ -118,10 +120,47 @@ func _ready() -> void:
 				glow.energy = 0.45
 				glow.position = Vector2(0, -20)
 				add_child(glow)
+			EnemyType.ORNITHOPTER:
+				anim.sprite_frames = _strip_frames("res://assets/sprites/ornithopter.png", 48, 32, 6, 12.0)
+				anim.offset = Vector2(2, 0)
+				$CollisionShape2D.set_deferred("disabled", true)  # flies over everything
+				_fly_y = FLY_ALTITUDE + randf_range(-12, 12)
 		anim.play("walk")
 
 
+# Ornithopter: flies at altitude toward the dome, drops a bomb each pass,
+# turns round beyond it and comes back.
+const FLY_ALTITUDE := -30.0
+const BOMB_COOLDOWN := 2.4
+var _fly_y := FLY_ALTITUDE
+var _fly_t := 0.0
+var _bomb_cooldown := 0.0
+
+
+func _flyer_process(delta: float) -> void:
+	_fly_t += delta
+	_bomb_cooldown -= delta
+	var dome := get_tree().current_scene.get_node_or_null("DomeZone") as Node2D
+	if dome:
+		var dx := global_position.x - dome.global_position.x
+		if dx * direction > 110:  # overshot the dome: come about
+			direction = -direction
+		if absf(dx) < 26 and _bomb_cooldown <= 0:
+			_bomb_cooldown = BOMB_COOLDOWN
+			var b: Node2D = preload("res://scenes/bomb.gd").new()
+			b.global_position = global_position + Vector2(0, 9)
+			b.velocity = Vector2(direction * speed * 0.6, 0)
+			b.damage = damage
+			get_parent().add_child(b)
+	global_position.x += direction * speed * delta
+	global_position.y = lerpf(global_position.y, _fly_y + sin(_fly_t * 2.2) * 5.0, 0.05)
+	$AnimatedSprite2D.flip_h = direction < 0
+
+
 func _physics_process(delta: float) -> void:
+	if enemy_type == EnemyType.ORNITHOPTER:
+		_flyer_process(delta)
+		return
 	if not is_on_floor():
 		velocity.y += GRAVITY * delta
 	else:

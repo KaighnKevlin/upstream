@@ -155,6 +155,23 @@ class Figure:
         r = math.hypot(hw, hh)
         self.prims.append((z, fn, (cx - r, cy - r, cx + r, cy + r)))
 
+    def poly(self, pts, mat, z=0, shade=0.45, grit=0.05):
+        """Flat filled polygon (convex or not), one tone of `mat` plus grit.
+        For membranes, panels and other flat pieces seen edge-on-ish."""
+        xs = [p[0] for p in pts]; ys = [p[1] for p in pts]
+
+        def fn(x, y):
+            inside = False
+            j = len(pts) - 1
+            for i in range(len(pts)):
+                xi, yi = pts[i]; xj, yj = pts[j]
+                if (yi > y) != (yj > y) and x < (xj - xi) * (y - yi) / ((yj - yi) or 1e-9) + xi:
+                    inside = not inside
+                j = i
+            if not inside: return None
+            return _ramp(mat, shade + (_hash(int(x * 3), int(y * 3)) - 0.5) * 2 * grit)
+        self.prims.append((z, fn, (min(xs), min(ys), max(xs), max(ys))))
+
     def render(self, w, h, origin, outline=True, extra=()):
         """-> h rows of w RGBA pixels, palette-mapped. origin: where figure
         (0, 0) lands in the output (e.g. feet at bottom-centre). extra: hex

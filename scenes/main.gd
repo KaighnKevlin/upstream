@@ -35,7 +35,7 @@ var _arrow_count: Label
 var _arrow_t := 0.0
 var _game_over_panel: NinePatchRect
 
-const ENEMY_NAMES := ["titan", "scuttler", "soldier", "caster"]
+const ENEMY_NAMES := ["titan", "scuttler", "soldier", "caster", "ornithopter"]
 
 @onready var _receiver: Area2D = $Receiver
 @onready var _turret: Node2D = $Turret
@@ -384,6 +384,10 @@ func _spawn_wave() -> void:
 	for i in count:
 		var t := i if i < 4 else i % 4
 		kinds[t] = kinds.get(t, 0) + 1
+	# fliers join from wave 3: one, then one more every other wave
+	var fliers := maxi(0, (wave_number - 1) / 2)
+	if fliers > 0:
+		kinds[4] = fliers
 	var parts := []
 	for t in kinds:
 		parts.append("%d %s%s" % [kinds[t], ENEMY_NAMES[t], "s" if kinds[t] > 1 else ""])
@@ -409,6 +413,14 @@ func _spawn_wave() -> void:
 		enemy.global_position = Vector2(spawn_x - i * 20, surface_y)
 		enemy.direction = -1.0
 		add_child(enemy)
+
+	for k in fliers:
+		var flier := _enemy_scene.instantiate()
+		flier.add_to_group("enemies")
+		flier.setup(4)  # ORNITHOPTER
+		flier.global_position = Vector2(spawn_x + 40 + k * 70, -40)
+		flier.direction = -1.0
+		add_child(flier)
 
 
 func _on_enemy_reached_dome(body: Node2D) -> void:
