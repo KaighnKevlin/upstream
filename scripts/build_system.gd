@@ -83,11 +83,15 @@ func _can_place(pos: Vector2) -> bool:
 	var tilemap := _get_tilemap()
 
 	if current_build == BuildType.MINER:
-		# Miners: must be on ore
+		# Tappers: on an ore block whose top face is dug out (the rig sits above it)
 		if tilemap:
 			var tile_pos := tilemap.local_to_map(tilemap.to_local(pos))
+			if tilemap.get_cell_source_id(tile_pos) == -1:
+				return false
 			var atlas_coords := tilemap.get_cell_atlas_coords(tile_pos)
 			if atlas_coords.x != 2 and atlas_coords.x != 3:
+				return false
+			if tilemap.get_cell_source_id(tile_pos + Vector2i(0, -1)) != -1:
 				return false
 	else:
 		# Trampolines and lasers: must be in empty space (no solid tile)

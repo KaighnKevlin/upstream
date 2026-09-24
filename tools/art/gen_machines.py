@@ -68,6 +68,63 @@ def miner2(i, n=8):
     return fig.render(MW, MH, MO)
 
 
+TW, TH, TO = 40, 46, (20, 30)   # vein tapper: figure (0,0) = top face of the ore cell
+
+
+def tapper(i, n=8):
+    """Vein tapper: bores a spinning drill screw down into the ore vein,
+    a flywheel and twin pistons pump, a mortar ring on top (the barrel is
+    a separate sprite so the game can aim it)."""
+    a = i / n * 2 * math.pi
+    fig = Figure()
+    # drill screw into the cell below: helical bands scroll down as it turns
+    fig.capsule((0, 0), (0, 13), 2.4, STEEL, z=0)
+    for k in range(-1, 5):
+        y = k * 3.2 + (i % 4) * 0.8
+        if 0 <= y <= 13:
+            fig.capsule((-2.4, y), (2.4, y + 1.6), 0.5, DARK, z=0.1)
+    fig.capsule((0, 13), (0, 15.5), 1.2, STEEL, z=0.2)                     # bit tip
+    # flange clamped onto the rock
+    fig.box((-12, -3, 12, 1.5), DARK, z=1, bevel=1.0)
+    for x in (-10, -5, 5, 10):
+        fig.sphere((x, -0.8), 0.8, STEEL, z=1.1)
+    # twin pistons, out of phase
+    for side, ph in ((-1, 0.0), (1, math.pi)):
+        ext = 2.2 * math.sin(a + ph)
+        fig.capsule((side * 11, -3), (side * 11, -12 - ext), 1.1, STEEL, z=1.2)
+        fig.box((side * 11 - 1.8, -13.5 - ext, side * 11 + 1.8, -11.5 - ext), BRONZE, z=1.3, bevel=0.5)
+    # housing
+    fig.box((-9, -18, 9, -3), BRONZE, z=2, bevel=1.8)
+    fig.box((-9, -19.5, 9, -17), DARK, z=2.1, bevel=0.6)
+    # flywheel window
+    fw = (-3.5, -9.5)
+    fig.disc(fw, 4.6, DARK, z=2.2)
+    fig.gear(fw, 4.0, 9, math.degrees(a) * 1.5, STEEL, z=2.3, hub_mat=BRONZE)
+    # pressure gauge, needle sweeping
+    g = (4.5, -10)
+    fig.disc(g, 2.4, BRONZE, z=2.4)
+    fig.disc(g, 1.6, [(173, 198, 184)] * 2, z=2.5)
+    t = math.radians(200 + 70 * (1 + math.sin(a)))
+    fig.capsule(g, (g[0] + 1.4 * math.cos(t), g[1] + 1.4 * math.sin(t)), 0.3, DARK, z=2.6)
+    fig.sphere((4.5, -5.5), 0.8, GLOW, z=2.6, emissive=True)                # status lamp
+    # turret ring the mortar sits in
+    fig.ellipsoid((0, -20.5), (6, 2.2), STEEL, z=3)
+    fig.ellipsoid((0, -21), (3.6, 1.2), DARK, z=3.1, grit=0.0)
+    return fig.render(TW, TH, TO)
+
+
+def mortar():
+    """Tapper barrel, pointing +x, pivot at the breech (3, 5)."""
+    fig = Figure()
+    fig.sphere((1, 0), 3.4, BRONZE, z=0)                                   # breech ball
+    fig.capsule((1, 0), (14, 0), 2.6, BRONZE, z=1)
+    for x in (6, 10):
+        fig.ellipsoid((x, 0), (0.8, 3.1), STEEL, z=1.5)
+    fig.ellipsoid((15.5, 0), (1.6, 3.8), STEEL, z=2)                       # flared mouth
+    fig.ellipsoid((16.6, 0), (0.8, 2.4), DARK, z=2.1, grit=0.0)
+    return fig.render(22, 10, (3, 5))
+
+
 def electrode():
     fig = Figure()
     fig.box((-7, -3.5, 0, 3.5), BRONZE, z=0, bevel=1.4)                  # housing
@@ -85,11 +142,16 @@ def main():
     frames = [miner(i) for i in range(4)]
     rows = [sum((f[y] for f in frames), []) for y in range(22)]
     write_png(SPR + 'miner.png', 80, 22, rows)
+    tap = [tapper(i) for i in range(8)]
+    write_png(SPR + 'tapper.png', TW * 8, TH, [sum((f[y] for f in tap), []) for y in range(TH)])
+    write_png(SPR + 'tapper_mortar.png', 22, 10, mortar())
     rig = [miner2(i) for i in range(8)]
     write_png(SPR + 'miner_rig.png', MW * 8, MH, [sum((f[y] for f in rig), []) for y in range(MH)])
     e = electrode(); write_png(SPR + 'electrode.png', 16, 20, e)
     print('wrote miner.png, electrode.png')
     if len(sys.argv) > 1:
+        big = side_by_side(tap + [mortar()], 6)
+        write_png(sys.argv[1] + '/tapper_preview.png', len(big[0]), len(big), big)
         big = side_by_side(rig, 10)
         write_png(sys.argv[1] + '/rig_preview.png', len(big[0]), len(big), big)
         big = side_by_side(frames + [e], 10)

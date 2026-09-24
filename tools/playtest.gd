@@ -1366,6 +1366,61 @@ func ledges() -> void:
 	log_line("wrote sounds to " + dir)
 
 
+func tapper_rec() -> void:
+	# Vein tapper: bolt onto a vein, aim, record some shots, then drain it fast.
+	main._wave_timer = -9999.0
+	main.get_node("CanvasModulate").color = Color(0.55, 0.55, 0.6)
+	var tm := tilemap()
+	var shading := get_nodes_in_group("tile_shading")[0]
+	var target := Vector2i(-1, -1)
+	for y in range(9, 40):
+		for x in range(50, 100):
+			var c := Vector2i(x, y)
+			if tm.get_cell_source_id(c) != -1 and tm.get_cell_atlas_coords(c).x in [2, 3]:
+				target = c
+				break
+		if target.x >= 0:
+			break
+	log_line("vein block at %s" % target)
+	for dx in range(-3, 4):
+		for dy in range(1, 6):
+			var c := target + Vector2i(dx, -dy)
+			tm.set_cell(c, -1)
+			shading.mark_dirty(c)
+	var m: Node2D = preload("res://scenes/miner.tscn").instantiate()
+	m.global_position = tm.to_global(tm.map_to_local(target))
+	m.eject_angle = 35.0
+	m.eject_force = 330.0
+	main.add_child(m)
+	await wait(0.2)
+	log_line("tapper vein: %d blocks, %d ore" % [m._cells.size(), m._ore_remaining()])
+	var p: CharacterBody2D = main.get_node("Player")
+	p.global_position = m.global_position + Vector2(-40, -10)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.zoom = Vector2(3.5, 3.5)
+	cam.position_smoothing_enabled = false
+	cam.global_position = m.global_position + Vector2(10, -30)
+	m._set_selected(true)
+	await wait(0.3)
+	await shot("tapper_selected")
+	m._set_selected(false)
+	for i in 50:
+		await _grab(Rect2(m.global_position + Vector2(-90, -100), Vector2(180, 130)), "tap_%03d" % i, -4)
+		await wait(0.04)
+	m.eject_interval = 0.05
+	var t := 0.0
+	while not m._depleted and t < 20.0:
+		await wait(0.2)
+		t += 0.2
+	var ore_left := 0
+	for c in m._cells:
+		if tm.get_cell_atlas_coords(c).x in [2, 3]:
+			ore_left += 1
+	log_line("after draining: depleted=%s, ore blocks still ore=%d of %d" % [m._depleted, ore_left, m._cells.size()])
+	await shot("tapper_depleted")
+
+
 func banner() -> void:
 	main._wave_timer = -9999.0
 	await wait(0.8)
