@@ -52,35 +52,6 @@ static func create_receiver_texture() -> ImageTexture:
 	return ImageTexture.create_from_image(img)
 
 
-static func create_miner_texture() -> ImageTexture:
-	var img := Image.create(14, 14, false, Image.FORMAT_RGBA8)
-	var blue := Color(0.3, 0.3, 0.75)
-	var blue_dk := Color(0.2, 0.2, 0.55)
-	var blue_hi := Color(0.4, 0.4, 0.85)
-	var metal := Color(0.5, 0.5, 0.55)
-	var green := Color(0.3, 0.8, 0.3)
-
-	# Body
-	for y in range(3, 14):
-		for x in range(2, 12):
-			img.set_pixel(x, y, blue if (x + y) % 3 != 0 else blue_dk)
-
-	# Top highlight
-	for x in range(3, 11):
-		img.set_pixel(x, 3, blue_hi)
-
-	# Nozzle
-	for y in range(0, 4):
-		img.set_pixel(6, y, metal)
-		img.set_pixel(7, y, metal)
-
-	# Status light
-	img.set_pixel(6, 8, green)
-	img.set_pixel(7, 8, green)
-
-	return ImageTexture.create_from_image(img)
-
-
 static func create_dome_texture() -> ImageTexture:
 	var img := Image.create(64, 24, false, Image.FORMAT_RGBA8)
 	var dome_color := Color(0.25, 0.35, 0.5)

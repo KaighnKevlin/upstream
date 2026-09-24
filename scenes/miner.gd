@@ -1,7 +1,6 @@
 extends StaticBody2D
 
 const LightTextures = preload("res://scripts/light_textures.gd")
-const ObjectSprites = preload("res://scripts/object_sprites.gd")
 
 ## Angle of ore ejection in degrees (0 = straight up, positive = rightward).
 @export_range(-60, 60, 1) var eject_angle: float = 0.0
@@ -14,6 +13,10 @@ const ObjectSprites = preload("res://scripts/object_sprites.gd")
 
 var _ore_scene: PackedScene = preload("res://scenes/ore.tscn")
 var _timer: float = 0.0
+var _anim_t := 0.0
+var _spr: Sprite2D
+
+const FX = preload("res://scripts/fx.gd")
 
 
 func _ready() -> void:
@@ -24,10 +27,12 @@ func _ready() -> void:
 		$Nozzle.visible = false
 	if has_node("Light"):
 		$Light.visible = false
-	var spr := Sprite2D.new()
-	spr.texture = ObjectSprites.create_miner_texture()
-	spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	add_child(spr)
+	# clockwork drill rig, nozzle pumping (tools/art/gen_machines.py)
+	_spr = Sprite2D.new()
+	_spr.texture = preload("res://assets/sprites/miner.png")
+	_spr.hframes = 4
+	_spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(_spr)
 
 	var light := PointLight2D.new()
 	light.texture = LightTextures.create_radial_light(128)
@@ -38,6 +43,8 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	_anim_t += delta
+	_spr.frame = int(_anim_t * 8.0) % 4
 	_timer += delta
 	if _timer >= eject_interval:
 		_timer -= eject_interval
@@ -58,6 +65,9 @@ func _eject_ore() -> void:
 
 	get_tree().current_scene.add_child(ore)
 	ore.apply_central_impulse(direction * eject_force)
+	# a puff of steam from the nozzle
+	FX.burst(get_parent(), global_position + Vector2(0, -10), Color(0.85, 0.85, 0.8, 0.8), 6, 40.0, 0.6, 2.5, -40.0)
+	FX.pop(_spr, Vector2(0.9, 1.15), 0.15)
 
 
 func _find_spawn_pos() -> Vector2:

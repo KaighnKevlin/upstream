@@ -36,7 +36,8 @@ bottom of the log.
 - [x] Clockwork soldier (replaces skeleton): shield + spear, walk (8) + thrust (6)
 - [ ] Player miner: redraw to sit with the clockwork world
 - [x] Ore (3 rock+copper chunks, tumble), brass ingot, spring trampoline
-- [ ] Dome (brass and glass), turret, receiver, laser, miner building
+- [x] Miner drill rig (4-frame pump, steam puff), arc smelter (brass electrodes + live lightning)
+- [ ] Dome (brass and glass), turret, receiver
 - [ ] HUD (brass frame, pixel font)
 
 ## Log
@@ -56,3 +57,5 @@ bottom of the log.
   off-palette colours (copper). Trampoline arrow recoloured cyan. playtest loop_rec;
   _grab(div<0) = fixed px per world px (window size varies between runs).
   Next: miner building (purple block), laser, dome, receiver bar.
+- pass 6: gen_machines.py (miner, electrode). Laser is now an arc: Line2D bolt + glow
+  re-rolled every 40-90ms, cyan light. Next: dome, turret, receiver, then the player.

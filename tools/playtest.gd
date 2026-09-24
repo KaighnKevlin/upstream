@@ -798,5 +798,5 @@ func loop_rec() -> void:
 	cam.global_position = Vector2(1224, 245)
 	await wait(2.0)
 	for i in 70:
-		await _grab(Rect2(Vector2(1134, 30), Vector2(180, 420)), "loop_%03d" % i, -2)
+		await _grab(Rect2(Vector2(1124, 30), Vector2(200, 420)), "loop_%03d" % i, -2)
 		await wait(0.06)
