@@ -344,11 +344,11 @@ func _build_chain() -> void:
 	# ore tile planted under the receiver so the test doesn't depend on the seed.
 	var tm := tilemap()
 	var ore := Vector2i(76, 26)
-	tm.set_cell(ore, 0, Vector2i(2, 0))
+	preload("res://scripts/world_gen.gd").set_tile(tm, ore, 2)
 	for y in range(19, ore.y):
 		for dx in range(-3, 4):
 			if tm.get_cell_source_id(Vector2i(ore.x + dx, y)) == -1:
-				tm.set_cell(Vector2i(ore.x + dx, y), 0, Vector2i(0, 0))
+				preload("res://scripts/world_gen.gd").set_tile(tm, Vector2i(ore.x + dx, y), 0)
 	var ore_pos := tile_center(ore)
 	for y in range(6, ore.y):
 		tm.set_cell(Vector2i(ore.x, y), -1)

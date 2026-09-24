@@ -1,0 +1,274 @@
+extends SceneTree
+## Generates assets/sprites/terrain_atlas.png — the terrain tiles.
+##
+##   godot --path . --headless --script tools/art/gen_terrain.gd [-- preview_dir]
+##
+## Each material is painted as one seamless 128x128 texture and sliced into an
+## 8x8 grid of 16px tiles; the world picks the slice by cell position, so the
+## ground reads as one continuous surface instead of a repeated 16px stamp.
+##
+## Atlas layout: column = tile type (matches world_gen TILE_* ids).
+##   rows 0-63    the 64 slices (row = (x % 8) + (y % 8) * 8)
+##   ore columns also have rows 64-127 (on dirt) and 128-191 (on deep stone);
+##   rows 0-63 are ore on stone.
+
+const T := 16
+const P := 128  # seamless period
+const G := P / T  # slices per side
+const N := G * G  # slices per material
+const DIRT := 0
+const STONE := 1
+const IRON := 2
+const COPPER := 3
+const DEEP := 4
+const GRASS := 5
+
+# Palettes, dark → light
+const DIRT_PAL := ["2e1c17", "46291f", "5c3727", "663e2b", "8a563b", "a26c4a"]
+const STONE_PAL := ["1f2029", "2f313d", "414452", "545868", "6a6f80", "878c9c"]
+const DEEP_PAL := ["15141d", "201e2b", "2c2939", "3a3649", "4a455b", "5d5770"]
+const GRASS_PAL := ["1d3b1c", "2c5a26", "3d7a30", "56993a", "7dbb4a"]
+const IRON_PAL := ["2a2230", "8c5a4e", "c0968a", "e6cfc4", "ffffff"]
+const COPPER_PAL := ["5a2410", "9a4a1e", "d27434", "f5a55a", "ffe0a8"]
+const VERDIGRIS := "4fb3a0"
+
+var rng := RandomNumberGenerator.new()
+
+
+func _initialize() -> void:
+	rng.seed = 7
+	var dirt := _dirt()
+	var stone := _stone(STONE_PAL, 80, 11)
+	var deep := _stone(DEEP_PAL, 112, 23)
+	var bases := [stone, dirt, deep]  # ore row blocks: 0 = stone, 1 = dirt, 2 = deep
+
+	var atlas := Image.create(6 * T, 3 * N * T, false, Image.FORMAT_RGBA8)
+	for v in N:
+		_blit_slice(atlas, dirt, DIRT, v, v)
+		_blit_slice(atlas, stone, STONE, v, v)
+		_blit_slice(atlas, deep, DEEP, v, v)
+		_blit_slice(atlas, _grass(dirt), GRASS, v, v)
+	for b in 3:
+		var iron := _ore(bases[b], IRON_PAL, "", 101 + b)
+		var copper := _ore(bases[b], COPPER_PAL, VERDIGRIS, 201 + b)
+		for v in N:
+			_blit_slice(atlas, iron, IRON, v, b * N + v)
+			_blit_slice(atlas, copper, COPPER, v, b * N + v)
+	atlas.save_png("res://assets/sprites/terrain_atlas.png")
+	print("wrote res://assets/sprites/terrain_atlas.png")
+
+	var args := OS.get_cmdline_user_args()
+	if args.size() > 0:
+		_save_previews(args[0], {"dirt": dirt, "stone": stone, "deep": deep,
+			"grass": _grass(dirt), "iron_dirt": _ore(dirt, IRON_PAL, "", 102),
+			"iron_stone": _ore(stone, IRON_PAL, "", 101),
+			"copper_deep": _ore(deep, COPPER_PAL, VERDIGRIS, 203)})
+	quit()
+
+
+# ── helpers ─────────────────────────────────────────────────────────────
+
+func _c(hex: String) -> Color:
+	return Color.html(hex)
+
+
+func _blit_slice(atlas: Image, tex: Image, col: int, v: int, row: int) -> void:
+	var sx := (v % G) * T
+	var sy := (v / G) * T
+	atlas.blit_rect(tex, Rect2i(sx, sy, T, T), Vector2i(col * T, row * T))
+
+
+func _wrap(v: int) -> int:
+	return posmod(v, P)
+
+
+## Wrapping value noise, 0..1, with lattice spacing `cell` (must divide P).
+func _noise_grid(cell: int, seed_val: int) -> Callable:
+	var n := P / cell
+	var r := RandomNumberGenerator.new()
+	r.seed = seed_val
+	var lattice := []
+	for i in n * n:
+		lattice.append(r.randf())
+	return func(x: float, y: float) -> float:
+		var gx := x / cell
+		var gy := y / cell
+		var x0 := int(floor(gx))
+		var y0 := int(floor(gy))
+		var fx := gx - x0
+		var fy := gy - y0
+		fx = fx * fx * (3.0 - 2.0 * fx)
+		fy = fy * fy * (3.0 - 2.0 * fy)
+		var a: float = lattice[posmod(y0, n) * n + posmod(x0, n)]
+		var b: float = lattice[posmod(y0, n) * n + posmod(x0 + 1, n)]
+		var c: float = lattice[posmod(y0 + 1, n) * n + posmod(x0, n)]
+		var d: float = lattice[posmod(y0 + 1, n) * n + posmod(x0 + 1, n)]
+		return lerpf(lerpf(a, b, fx), lerpf(c, d, fx), fy)
+
+
+func _fbm(seed_val: int) -> Callable:
+	var o0 := _noise_grid(32, seed_val + 3)
+	var o1 := _noise_grid(16, seed_val)
+	var o2 := _noise_grid(8, seed_val + 1)
+	var o3 := _noise_grid(4, seed_val + 2)
+	return func(x: float, y: float) -> float:
+		return o0.call(x, y) * 0.35 + o1.call(x, y) * 0.35 + o2.call(x, y) * 0.2 + o3.call(x, y) * 0.1
+
+
+## Toroidal distance vector from a to b.
+func _tdelta(a: Vector2, b: Vector2) -> Vector2:
+	var d := b - a
+	if d.x > P / 2.0: d.x -= P
+	if d.x < -P / 2.0: d.x += P
+	if d.y > P / 2.0: d.y -= P
+	if d.y < -P / 2.0: d.y += P
+	return d
+
+
+# ── materials ───────────────────────────────────────────────────────────
+
+func _dirt() -> Image:
+	var img := Image.create(P, P, false, Image.FORMAT_RGBA8)
+	var fbm := _fbm(3)
+	# Soft clumps: 3 mid shades from low-frequency noise
+	for y in P:
+		for x in P:
+			var n: float = fbm.call(x, y)
+			var idx := 2 if n < 0.47 else 3
+			img.set_pixel(x, y, _c(DIRT_PAL[idx]))
+	# Pebbles: small dark blobs lit from above
+	rng.seed = 31
+	for i in 88:
+		var cx := rng.randi_range(0, P - 1)
+		var cy := rng.randi_range(0, P - 1)
+		var w := rng.randi_range(1, 3)
+		var h := rng.randi_range(1, 2)
+		for dy in h:
+			for dx in w:
+				img.set_pixel(_wrap(cx + dx), _wrap(cy + dy), _c(DIRT_PAL[1]))
+		for dx in w:
+			img.set_pixel(_wrap(cx + dx), _wrap(cy - 1), _c(DIRT_PAL[5]))  # rim light
+			img.set_pixel(_wrap(cx + dx), _wrap(cy + h), _c(DIRT_PAL[0]))  # contact shadow
+	# Fine specks
+	for i in 144:
+		var x := rng.randi_range(0, P - 1)
+		var y := rng.randi_range(0, P - 1)
+		img.set_pixel(x, y, _c(DIRT_PAL[4] if rng.randf() < 0.5 else DIRT_PAL[1]))
+	return img
+
+
+## Boulder texture: wrapping Voronoi cells with cracks between them, each
+## cell shaded as a rounded rock lit from the top-left.
+func _stone(pal: Array, points: int, seed_val: int) -> Image:
+	var img := Image.create(P, P, false, Image.FORMAT_RGBA8)
+	var r := RandomNumberGenerator.new()
+	r.seed = seed_val
+	var pts: Array[Vector2] = []
+	for i in points:
+		pts.append(Vector2(r.randf() * P, r.randf() * P))
+	var light := Vector2(-0.6, -0.8).normalized()
+	var grain := _noise_grid(4, seed_val + 5)
+	for y in P:
+		for x in P:
+			var p := Vector2(x + 0.5, y + 0.5)
+			var d1 := INF
+			var d2 := INF
+			var nearest := Vector2.ZERO
+			for c in pts:
+				var dv := _tdelta(c, p)
+				var d := dv.length()
+				if d < d1:
+					d2 = d1
+					d1 = d
+					nearest = dv
+				elif d < d2:
+					d2 = d
+			var edge := d2 - d1
+			var idx: int
+			if edge < 1.1:
+				idx = 0  # crack
+			elif edge < 2.2:
+				# rim: lit side bright, shadow side dark
+				idx = 3 if nearest.normalized().dot(light) > 0.2 else 1
+			else:
+				var shade := -nearest.normalized().dot(light) * clampf(d1 / 7.0, 0.0, 1.0)
+				shade += (grain.call(x, y) - 0.5) * 0.5
+				idx = 3 if shade > 0.45 else (2 if shade > -0.45 else 1)
+			img.set_pixel(x, y, _c(pal[idx]))
+	# A few bright glints
+	for i in 24:
+		img.set_pixel(r.randi_range(0, P - 1), r.randi_range(0, P - 1), _c(pal[4]))
+	return img
+
+
+func _grass(dirt: Image) -> Image:
+	var img := dirt.duplicate() as Image
+	var r := RandomNumberGenerator.new()
+	r.seed = 55
+	for x in P:
+		# grass mat 3-4px thick, then a ragged fringe hanging into the dirt
+		var depth := 3 + (1 if r.randf() < 0.4 else 0)
+		var fringe := r.randi_range(0, 3) if r.randf() < 0.6 else 0
+		for y in range(0, depth + fringe):
+			var idx := 4 if y == 0 else (3 if y == 1 else (2 if y < depth else 1))
+			for tile_row in G:  # every 16px row of the period is a possible grass row
+				img.set_pixel(x, tile_row * T + y, _c(GRASS_PAL[idx]))
+		for tile_row in G:
+			img.set_pixel(x, tile_row * T + depth + fringe, _c(DIRT_PAL[0]))  # shadow under grass
+	return img
+
+
+## Ore: the host rock with 3-5 lit nuggets per 16px tile, kept inside the
+## tile so ore blocks don't bleed into neighbours.
+func _ore(base: Image, pal: Array, fleck: String, seed_val: int) -> Image:
+	var img := base.duplicate() as Image
+	var r := RandomNumberGenerator.new()
+	r.seed = seed_val
+	for ty in G:
+		for tx in G:
+			var count := r.randi_range(4, 6)
+			for i in count:
+				var w := r.randi_range(2, 4)
+				var h := r.randi_range(2, 3)
+				var ox := tx * T + r.randi_range(1, T - 2 - w)
+				var oy := ty * T + r.randi_range(1, T - 2 - h)
+				# full dark outline first, nugget on top
+				for dy in range(-1, h + 1):
+					for dx in range(-1, w + 1):
+						img.set_pixel(ox + dx, oy + dy, _c(pal[0]))
+				for dy in h:
+					for dx in w:
+						var idx := 2
+						if dy == 0 or dx == 0:
+							idx = 3
+						if dy == h - 1 or dx == w - 1:
+							idx = 1
+						img.set_pixel(ox + dx, oy + dy, _c(pal[idx]))
+				img.set_pixel(ox, oy, _c(pal[4]))  # glint
+				# dark outline below/right so nuggets sit in the rock
+				for dx in w:
+					img.set_pixel(ox + dx, oy + h, _c(pal[0]))
+				for dy in h:
+					img.set_pixel(ox + w, oy + dy, _c(pal[0]))
+			if fleck != "" and r.randf() < 0.7:
+				img.set_pixel(tx * T + r.randi_range(2, 13), ty * T + r.randi_range(2, 13), _c(fleck))
+	return img
+
+
+func _save_previews(dir: String, textures: Dictionary) -> void:
+	DirAccess.make_dir_recursive_absolute(dir)
+	# Each material tiled 2x2 (128px) and scaled 4x, side by side
+	var names := textures.keys()
+	var sheet := Image.create(names.size() * 2 * P * 4 + (names.size() - 1) * 16, 2 * P * 4, false, Image.FORMAT_RGBA8)
+	sheet.fill(Color(0.1, 0.1, 0.12))
+	for i in names.size():
+		var tex: Image = textures[names[i]]
+		var tiled := Image.create(2 * P, 2 * P, false, Image.FORMAT_RGBA8)
+		for ty in 2:
+			for tx in 2:
+				tiled.blit_rect(tex, Rect2i(0, 0, P, P), Vector2i(tx * P, ty * P))
+		tiled.resize(2 * P * 4, 2 * P * 4, Image.INTERPOLATE_NEAREST)
+		sheet.blit_rect(tiled, Rect2i(0, 0, tiled.get_width(), tiled.get_height()),
+			Vector2i(i * (2 * P * 4 + 16), 0))
+	sheet.save_png(dir + "/terrain_preview.png")
+	print("preview: %s  order: %s" % [dir + "/terrain_preview.png", names])

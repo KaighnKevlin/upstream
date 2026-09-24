@@ -13,6 +13,7 @@ const TILE_GRASS := 5
 const WORLD_WIDTH := 150  # tiles
 const WORLD_HEIGHT := 80  # tiles
 const TILE_SIZE := 16     # pixels
+const SLICE_GRID := 8     # terrain textures repeat every 8 tiles (tools/art/gen_terrain.gd)
 
 # Zone boundaries (in tile rows from top)
 const SURFACE_ROWS := 6       # open air above ground
@@ -78,15 +79,16 @@ static func generate(tilemap: TileMapLayer, rng_seed: int = 0) -> void:
 		step += 1
 
 
-## Places a tile with a random flip, which hides the repeating texture grid.
-## Grass only flips horizontally (its green edge has to stay on top).
-static func set_tile(tilemap: TileMapLayer, cell: Vector2i, tile: int, rng: RandomNumberGenerator) -> void:
-	var alt := 0
-	if rng.randf() < 0.5:
-		alt |= TileSetAtlasSource.TRANSFORM_FLIP_H
-	if tile != TILE_GRASS and rng.randf() < 0.5:
-		alt |= TileSetAtlasSource.TRANSFORM_FLIP_V
-	tilemap.set_cell(cell, 0, Vector2i(tile, 0), alt)
+## Places a tile, picking the atlas slice from the cell position so each
+## material reads as one continuous 128px texture (see tools/art/gen_terrain.gd).
+## Ore also picks the block painted on its host rock for that depth.
+static func set_tile(tilemap: TileMapLayer, cell: Vector2i, tile: int, _rng: RandomNumberGenerator = null) -> void:
+	var row := posmod(cell.x, SLICE_GRID) + posmod(cell.y, SLICE_GRID) * SLICE_GRID
+	if tile == TILE_IRON or tile == TILE_COPPER:
+		match _get_base_tile(cell.y):
+			TILE_DIRT: row += SLICE_GRID * SLICE_GRID
+			TILE_DEEP_STONE: row += SLICE_GRID * SLICE_GRID * 2
+	tilemap.set_cell(cell, 0, Vector2i(tile, row))
 
 
 ## Fills the back wall layer: the plain rock type for each depth, from the
