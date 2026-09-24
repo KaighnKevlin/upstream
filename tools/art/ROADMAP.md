@@ -49,6 +49,7 @@ bottom of the log.
 - [x] Mined tiles break into quarters of their own texture that tumble away from the pick (FX.tile_break)
 - [x] Upstream shaft: droplet spray over the rim
 - [x] Trampoline v2: base + animated spring/plate (crush, bottom out, overshoot, settle) with a status core; tilts to the launch angle
+- [x] Soldier idle (6): torso settles on its springs, key ticks, spear tip drifts, visor flickers; standing/attack poses get a planted two-leg stance
 - [x] HUD: own 5x7 proportional pixel font (gen_font.py -> FontFile at runtime, scripts/pixel_font.gd), brass 9-slice panels, rimmed bars
 
 ## Log
@@ -135,4 +136,8 @@ bottom of the log.
 - gen_items.py: trampoline_base.png (28x8) + trampoline_top.png (8 frames of 48x28, spring foot at (24,26)): rest, then crush 5 -> 3.2 (coil splays) -> 6.5 -> overshoot 11 -> 7 -> 8.8 -> rest.
 - trampoline.gd: _build_rig(): a Node2D rig (base + AnimatedSprite2D top, spring foot 14px under the plate top = node origin) rotated to bounce_angle so the plate faces the launch; "bounce" plays at 20 fps on every hit, replacing the whole-sprite squash. Old single sprite remains the fallback. Physics untouched.
 - playtest: tramp_rec (flat + tilted, ore dropped on both).
+
+### Pass 22 — soldier idle + stance
+- gen_soldier.py: breathe (torso-only vertical offset) and soldier_idle.png (6 frames). Non-walking poses used legs at swing 0, so the two legs overlapped into one; now far -16 / near +14 (+ lunge), which also fixes the attack frames.
+- enemy.gd: soldier "idle" replaced by the 6-frame loop at 6 fps (it was the first walk frame).
 

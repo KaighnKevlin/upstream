@@ -101,6 +101,9 @@ func _ready() -> void:
 				anim.sprite_frames = _strip_frames("res://assets/sprites/soldier_walk.png", 60, 50, 8, 10.0)
 				_add_strip_anim(anim.sprite_frames, "attack", "res://assets/sprites/soldier_attack.png", 60, 50, 6, 12.0)
 				_add_strip_anim(anim.sprite_frames, "death", "res://assets/sprites/soldier_death.png", 60, 50, 7, 11.0)
+				if ResourceLoader.exists("res://assets/sprites/soldier_idle.png"):
+					anim.sprite_frames.remove_animation("idle")
+					_add_strip_anim(anim.sprite_frames, "idle", "res://assets/sprites/soldier_idle.png", 60, 50, 6, 6.0, true)
 				anim.offset.y = -10
 				anim.frame_changed.connect(_on_melee_frame)
 			EnemyType.CASTER:

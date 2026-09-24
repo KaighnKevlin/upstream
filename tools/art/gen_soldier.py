@@ -32,7 +32,7 @@ def leg(fig, hip, swing, bend, near):
 
 
 def build(i, n=8, lunge=0.0, spear_back=0.0, lean=0.0, walk=True,
-          kneel=0.0, topple=0.0, dim=0.0, spear=True, droop=0.0):
+          kneel=0.0, topple=0.0, dim=0.0, spear=True, droop=0.0, breathe=0.0):
     """kneel 0..1 folds the legs to a kneel (near knee on the ground);
     topple rotates the whole body forward about that knee; dim 0..1 kills
     the core and visor glow; spear=False leaves the hands empty."""
@@ -49,9 +49,13 @@ def build(i, n=8, lunge=0.0, spear_back=0.0, lean=0.0, walk=True,
         leg(fig, (hip[0] - 0.5, hip[1] - 0.4), -30 * kneel, 10 + 100 * kneel, False)
         leg(fig, hip, 20 * kneel, 18 + 92 * kneel, True)
     else:
-        leg(fig, (hip[0] - 0.5, hip[1] - 0.4), -26 * s, max(0.0, -math.sin(ph + 0.6)) * 45 if walk else 10, False)
-        leg(fig, hip, 26 * s, max(0.0, math.sin(ph + 0.6)) * 45 if walk else 18, True)
-    cx, cy = ox + lean, -25 + bob + kneel * 10
+        if walk:
+            leg(fig, (hip[0] - 0.5, hip[1] - 0.4), -26 * s, max(0.0, -math.sin(ph + 0.6)) * 45, False)
+            leg(fig, hip, 26 * s, max(0.0, math.sin(ph + 0.6)) * 45, True)
+        else:  # planted stance: far foot back, near foot forward
+            leg(fig, (hip[0] - 0.5, hip[1] - 0.4), -16, 6, False)
+            leg(fig, hip, 14 + lunge * 1.5, 22, True)
+    cx, cy = ox + lean, -25 + bob + kneel * 10 + breathe   # breathe: torso only
     glow = GLOW if dim < 0.5 else DARK
     # backpack boiler + wind-up key
     fig.ellipsoid((cx - 6.5, cy - 1), (3.2, 5.8), STEEL, z=2)
@@ -142,11 +146,19 @@ def main():
         build(5, lunge=1, spear_back=0, walk=False),
     ]
     dead = death()
-    for name, frames in (('soldier_walk', walk), ('soldier_attack', attack), ('soldier_death', dead)):
+    # idle: the torso settles on its springs, the key ticks round, the spear
+    # tip drifts, and the visor flickers once
+    idle = [build(i, n=6, walk=False, breathe=0.8 * (1 - math.cos(i / 6 * 2 * math.pi)) / 2,
+                  lean=0.4 * math.sin(i / 6 * 2 * math.pi), dim=0.35 if i == 4 else 0.0)
+            for i in range(6)]
+    for name, frames in (('soldier_walk', walk), ('soldier_attack', attack), ('soldier_death', dead),
+                         ('soldier_idle', idle)):
         rows = [sum((f[y] for f in frames), []) for y in range(FH)]
         write_png(SPR + name + '.png', FW * len(frames), FH, rows)
     print('wrote soldier_walk.png, soldier_attack.png')
     if len(sys.argv) > 1:
+        big = side_by_side(idle, 6)
+        write_png(sys.argv[1] + '/soldier_idle_preview.png', len(big[0]), len(big), big)
         big = side_by_side(dead, 6)
         write_png(sys.argv[1] + '/soldier_death_preview.png', len(big[0]), len(big), big)
         big = side_by_side(walk + attack, 6)
