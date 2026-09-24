@@ -1241,6 +1241,20 @@ func flier_crash_rec() -> void:
 		await wait(0.03)
 
 
+func title() -> void:
+	# The title card (normally skipped under the harness): shot, key, shot.
+	main._show_title()
+	await wait(1.0)
+	await shot("title")
+	var ev := InputEventKey.new()
+	ev.keycode = KEY_SPACE
+	ev.pressed = true
+	Input.parse_input_event(ev)
+	await wait(0.8)
+	log_line("paused after key: %s" % paused)
+	await shot("after_title")
+
+
 func banner() -> void:
 	main._wave_timer = -9999.0
 	await wait(0.8)

@@ -58,6 +58,7 @@ bottom of the log.
 - [x] Smelter strike: the arc snaps onto the ore from both electrodes, thickens and whitens, light flares; white flash + molten drips
 - [x] Ornithopter (new enemy, from wave 3): brass flier, membrane wings (6-frame wingbeat), gear drive, bomb clamp; drops fused bombs on the dome each pass
 - [x] Ornithopter crash: wings sputter, smoke trail, noses over into a dive, bursts into gears on impact
+- [x] Title card: riveted brass UPSTREAM logo with gears (gen_title.py), over the paused, dimmed skyline; any key starts, camera glides down to the prospector
 - [x] HUD: own 5x7 proportional pixel font (gen_font.py -> FontFile at runtime, scripts/pixel_font.gd), brass 9-slice panels, rimmed bars
 
 ## Log
@@ -201,4 +202,9 @@ Lights are additive over a 0.08 CanvasModulate and the framebuffer clips at 1.0,
 ### Pass 32 — ornithopter crash
 - enemy.gd _flier_crash(): wing anim at 0.35x, ballistic fall (gravity 420, keeps 0.8 of its speed), sprite rotation follows the velocity (nose-down), smoke puff every 50 ms, stops on the first solid tile (or off the map / 4 s) and bursts: sparks, dust, debris, shake.
 - playtest: flier_crash_rec.
+
+### Pass 33 — title card
+- gen_title.py (new): assets/ui/logo.png 177x47 (shown at 4x). Letters from the HUD font glyphs (gen_font.G), each font pixel a bevelled brass block with a drop shadow; cyan cores in the S and A; gears either side; riveted rail.
+- main.gd _show_title(): pauses the tree, hides the HUD, frames the skyline (camera top_level at (1200,-40), zoom 2) with the dome at the bottom, logo drops in, subtitle, blinking prompt. Input comes through the title Control (focused, PROCESS_MODE_ALWAYS) since main is paused. On start: fade, HUD back, camera restored (smoothing glides it to the player), unpause.
+- Skipped when the game is launched with user args (the playtest harness passes "-- scenario out_dir"), so all scenarios still run unpaused. playtest: title (calls _show_title directly).
 

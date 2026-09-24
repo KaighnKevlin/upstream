@@ -95,6 +95,9 @@ func _ready() -> void:
 		_wave_label.text = "Get an ingot into the dome to begin"
 	_build_mode_label.text = ""
 	_style_hud()
+	# the playtest harness passes user args (-- scenario out_dir): no title then
+	if OS.get_cmdline_user_args().is_empty():
+		_show_title()
 
 
 
@@ -153,6 +156,88 @@ func _style_hud() -> void:
 	_update_hp_bar()
 	_update_player_hp_bar()
 	_build_banner_and_markers()
+
+
+## Title card over the paused, dimmed world: brass logo, subtitle, prompt.
+## Any key or click fades it out and starts the game.
+func _show_title() -> void:
+	get_tree().paused = true
+	$CanvasLayer.visible = false
+	# frame the skyline with the dome at the bottom; restored on start, and
+	# camera smoothing glides it back down to the prospector
+	var cam := _player.get_node("Camera2D") as Camera2D
+	_title_cam_zoom = cam.zoom
+	cam.top_level = true
+	cam.global_position = Vector2(1200, -40)
+	cam.zoom = Vector2(2, 2)
+	cam.reset_smoothing()
+	var layer := CanvasLayer.new()
+	layer.layer = 20
+	layer.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(layer)
+	var root := Control.new()
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(root)
+	var dim := ColorRect.new()
+	dim.color = Color(0.03, 0.02, 0.06, 0.55)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.add_child(dim)
+	var logo := TextureRect.new()
+	logo.texture = preload("res://assets/ui/logo.png")
+	logo.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	logo.stretch_mode = TextureRect.STRETCH_SCALE
+	var sz := logo.texture.get_size() * 4.0
+	logo.size = sz
+	logo.position = Vector2((1280 - sz.x) / 2.0, 150)
+	root.add_child(logo)
+	var sub := _hud_label("A CLOCKWORK MINING DEFENCE", 20, Color(0.85, 0.75, 0.55))
+	sub.size = Vector2(1280, 30)
+	sub.position = Vector2(0, 150 + sz.y + 18)
+	root.add_child(sub)
+	var prompt := _hud_label("press any key", 30, Color(0.55, 0.88, 0.92))
+	prompt.size = Vector2(1280, 40)
+	prompt.position = Vector2(0, 405)
+	root.add_child(prompt)
+	var blink := prompt.create_tween().set_loops()
+	blink.tween_property(prompt, "modulate:a", 0.25, 0.6)
+	blink.tween_property(prompt, "modulate:a", 1.0, 0.6)
+	# logo drops in
+	logo.position.y -= 40
+	logo.modulate.a = 0.0
+	var t := logo.create_tween().set_parallel()
+	t.tween_property(logo, "position:y", logo.position.y + 40, 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.tween_property(logo, "modulate:a", 1.0, 0.35)
+	_title = root
+	# the world is paused, so input goes through the title's own control
+	root.focus_mode = Control.FOCUS_ALL
+	root.mouse_filter = Control.MOUSE_FILTER_STOP
+	root.gui_input.connect(_on_title_input)
+	root.grab_focus.call_deferred()
+
+
+var _title: Control
+var _title_cam_zoom := Vector2.ONE
+
+
+func _on_title_input(event: InputEvent) -> void:
+	if _title == null or not is_instance_valid(_title):
+		return
+	var go: bool = (event is InputEventKey and event.pressed) or (event is InputEventMouseButton and event.pressed)
+	if not go:
+		return
+	_title.accept_event()
+	var title := _title
+	_title = null
+	var t := title.create_tween()
+	t.tween_property(title, "modulate:a", 0.0, 0.35)
+	t.tween_callback(func():
+		title.get_parent().queue_free()
+		$CanvasLayer.visible = true
+		var cam := _player.get_node("Camera2D") as Camera2D
+		cam.top_level = false
+		cam.position = Vector2.ZERO
+		cam.zoom = _title_cam_zoom
+		get_tree().paused = false)
 
 
 func _hud_label(text: String, size: int, color: Color) -> Label:
