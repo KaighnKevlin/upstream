@@ -5,7 +5,7 @@ extends CharacterBody2D
 @export var mine_damage: int = 1
 @export var mine_cooldown: float = 0.25
 @export var max_hp: int = 100
-@export var contact_damage_cooldown: float = 0.5
+@export var contact_damage_cooldown: float = 1.0
 
 const GRAVITY := 980.0
 const TILE_SIZE := 16
@@ -50,6 +50,15 @@ func _ready() -> void:
 	add_child(light)
 
 
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed:
+		var cam := $Camera2D as Camera2D
+		if event.keycode == KEY_EQUAL or event.keycode == KEY_PLUS:
+			cam.zoom = Vector2(minf(cam.zoom.x + 0.25, 3.0), minf(cam.zoom.y + 0.25, 3.0))
+		elif event.keycode == KEY_MINUS:
+			cam.zoom = Vector2(maxf(cam.zoom.x - 0.25, 0.5), maxf(cam.zoom.y - 0.25, 0.5))
+
+
 func _physics_process(delta: float) -> void:
 	# Damage cooldown
 	if _damage_cooldown > 0:
@@ -71,9 +80,9 @@ func _physics_process(delta: float) -> void:
 		input_x += 1.0
 
 	if _launch_timer > 0:
-		# During knockback/launch: preserve momentum, allow slight nudging
+		# During knockback/launch: very little player control
 		if input_x != 0:
-			velocity.x += input_x * move_speed * 0.3 * delta * 60
+			velocity.x += input_x * move_speed * 0.1 * delta * 60
 	elif is_on_floor():
 		# On ground: direct control
 		velocity.x = input_x * move_speed
@@ -195,11 +204,13 @@ func _check_enemy_contact() -> void:
 		if global_position.distance_to(enemy.global_position) < ENEMY_DETECT_RADIUS:
 			var dmg: int = enemy.damage if "damage" in enemy else 10
 			take_damage(dmg)
-			# Knockback: use enemy's actual velocity direction + upward pop
-			var push_x: float = signf(enemy.velocity.x) if abs(enemy.velocity.x) > 1 else -1.0
-			var knockback := Vector2(push_x * 350, -250)
+			# Knockback: push player away from enemy + upward pop
+			var push_x: float = signf(global_position.x - enemy.global_position.x)
+			if push_x == 0:
+				push_x = 1.0
+			var knockback := Vector2(push_x * 700, -500)
 			velocity = knockback
-			_launch_timer = 0.3  # longer than trampoline so knockback is felt
+			_launch_timer = 1.0
 			break
 
 

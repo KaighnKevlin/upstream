@@ -23,6 +23,7 @@ static func create_tileset() -> TileSet:
 	tileset.add_physics_layer(0)
 	tileset.set_physics_layer_collision_layer(0, 1)
 
+
 	# Build a combined atlas image
 	var atlas_img := Image.create(TILE_SIZE * TILE_COUNT, TILE_SIZE, false, Image.FORMAT_RGBA8)
 

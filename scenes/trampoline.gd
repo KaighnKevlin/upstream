@@ -89,7 +89,7 @@ func _mouse_near(point: Vector2) -> bool:
 
 func _mouse_over_body() -> bool:
 	var mouse := get_global_mouse_position()
-	return absf(mouse.x - global_position.x) < 45 and absf(mouse.y - global_position.y) < 12
+	return absf(mouse.x - global_position.x) < 22 and absf(mouse.y - global_position.y) < 8
 
 
 func select() -> void:

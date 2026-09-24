@@ -1,8 +1,8 @@
 extends CharacterBody2D
 
-enum EnemyType { SLIME, GOBLIN, SKELETON, WIZARD }
+enum EnemyType { TITAN, GOBLIN, SKELETON, WIZARD }
 
-@export var enemy_type: EnemyType = EnemyType.SLIME
+@export var enemy_type: EnemyType = EnemyType.TITAN
 @export var speed: float = 60.0
 @export var hp: int = 3
 @export var damage: int = 10
@@ -23,7 +23,7 @@ var _bullet_scene: PackedScene = preload("res://scenes/enemy_bullet.tscn")
 
 # Stats per type: [speed, hp, damage, scale]
 const TYPE_STATS := {
-	EnemyType.SLIME:    [50.0,  3,  8,  1.5],
+	EnemyType.TITAN:    [25.0,  15, 30, 1.0],  # slow, tanky, hard-hitting, already 64x96
 	EnemyType.GOBLIN:   [100.0, 2,  5,  1.8],
 	EnemyType.SKELETON: [30.0,  8,  20, 2.2],
 	EnemyType.WIZARD:   [35.0,  4,  0,  2.0],
@@ -49,8 +49,15 @@ func _ready() -> void:
 		var anim := $AnimatedSprite2D as AnimatedSprite2D
 		anim.scale = Vector2(sprite_scale, sprite_scale)
 		match enemy_type:
-			EnemyType.SLIME:
-				anim.sprite_frames = SpriteLoader.create_slime_frames()
+			EnemyType.TITAN:
+				anim.sprite_frames = _create_titan_frames()
+				anim.offset.y = -34
+				anim.flip_h = true
+				# Bigger collision box for titan (new shape, don't modify shared one)
+				var titan_shape := RectangleShape2D.new()
+				titan_shape.size = Vector2(40, 60)
+				$CollisionShape2D.shape = titan_shape
+				$CollisionShape2D.position.y = -38
 			EnemyType.GOBLIN:
 				anim.sprite_frames = SpriteLoader.create_goblin_frames()
 				anim.modulate = Color(0.9, 0.6, 0.3)
@@ -87,7 +94,10 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 	if has_node("AnimatedSprite2D"):
-		$AnimatedSprite2D.flip_h = direction > 0
+		if enemy_type == EnemyType.TITAN:
+			$AnimatedSprite2D.flip_h = direction < 0  # titan sprite faces right by default
+		else:
+			$AnimatedSprite2D.flip_h = direction > 0
 		if enemy_type == EnemyType.WIZARD and _stopped:
 			$AnimatedSprite2D.play("idle")
 		elif is_on_floor() and abs(velocity.x) > 5:
@@ -158,6 +168,42 @@ func _shoot_at(target: Node2D) -> void:
 	# Attack animation
 	if has_node("AnimatedSprite2D"):
 		$AnimatedSprite2D.play("attack")
+
+
+func _create_titan_frames() -> SpriteFrames:
+	var tex := load("res://assets/sprites/titan-walking-sheet.png") as Texture2D
+	if tex == null:
+		return SpriteLoader.create_slime_frames()
+	var sf := SpriteFrames.new()
+	if sf.has_animation("default"):
+		sf.remove_animation("default")
+
+	var fw := 64
+	var fh := 96
+
+	# Walk: 2 frames
+	sf.add_animation("walk")
+	sf.set_animation_speed("walk", 4.0)
+	sf.set_animation_loop("walk", true)
+	for i in 2:
+		var atlas := AtlasTexture.new()
+		atlas.atlas = tex
+		atlas.region = Rect2(i * fw, 0, fw, fh)
+		atlas.filter_clip = true
+		sf.add_frame("walk", atlas)
+
+	# Reuse for other anims
+	for anim_name in ["idle", "jump", "attack", "damage", "death"]:
+		sf.add_animation(anim_name)
+		sf.set_animation_speed(anim_name, 4.0)
+		sf.set_animation_loop(anim_name, anim_name != "death")
+		var atlas := AtlasTexture.new()
+		atlas.atlas = tex
+		atlas.region = Rect2(0, 0, fw, fh)
+		atlas.filter_clip = true
+		sf.add_frame(anim_name, atlas)
+
+	return sf
 
 
 func _create_skeleton_frames() -> SpriteFrames:

@@ -26,6 +26,7 @@ var _enemy_scene: PackedScene = preload("res://scenes/enemy.tscn")
 @onready var _tilemap: TileMapLayer = $TileMapLayer
 @onready var _player: CharacterBody2D = $Player
 @onready var _player_hp_fill: Polygon2D = $CanvasLayer/PlayerHpFill
+@onready var _canvas_mod: CanvasModulate = $CanvasModulate
 
 
 func _ready() -> void:
@@ -45,6 +46,17 @@ func _ready() -> void:
 	dome_spr.scale = Vector2(2.5, 1.5)
 	dome_spr.global_position = Vector2(1200, 72)
 	add_child(dome_spr)
+
+	# Large light on the dome so surface is always visible
+	var LightTextures := preload("res://scripts/light_textures.gd")
+	var dome_light := PointLight2D.new()
+	dome_light.texture = LightTextures.create_radial_light(256)
+	dome_light.texture_scale = 5.0
+	dome_light.energy = 1.0
+	dome_light.color = Color(0.9, 0.9, 1.0)
+	dome_light.global_position = Vector2(1200, 20)
+	dome_light.shadow_enabled = true
+	add_child(dome_light)
 
 	# Setup game state
 	dome_hp = dome_max_hp
@@ -209,3 +221,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		if not _game_over and event.keycode == KEY_P:
 			_wave_timer = 0.0
 			_spawn_wave()
+		# Cheat: L to toggle lighting (see underground)
+		if event.keycode == KEY_L:
+			if _canvas_mod.color.r < 0.5:
+				_canvas_mod.color = Color(1, 1, 1, 1)  # full bright
+			else:
+				_canvas_mod.color = Color(0.08, 0.08, 0.12, 1)  # dark
