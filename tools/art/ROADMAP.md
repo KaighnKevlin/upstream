@@ -46,6 +46,8 @@ bottom of the log.
 - [x] Backdrop: painted night sky + moon, far range, ruined clockwork city (towers, domes, sunk gears, smoking chimneys, lit windows), near ridge with a buried gear and pipe
 - [x] Upstream shaft: Kaighn's drawing kept, stream animated (8 frames, currents + bubbles rising at ~lift speed)
 - [x] Blunderbuss (brass, flared bell, steel bands, pressure gauge) + 3-frame muzzle flash/smoke + brass shot sprite (also the turret's rounds)
+- [x] Mined tiles break into quarters of their own texture that tumble away from the pick (FX.tile_break)
+- [x] Upstream shaft: droplet spray over the rim
 - [x] HUD: own 5x7 proportional pixel font (gen_font.py -> FontFile at runtime, scripts/pixel_font.gd), brass 9-slice panels, rimmed bars
 
 ## Log
@@ -122,4 +124,9 @@ bottom of the log.
 - shotgun.gd: sprite offset so the grip is the pivot; flip_v when aiming left so it stays upright; AnimatedSprite2D flash at the bell; pellets spawn at the muzzle; the prospector turns to face the shot.
 - bullet.gd: shot sprite rotated along velocity every frame (turret rounds too).
 - playtest: gun_rec (warps the mouse to aim, fires right then left).
+
+### Pass 20 — tile crumble, shaft spray
+- fx.gd tile_break(): reads the tile's atlas region from the TileSet, spawns four 8x8 Sprite2D quarters that fly away from the pick on a tweened parabola, spin, shrink and fade (~0.5 s). z 0 so a full-column dig doesn't cover the prospector (z 2). The dust burst is smaller now that the chunks carry the impact.
+- upstream_shaft.gd: CPUParticles2D spray at the cap rim (at the stream's top, row 15, it was hidden against the pale stone).
+- Still undecided: multi-hit tiles with a crack overlay. Changes mining pace, so it needs Kaighn's call.
 

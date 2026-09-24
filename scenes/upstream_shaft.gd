@@ -43,6 +43,27 @@ func _ready() -> void:
 		spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		add_child(spr)
 
+	# Spray where the stream spills over the top of the column
+	var spray := CPUParticles2D.new()
+	spray.position = Vector2(0, -64 + 3)  # the rim of the cap (sprite is 128 tall)
+	spray.amount = 18
+	spray.lifetime = 0.7
+	spray.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	spray.emission_rect_extents = Vector2(12, 1)
+	spray.direction = Vector2(0, -1)
+	spray.spread = 60.0
+	spray.initial_velocity_min = 45.0
+	spray.initial_velocity_max = 75.0
+	spray.gravity = Vector2(0, 160)
+	spray.scale_amount_min = 1.0
+	spray.scale_amount_max = 2.0
+	var ramp := Gradient.new()
+	ramp.set_color(0, Color(0.55, 0.9, 1.0, 1.0))
+	ramp.set_color(1, Color(0.3, 0.55, 0.95, 0.0))
+	spray.color_ramp = ramp
+	spray.z_index = 1
+	add_child(spray)
+
 	# Blue glow
 	var light := PointLight2D.new()
 	light.texture = LightTextures.create_radial_light(128)

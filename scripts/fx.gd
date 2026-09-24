@@ -108,3 +108,42 @@ static func debris(parent: Node, pos: Vector2, count := 6, speed := 170.0, glass
 		tween.tween_interval(randf_range(1.8, 2.6))
 		tween.tween_property(b, "modulate:a", 0.0, 0.5)
 		tween.tween_callback(b.queue_free)
+
+
+## A mined tile breaks into quarters of its own texture that pop out,
+## tumble and fall, fading. Purely visual: the cell is already cleared.
+static func tile_break(parent: Node, tilemap: TileMapLayer, cell: Vector2i, source_id: int,
+		atlas_coords: Vector2i, from_dir := Vector2.ZERO) -> void:
+	var src := tilemap.tile_set.get_source(source_id) as TileSetAtlasSource
+	if src == null:
+		return
+	var region := Rect2(src.get_tile_texture_region(atlas_coords))
+	var center := tilemap.to_global(tilemap.map_to_local(cell))
+	var half := region.size / 2
+	for q in 4:
+		var qx := q % 2
+		var qy := q / 2
+		var spr := Sprite2D.new()
+		var a := AtlasTexture.new()
+		a.atlas = src.texture
+		a.region = Rect2(region.position + Vector2(qx * half.x, qy * half.y), half)
+		spr.texture = a
+		spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		spr.z_index = 0  # behind the prospector (so a column dig doesn't bury him)
+		var start := center + Vector2((qx - 0.5) * half.x, (qy - 0.5) * half.y)
+		spr.global_position = start
+		parent.add_child(spr)
+		# fly away from the pick, outward from the centre, then fall
+		var out := Vector2(qx - 0.5, qy - 0.5) * 2.0
+		var vel := (out * 55.0 - from_dir * 40.0) + Vector2(randf_range(-20, 20), -randf_range(60, 110))
+		var spin := randf_range(-9.0, 9.0)
+		var life := randf_range(0.45, 0.6)
+		var t := spr.create_tween()
+		t.tween_method(func(k: float):
+			spr.global_position = start + vel * k + Vector2(0, 520.0 * k * k)
+			spr.rotation = spin * k
+			spr.scale = Vector2.ONE * (1.0 - 0.45 * k / life),
+			0.0, life, life)
+		t.parallel().tween_property(spr, "modulate:a", 0.0, life * 0.5).set_delay(life * 0.5)
+		t.tween_callback(spr.queue_free)
+

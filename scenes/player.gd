@@ -239,9 +239,12 @@ func _try_mine_at(world_pos: Vector2, start_cooldown := true) -> bool:
 	if start_cooldown:
 		_mine_timer = mine_cooldown
 	_play_pickaxe_swing(tile_center)
-	var debris: Color = FX.TILE_COLORS.get(tilemap.get_cell_atlas_coords(tile_pos).x, Color.GRAY)
-	FX.burst(get_parent(), tile_center, debris, 10, 110.0, 0.55)
+	var atlas_coords := tilemap.get_cell_atlas_coords(tile_pos)
+	var debris: Color = FX.TILE_COLORS.get(atlas_coords.x, Color.GRAY)
+	FX.burst(get_parent(), tile_center, debris, 5, 80.0, 0.4)
 	tilemap.set_cell(tile_pos, -1)
+	FX.tile_break(get_parent(), tilemap, tile_pos, source_id, atlas_coords,
+		(global_position - tile_center).normalized())
 	get_tree().call_group("tile_shading", "mark_dirty", tile_pos)
 	SFX.play(self, SFX.sfx_mine_break())
 	return true
