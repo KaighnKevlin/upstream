@@ -1,6 +1,6 @@
 extends CharacterBody2D
 
-enum EnemyType { TITAN, GOBLIN, SKELETON, WIZARD }
+enum EnemyType { TITAN, SCUTTLER, SKELETON, WIZARD }
 
 @export var enemy_type: EnemyType = EnemyType.TITAN
 @export var speed: float = 60.0
@@ -23,7 +23,7 @@ const FX = preload("res://scripts/fx.gd")
 # Colour of the burst when each type dies
 const DEATH_COLORS := {
 	EnemyType.TITAN: Color(0.62, 0.48, 0.32),
-	EnemyType.GOBLIN: Color(0.4, 0.72, 0.28),
+	EnemyType.SCUTTLER: Color(0.72, 0.58, 0.35),
 	EnemyType.SKELETON: Color(0.92, 0.9, 0.96),
 	EnemyType.WIZARD: Color(0.62, 0.32, 0.92),
 }
@@ -49,7 +49,7 @@ var _bullet_scene: PackedScene = preload("res://scenes/enemy_bullet.tscn")
 # Stats per type: [speed, hp, damage, scale]
 const TYPE_STATS := {
 	EnemyType.TITAN:    [25.0,  15, 30, 1.0],  # slow, tanky; chops for TITAN_CHOP_DAMAGE
-	EnemyType.GOBLIN:   [100.0, 2,  5,  1.8],
+	EnemyType.SCUTTLER: [100.0, 2,  5,  1.0],  # small, fast clockwork beetle
 	EnemyType.SKELETON: [30.0,  8,  20, 2.2],
 	EnemyType.WIZARD:   [35.0,  4,  0,  2.0],
 }
@@ -83,9 +83,9 @@ func _ready() -> void:
 				titan_shape.size = Vector2(40, 60)
 				$CollisionShape2D.shape = titan_shape
 				$CollisionShape2D.position.y = -38
-			EnemyType.GOBLIN:
-				anim.sprite_frames = SpriteLoader.create_goblin_frames()
-				anim.modulate = Color(0.9, 0.6, 0.3)
+			EnemyType.SCUTTLER:
+				anim.sprite_frames = _strip_frames("res://assets/sprites/scuttler_walk.png", 44, 36, 6, 14.0)
+				anim.offset.y = -3
 			EnemyType.SKELETON:
 				anim.sprite_frames = _create_skeleton_frames()
 			EnemyType.WIZARD:
@@ -125,7 +125,8 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 	if has_node("AnimatedSprite2D"):
-		$AnimatedSprite2D.flip_h = direction > 0
+		# the new clockwork sprites face right; the old sheets face left
+		$AnimatedSprite2D.flip_h = (direction < 0) if enemy_type == EnemyType.SCUTTLER else (direction > 0)
 		if enemy_type == EnemyType.WIZARD and _stopped:
 			$AnimatedSprite2D.play("idle")
 		elif is_on_floor() and abs(velocity.x) > 5:
@@ -142,8 +143,6 @@ func take_damage(amount: int) -> void:
 		var tween := create_tween()
 		tween.tween_property(sprite, "modulate", Color.RED, 0.05)
 		var restore_color := Color.WHITE
-		if enemy_type == EnemyType.GOBLIN:
-			restore_color = Color(0.9, 0.6, 0.3)
 		tween.tween_property(sprite, "modulate", restore_color, 0.1)
 	if hp <= 0:
 		SFX.play(get_tree().current_scene, SFX.sfx_enemy_die())
@@ -292,6 +291,22 @@ func _on_titan_frame() -> void:
 			_chop_target.launch(Vector2(_facing * 260, -240))
 	elif get_tree().current_scene.has_method("damage_dome"):
 		get_tree().current_scene.damage_dome(TITAN_CHOP_DAMAGE)
+
+
+## SpriteFrames from a horizontal strip: "walk" (all frames) and "idle" (first).
+func _strip_frames(path: String, fw: int, fh: int, count: int, fps: float) -> SpriteFrames:
+	var tex := load(path) as Texture2D
+	var sf := SpriteFrames.new()
+	sf.remove_animation("default")
+	for anim_name in ["walk", "idle"]:
+		sf.add_animation(anim_name)
+		sf.set_animation_speed(anim_name, fps)
+		for i in (count if anim_name == "walk" else 1):
+			var atlas := AtlasTexture.new()
+			atlas.atlas = tex
+			atlas.region = Rect2(i * fw, 0, fw, fh)
+			sf.add_frame(anim_name, atlas)
+	return sf
 
 
 func _create_titan_frames() -> SpriteFrames:

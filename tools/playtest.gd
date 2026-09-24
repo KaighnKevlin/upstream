@@ -711,3 +711,24 @@ func titan_death() -> void:
 			killed = true
 		await wait(0.08)
 	log_line("titan_death recorded; killed=%s" % killed)
+
+
+func parade() -> void:
+	# Recording: a titan and scuttlers walk in along the surface.
+	main._wave_timer = -9999.0
+	main.get_node("Turret").set_physics_process(false)
+	var p: CharacterBody2D = main.get_node("Player")
+	p.global_position = Vector2(1560, 60)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.zoom = Vector2(3, 3)
+	cam.position_smoothing_enabled = false
+	cam.global_position = Vector2(1700, 38)
+	await wait(0.8)
+	_spawn(1, Vector2(1880, 76))
+	_spawn(1, Vector2(1930, 76))
+	_spawn(0, Vector2(1870, 76))
+	await wait(0.3)
+	for i in 60:
+		await _grab(Rect2(Vector2(1540, -44), Vector2(340, 150)), "parade_%03d" % i, 4)
+		await wait(0.08)

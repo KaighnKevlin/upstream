@@ -191,11 +191,11 @@ func _spawn_wave() -> void:
 		var enemy := _enemy_scene.instantiate()
 		enemy.add_to_group("enemies")
 
-		# One of each type, then fill remainder with slimes
+		# One of each type, then cycle through them
 		var type: int
 		match i:
-			0: type = 0  # SLIME
-			1: type = 1  # GOBLIN
+			0: type = 0  # TITAN
+			1: type = 1  # SCUTTLER
 			2: type = 2  # SKELETON
 			3: type = 3  # WIZARD
 			_: type = i % 4

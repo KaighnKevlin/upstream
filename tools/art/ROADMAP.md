@@ -20,16 +20,19 @@ bottom of the log.
   box-filtered into the palette. The rig includes IK arms, in-painting and smear.
 - `gen_terrain.py`: terrain atlas.
 - `frames_to_gif.py` + `tools/playtest.gd titan_vs_player`: in-game GIFs.
-- For new clockwork enemies: paint at high resolution (shaded shapes, gears),
-  then downscale with the same palette pipeline so they match the titan.
+- `clockwork.py`: 2.5D painter for new sprites. It builds figures from lit
+  ellipsoids, capsules, gears and discs, renders them supersampled, and
+  palette-maps with a 1px outline. Materials are BRONZE / STEEL / DARK / GLOW
+  (emissive). Primitives are posed per frame, so animation is real joints.
+  Example: `gen_scuttler.py`.
 
 ## Backlog
 
 - [x] Titan walk (8) + two-handed chop (8)
 - [x] Titan idle (6, core pulses) + death (8: buckle, pitch forward, axe drops, core fades)
 - [ ] Titan second attack (sweep / ground slam)
-- [ ] Clockwork replacements for goblin (small fast scuttler), skeleton
-      (soldier), wizard (tesla caster)
+- [x] Scuttler (replaces goblin): bronze beetle, gear, headlamp core, wind-up key
+- [ ] Clockwork soldier (replaces skeleton), tesla caster (replaces wizard)
 - [ ] Player miner: redraw to sit with the clockwork world
 - [ ] Ore and ingot look; trampoline redesign (spring-loaded brass plate)
 - [ ] Dome (brass and glass), turret, receiver, laser, miner building
@@ -41,3 +44,5 @@ bottom of the log.
 - 2026-09-23 pass 1: titan idle + death. Rig now takes affine transforms (body tilt
   carries arms, pads and held axe), plus colour remap for the glow. In game: idle between
   chops; death plays the collapse, holds, then fades.
+- pass 2: clockwork.py painter; scuttler walk (6) replaces the goblin in game
+  (EnemyType.GOBLIN renamed SCUTTLER).
