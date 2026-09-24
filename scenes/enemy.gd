@@ -269,6 +269,8 @@ func _on_titan_frame() -> void:
 		return
 	if _chop_target.has_method("take_damage"):
 		_chop_target.take_damage(TITAN_CHOP_DAMAGE)
+		if _chop_target.has_method("launch"):
+			_chop_target.launch(Vector2(_facing * 260, -240))
 	elif get_tree().current_scene.has_method("damage_dome"):
 		get_tree().current_scene.damage_dome(TITAN_CHOP_DAMAGE)
 

@@ -622,3 +622,58 @@ func titan() -> void:
 	var php: int = p.hp
 	await wait(2.5)
 	log_line("player next to titan: hp %d -> %d" % [php, p.hp])
+
+
+func titan_vs_player() -> void:
+	# Recording: a titan walks up to the player on open ground and chops twice.
+	# Camera tracks the midpoint of the two; frames go to tools/art/frames_to_gif.py.
+	var p: CharacterBody2D = main.get_node("Player")
+	main._wave_timer = -9999.0
+	main.get_node("Turret").set_physics_process(false)
+	p.global_position = Vector2(1720, 60)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.zoom = Vector2(3, 3)
+	cam.position_smoothing_enabled = false
+	await wait(1.0)
+	var t := _spawn(0, Vector2(1805, 76))
+	await wait(0.25)  # settle onto the ground before recording
+	var chops := 0
+	var was_attacking := false
+	var tail := -1
+	var i := 0
+	while i < 160 and tail != 0:
+		var mid: float = (p.global_position.x + t.global_position.x) / 2.0 + 10
+		cam.global_position = Vector2(mid, 38)
+		await process_frame
+		await _grab(Rect2(Vector2(mid - 170, -44), Vector2(340, 150)), "rec_%03d" % i, 4)
+		var anim: AnimatedSprite2D = t.get_node("AnimatedSprite2D")
+		var attacking := anim.animation == "attack"
+		if was_attacking and not attacking:
+			chops += 1
+			if chops == 2:
+				tail = 10  # a beat after the second chop
+		was_attacking = attacking
+		if tail > 0:
+			tail -= 1
+		await wait(0.08)
+		i += 1
+	log_line("recorded %d frames, %d chops; player hp=%d" % [i, chops, p.hp])
+
+
+## Crop a world-space rect out of the frame and downscale it by `div`.
+func _grab(region: Rect2, label: String, div: int) -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+	var ts := Engine.time_scale
+	Engine.time_scale = 0.0
+	await process_frame
+	RenderingServer.force_draw(false)
+	var img := root.get_texture().get_image()
+	var k := float(img.get_width()) / root.get_visible_rect().size.x  # physical px per logical px
+	var a := world_to_screen(region.position) * k
+	var b := world_to_screen(region.end) * k
+	var crop := img.get_region(Rect2i(Vector2i(a), Vector2i(b - a)))
+	crop.resize(crop.get_width() / div, crop.get_height() / div, Image.INTERPOLATE_NEAREST)
+	crop.save_png("%s/%s.png" % [out_dir, label])
+	Engine.time_scale = ts
