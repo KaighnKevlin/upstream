@@ -59,16 +59,35 @@ def trampoline():
     return fig.render(44, 22, (22, 3))
 
 
+def debris():
+    """Clockwork debris for deaths: 6 pieces, 8x8 each."""
+    pieces = []
+    f = Figure(); f.gear((0, 0), 3.0, 7, 10, BRONZE); pieces.append(f)          # brass gear
+    f = Figure(); f.gear((0, 0), 2.6, 6, 0, STEEL); pieces.append(f)            # steel gear
+    f = Figure(); f.box((-2, -2, 2, 2), STEEL, bevel=0.8, tilt=30)              # hex-ish bolt
+    f.disc((0, 0), 0.8, DARK); pieces.append(f)
+    f = Figure()                                                               # coil spring
+    for k in range(4):
+        f.capsule((-2.5, -3 + k * 1.6), (2.5, -2.2 + k * 1.6), 0.45, STEEL, z=k)
+    pieces.append(f)
+    f = Figure(); f.box((-3, -1.5, 3, 1.5), BRONZE, bevel=0.8, tilt=-20)        # plate shard
+    f.sphere((-1.5, 0), 0.5, STEEL, z=1); pieces.append(f)
+    f = Figure(); f.ellipsoid((0, 0), (2.4, 1.5), GLOW, emissive=True, tilt=40); pieces.append(f)  # core glass
+    return [p.render(8, 8, (4, 4)) for p in pieces]
+
+
 def main():
     ores = [ore(s) for s in (3, 8, 13)]
     rows = [sum((f[y] for f in ores), []) for y in range(12)]
     write_png(SPR + 'ore.png', 36, 12, rows)
     ing = ingot(); write_png(SPR + 'ingot.png', 14, 8, ing)
     tr = trampoline(); write_png(SPR + 'trampoline.png', 44, 22, tr)
-    print('wrote ore.png, ingot.png, trampoline.png')
+    deb = debris()
+    write_png(SPR + 'debris.png', 48, 8, [sum((d[y] for d in deb), []) for y in range(8)])
+    print('wrote ore.png, ingot.png, trampoline.png, debris.png')
     if len(sys.argv) > 1:
         pad = lambda f, w, h: [row + [(0, 0, 0, 0)] * (w - len(row)) for row in f] + [[(0, 0, 0, 0)] * w] * (h - len(f))
-        big = side_by_side([pad(o, 12, 22) for o in ores] + [pad(ing, 14, 22), tr], 10)
+        big = side_by_side([pad(o, 12, 22) for o in ores] + [pad(ing, 14, 22), tr] + [pad(d, 8, 22) for d in deb], 10)
         write_png(sys.argv[1] + '/items_preview.png', len(big[0]), len(big), big)
 
 

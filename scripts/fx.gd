@@ -71,3 +71,40 @@ static func flash(node: CanvasItem, color := Color(2, 2, 2), duration := 0.12) -
 	var tween := node.create_tween()
 	tween.tween_property(node, "modulate", color, duration * 0.3)
 	tween.tween_property(node, "modulate", base, duration * 0.7)
+
+
+## Clockwork debris: real physics bits (gears, bolts, springs, plate, core
+## glass from assets/sprites/debris.png) that bounce on the terrain, then fade.
+static func debris(parent: Node, pos: Vector2, count := 6, speed := 170.0, glass := true) -> void:
+	var tex := preload("res://assets/sprites/debris.png")
+	var mat := PhysicsMaterial.new()
+	mat.bounce = 0.45
+	mat.friction = 0.6
+	for i in count:
+		var b := RigidBody2D.new()
+		b.collision_layer = 0
+		b.collision_mask = 1  # terrain + walls only
+		b.physics_material_override = mat
+		var shape := CollisionShape2D.new()
+		var circle := CircleShape2D.new()
+		circle.radius = 2.5
+		shape.shape = circle
+		b.add_child(shape)
+		var spr := Sprite2D.new()
+		var atlas := AtlasTexture.new()
+		atlas.atlas = tex
+		var piece := randi() % (6 if glass else 5)
+		atlas.region = Rect2(piece * 8, 0, 8, 8)
+		spr.texture = atlas
+		spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		b.add_child(spr)
+		b.z_index = 3
+		b.position = pos + Vector2(randf_range(-6, 6), randf_range(-6, 6))
+		b.linear_velocity = Vector2(randf_range(-0.7, 0.7) * speed, -randf_range(0.5, 1.0) * speed)
+		b.angular_velocity = randf_range(-18, 18)
+		# deferred: deaths can happen inside physics callbacks
+		parent.add_child.call_deferred(b)
+		var tween := parent.create_tween()
+		tween.tween_interval(randf_range(1.8, 2.6))
+		tween.tween_property(b, "modulate:a", 0.0, 0.5)
+		tween.tween_callback(b.queue_free)

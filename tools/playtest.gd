@@ -859,3 +859,28 @@ func mining_rec() -> void:
 			i += 1
 		key(KEY_J, false)
 		Input.action_release(step)
+
+
+func deaths_rec() -> void:
+	# Recording: one of each small enemy is destroyed, then a titan.
+	main._wave_timer = -9999.0
+	main.get_node("Turret").set_physics_process(false)
+	var p: CharacterBody2D = main.get_node("Player")
+	p.global_position = Vector2(1500, 60)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.zoom = Vector2(3, 3)
+	cam.position_smoothing_enabled = false
+	cam.global_position = Vector2(1660, 40)
+	await wait(0.6)
+	var foes := [_spawn(1, Vector2(1600, 76)), _spawn(2, Vector2(1650, 76)), _spawn(3, Vector2(1700, 76)), _spawn(0, Vector2(1770, 76))]
+	for f in foes:
+		f.speed = 0.0
+	await wait(0.4)
+	var i := 0
+	for k in 4:
+		foes[k].take_damage(100)
+		for j in (14 if k < 3 else 40):
+			await _grab(Rect2(Vector2(1540, -30), Vector2(260, 130)), "death_%03d" % i, -3)
+			await wait(0.06)
+			i += 1

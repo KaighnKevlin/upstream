@@ -73,3 +73,6 @@ bottom of the log.
   swing mirrors by facing so it always chops down. Gameplay fix: sideways J-mining clears
   the full body height (was one tile, so you couldn't enter your own tunnel).
   Next: lift shaft art, wave banner, maybe a scuttler death, dirt/stone mining crack overlay.
+- pass 12: clockwork deaths. debris.png (brass/steel gears, bolt, spring, plate, core glass);
+  FX.debris() spawns physics bits (terrain-only collision, bounce 0.45, fade ~2s).
+  Small enemies burst into 5-7 bits; the titan spills 8 from its core as it falls.

@@ -179,6 +179,10 @@ func _die() -> void:
 		_titan_die()
 		return
 	var body_y := -10.0
+	# the mechanism comes apart
+	var bits := {EnemyType.SCUTTLER: 5, EnemyType.SOLDIER: 7, EnemyType.CASTER: 6}
+	FX.debris(get_parent(), global_position + Vector2(0, -14), bits.get(enemy_type, 5), 170.0,
+		enemy_type != EnemyType.SOLDIER)
 	FX.burst(get_parent(), global_position + Vector2(0, body_y), DEATH_COLORS[enemy_type],
 		18 if enemy_type != EnemyType.TITAN else 40, 140.0, 0.7, 2.5)
 	var sprite := $AnimatedSprite2D as AnimatedSprite2D
@@ -196,6 +200,7 @@ func _titan_die() -> void:
 	FX.burst(get_parent(), global_position + Vector2(0, -45), Color(0.55, 0.85, 0.9), 14, 150.0, 0.5, 2.0)
 	FX.burst(get_parent(), global_position + Vector2(0, -40), Color(0.85, 0.85, 0.8, 0.8), 10, 50.0, 1.0, 3.0, -60.0)
 	FX.shake(self, 3.0, 0.2)
+	FX.debris(get_parent(), global_position + Vector2(0, -45), 8, 200.0)  # gears spill from the core
 	await sprite.animation_finished
 	FX.burst(get_parent(), global_position + Vector2(_facing * 20, 8), Color(0.55, 0.45, 0.35), 18, 110.0, 0.6, 2.5)
 	FX.shake(self, 4.0, 0.2)
