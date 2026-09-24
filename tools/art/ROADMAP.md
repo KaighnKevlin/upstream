@@ -38,6 +38,9 @@ bottom of the log.
 - [x] Ore (3 rock+copper chunks, tumble), brass ingot, spring trampoline
 - [x] Miner drill rig (4-frame pump, steam puff), arc smelter (brass electrodes + live lightning)
 - [x] Dome observatory: glass (45% alpha) + brass ribs + riveted plinth with intake grate; cannon on the crown swivels to aim; ammo gauge strip on the rail
+- [x] Scuttler pounce (6): crouch, tuck-and-leap, core overloads; it leaps onto the dome flank and detonates (blast does the damage)
+- [x] Soldier death (7): spear slips and falls, kneels as the core gutters, topples onto its shield
+- [x] Caster death (6): overload flash, thruster cuts, drops and tips over dark
 - [x] HUD: own 5x7 proportional pixel font (gen_font.py -> FontFile at runtime, scripts/pixel_font.gd), brass 9-slice panels, rimmed bars
 
 ## Log
@@ -79,3 +82,10 @@ bottom of the log.
 - pass 13: wave banner (brass plate drops in: WAVE n + roster), pulsing off-screen
   enemy marker with count (assets/ui/arrow.png), brass game-over plate. HUD labels use
   NEAREST filtering (linear bled the neighbouring atlas cell as thin bars).
+
+### Pass 14 — pounce + small-enemy deaths
+- clockwork.py: Figure.transform(deg, pivot, shift) rotates/moves a whole figure (topples, falls, leaps).
+- gen_scuttler.py: scuttler_pounce.png. enemy.gd: within POUNCE_RANGE of DomeZone the scuttler commits (leaves "enemies", no collision), leaps on a tweened arc and _detonate()s: cyan/orange burst, steam, debris, light flash, damage_dome. Replaces silently vanishing into the dome.
+- gen_soldier.py: soldier_death.png (spear composited separately so it falls on its own). gen_caster.py: caster_death.png. enemy.gd: _soldier_die / _caster_die play them, dust on landing, then fade.
+- playtest: pounce_rec; deaths_rec gives each death time to play.
+

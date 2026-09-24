@@ -60,6 +60,13 @@ def _shade(n, mat, grit=0.07, gx=0, gy=0, emissive=False):
 class Figure:
     def __init__(self):
         self.prims = []
+        self.xf = None
+
+    def transform(self, deg=0.0, pivot=(0, 0), shift=(0, 0)):
+        """Rotate the whole figure `deg` (clockwise, y down) about `pivot`,
+        then move it by `shift`. Shading is not re-lit, which reads fine for
+        the small angles and quick frames it's used for (falls, topples)."""
+        self.xf = (math.radians(deg), pivot, shift)
 
     # each primitive: (z, fn(x, y) -> colour or None)
 
@@ -163,6 +170,11 @@ class Figure:
                     for sx in range(S):
                         x = px - ox + (sx + 0.5) / S
                         y = py - oy + (sy + 0.5) / S
+                        if self.xf:
+                            a, (qx, qy), (tx, ty) = self.xf
+                            ux, uy = x - tx - qx, y - ty - qy
+                            ca, sa = math.cos(a), math.sin(a)
+                            x, y = qx + ux * ca + uy * sa, qy - ux * sa + uy * ca
                         col = None
                         for z, fn, bb in reversed(prims):
                             if bb[0] <= x <= bb[2] and bb[1] <= y <= bb[3]:

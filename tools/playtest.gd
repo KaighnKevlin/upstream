@@ -880,10 +880,29 @@ func deaths_rec() -> void:
 	var i := 0
 	for k in 4:
 		foes[k].take_damage(100)
-		for j in (14 if k < 3 else 40):
+		for j in (14 if k == 0 else 32 if k < 3 else 40):
 			await _grab(Rect2(Vector2(1540, -30), Vector2(260, 130)), "death_%03d" % i, -3)
 			await wait(0.06)
 			i += 1
+
+
+func pounce_rec() -> void:
+	# Recording: two scuttlers leap onto the dome and burst.
+	main._wave_timer = -9999.0
+	main.get_node("Turret").set_physics_process(false)
+	var p: CharacterBody2D = main.get_node("Player")
+	p.global_position = Vector2(1000, 60)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.zoom = Vector2(3, 3)
+	cam.position_smoothing_enabled = false
+	cam.global_position = Vector2(1300, 40)
+	await wait(0.6)
+	_spawn(1, Vector2(1400, 76))
+	_spawn(1, Vector2(1470, 76))
+	for i in 60:
+		await _grab(Rect2(Vector2(1150, -20), Vector2(300, 120)), "pounce_%03d" % i, -3)
+		await wait(0.05)
 
 
 func banner() -> void:

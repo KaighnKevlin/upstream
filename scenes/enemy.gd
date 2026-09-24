@@ -29,6 +29,7 @@ const DEATH_COLORS := {
 }
 
 var _dying := false
+const POUNCE_RANGE := 78.0
 
 # Melee types walk up to the dome (or the player), stop and swing; damage
 # lands on the impact frame of the "attack" animation. body_offset: how far
@@ -88,15 +89,18 @@ func _ready() -> void:
 				$CollisionShape2D.position.y = -38
 			EnemyType.SCUTTLER:
 				anim.sprite_frames = _strip_frames("res://assets/sprites/scuttler_walk.png", 44, 36, 6, 14.0)
+				_add_strip_anim(anim.sprite_frames, "pounce", "res://assets/sprites/scuttler_pounce.png", 44, 36, 6, 12.0)
 				anim.offset.y = -3
 			EnemyType.SOLDIER:
 				anim.sprite_frames = _strip_frames("res://assets/sprites/soldier_walk.png", 60, 50, 8, 10.0)
 				_add_strip_anim(anim.sprite_frames, "attack", "res://assets/sprites/soldier_attack.png", 60, 50, 6, 12.0)
+				_add_strip_anim(anim.sprite_frames, "death", "res://assets/sprites/soldier_death.png", 60, 50, 7, 11.0)
 				anim.offset.y = -10
 				anim.frame_changed.connect(_on_melee_frame)
 			EnemyType.CASTER:
 				anim.sprite_frames = _strip_frames("res://assets/sprites/caster_hover.png", 40, 46, 6, 9.0)
 				_add_strip_anim(anim.sprite_frames, "attack", "res://assets/sprites/caster_attack.png", 40, 46, 6, 12.0)
+				_add_strip_anim(anim.sprite_frames, "death", "res://assets/sprites/caster_death.png", 40, 46, 6, 10.0)
 				anim.offset.y = -8
 				# its core and coils light it up
 				var glow := PointLight2D.new()
@@ -119,6 +123,13 @@ func _physics_process(delta: float) -> void:
 		_melee_process(delta)
 		move_and_slide()
 		return
+
+	# Scuttlers leap onto the dome and blow themselves up against it
+	if enemy_type == EnemyType.SCUTTLER and is_on_floor():
+		var dome := get_tree().current_scene.get_node_or_null("DomeZone") as Node2D
+		if dome and absf(dome.global_position.x - global_position.x) < POUNCE_RANGE:
+			_pounce(dome)
+			return
 
 	# Wizard stops at range and shoots
 	if enemy_type == EnemyType.CASTER:
@@ -178,6 +189,12 @@ func _die() -> void:
 	if enemy_type == EnemyType.TITAN and $AnimatedSprite2D.sprite_frames.has_animation("death"):
 		_titan_die()
 		return
+	if enemy_type == EnemyType.SOLDIER and $AnimatedSprite2D.sprite_frames.has_animation("death"):
+		_soldier_die()
+		return
+	if enemy_type == EnemyType.CASTER and $AnimatedSprite2D.sprite_frames.has_animation("death"):
+		_caster_die()
+		return
 	var body_y := -10.0
 	# the mechanism comes apart
 	var bits := {EnemyType.SCUTTLER: 5, EnemyType.SOLDIER: 7, EnemyType.CASTER: 6}
@@ -208,6 +225,85 @@ func _titan_die() -> void:
 	var tween := create_tween()
 	tween.tween_property(sprite, "modulate:a", 0.0, 0.6)
 	tween.tween_callback(queue_free)
+
+
+func _soldier_die() -> void:
+	var sprite := $AnimatedSprite2D as AnimatedSprite2D
+	sprite.play("death")
+	# a few gears shake loose; the rest of it keels over
+	FX.debris(get_parent(), global_position + Vector2(0, -14), 3, 140.0, false)
+	FX.burst(get_parent(), global_position + Vector2(0, -16), Color(0.55, 0.85, 0.9), 8, 110.0, 0.35, 1.5)
+	await sprite.animation_finished
+	FX.burst(get_parent(), global_position + Vector2(_facing * 14, 8), Color(0.55, 0.45, 0.35), 10, 80.0, 0.5, 2.0)
+	FX.burst(get_parent(), global_position + Vector2(_facing * 6, -2), Color(0.85, 0.85, 0.8, 0.7), 5, 30.0, 1.0, 2.5, -50.0)
+	await get_tree().create_timer(1.2).timeout
+	var tween := create_tween()
+	tween.tween_property(sprite, "modulate:a", 0.0, 0.5)
+	tween.tween_callback(queue_free)
+
+
+func _caster_die() -> void:
+	var sprite := $AnimatedSprite2D as AnimatedSprite2D
+	sprite.play("death")
+	FX.burst(get_parent(), global_position + Vector2(0, -18), Color(0.7, 0.95, 1.0), 14, 150.0, 0.35, 1.5)
+	var light := get_node_or_null("PointLight2D") as PointLight2D
+	for c in get_children():
+		if c is PointLight2D:
+			light = c
+	if light:  # the core gutters out
+		var lt := create_tween()
+		lt.tween_property(light, "energy", 1.6, 0.08)
+		lt.tween_property(light, "energy", 0.0, 0.3)
+	await sprite.animation_finished
+	FX.burst(get_parent(), global_position + Vector2(0, 6), Color(0.55, 0.45, 0.35), 10, 80.0, 0.5, 2.0)
+	FX.debris(get_parent(), global_position + Vector2(0, -8), 3, 120.0)
+	await get_tree().create_timer(1.0).timeout
+	var tween := create_tween()
+	tween.tween_property(sprite, "modulate:a", 0.0, 0.5)
+	tween.tween_callback(queue_free)
+
+
+## Crouch, leap in an arc onto the dome's flank, overload and burst.
+## Committed once it jumps: it leaves "enemies", so turrets and the dome
+## zone ignore it, and the damage comes from the blast instead.
+func _pounce(dome: Node2D) -> void:
+	_dying = true
+	remove_from_group("enemies")
+	set_physics_process(false)
+	$CollisionShape2D.set_deferred("disabled", true)
+	var sprite := $AnimatedSprite2D as AnimatedSprite2D
+	sprite.play("pounce")
+	var side := signf(global_position.x - dome.global_position.x)
+	var start := global_position
+	var end := Vector2(dome.global_position.x + side * 30.0, dome.global_position.y + 8.0)
+	await get_tree().create_timer(0.17).timeout  # crouch
+	var tween := create_tween()
+	tween.tween_method(func(t: float):
+		global_position = start.lerp(end, t) + Vector2(0, -34.0 * 4.0 * t * (1.0 - t)),
+		0.0, 1.0, 0.33)
+	await tween.finished
+	_detonate()
+
+
+func _detonate() -> void:
+	var at := global_position + Vector2(0, -12)
+	FX.burst(get_parent(), at, Color(0.7, 0.95, 1.0), 22, 190.0, 0.4, 2.0)
+	FX.burst(get_parent(), at, Color(1.0, 0.75, 0.35), 14, 130.0, 0.5, 2.5)
+	FX.burst(get_parent(), at, Color(0.8, 0.8, 0.78, 0.7), 8, 40.0, 1.1, 3.0, -50.0)
+	FX.debris(get_parent(), at, 5, 200.0, false)
+	var flash := PointLight2D.new()
+	flash.texture = preload("res://scripts/light_textures.gd").create_radial_light(128)
+	flash.color = Color(0.6, 0.9, 1.0)
+	flash.energy = 2.2
+	flash.global_position = at
+	get_parent().add_child(flash)
+	var ft := flash.create_tween()
+	ft.tween_property(flash, "energy", 0.0, 0.35)
+	ft.tween_callback(flash.queue_free)
+	SFX.play(get_tree().current_scene, SFX.sfx_enemy_die())
+	if get_tree().current_scene.has_method("damage_dome"):
+		get_tree().current_scene.damage_dome(damage)
+	queue_free()
 
 
 func _find_nearest_target() -> Node2D:
