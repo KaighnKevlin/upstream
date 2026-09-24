@@ -6,6 +6,10 @@ Writes assets/sprites/prospector.png: one strip of 32x40 frames, facing right,
 feet at (16, 38) so the frame centre is the body centre:
   frames 0-3 idle, 4-11 run, 12-13 jump, 14-16 pickaxe swing (raise, strike,
   follow-through).
+Frame 17 is "hurt" (knocked back, arms flung). prospector_death.png: 6 frames
+of 64x40 (wider so the fall fits; feet at (32, 38), so it lines up with the
+32x40 frames when both are centred): reel, topple back, land, bounce, lie
+with the headlamp flickering out.
 Also assets/sprites/pickaxe.png (24x16): handle along +x from the butt at
 (2, 8) (the pivot, held at the shoulder), head at the far end with the pick
 tip on the +y side so it leads a clockwise swing.
@@ -39,8 +43,11 @@ def limb(fig, a, ang, bend, l1, l2, mat, r1, r2, z):
     return k, e
 
 
-def build(legs=(0, 0), bends=(8, 8), arms=(0, 0), bob=0.0, lamp=1.0):
+def build(legs=(0, 0), bends=(8, 8), arms=(0, 0), bob=0.0, lamp=1.0,
+          rot=0.0, shift=(0, 0), size=(FW, FH, ORIGIN), eye=True):
     fig = Figure()
+    if rot or shift != (0, 0):
+        fig.transform(rot, (0, -1), shift)
     hip = (0, -12 + bob)
     near_leg, far_leg = legs
     # far leg / far arm (darker, behind)
@@ -63,17 +70,24 @@ def build(legs=(0, 0), bends=(8, 8), arms=(0, 0), bob=0.0, lamp=1.0):
     # head: face, eye, short beard, brass helmet with brim, goggles, lamp
     hx, hy = 1.4, -26.3 + bob
     fig.ellipsoid((hx, hy), (3.1, 3.3), SKIN, z=6, grit=0.03)
-    fig.sphere((hx + 1.7, hy - 0.2), 0.5, DARK, z=6.15)                           # eye
+    if eye:
+        fig.sphere((hx + 1.7, hy - 0.2), 0.5, DARK, z=6.15)                       # eye
+    else:
+        fig.capsule((hx + 1.1, hy - 0.1), (hx + 2.3, hy - 0.1), 0.3, DARK, z=6.15)  # shut
     fig.ellipsoid((hx + 0.8, hy + 2.3), (2.1, 1.1), BEARD, z=6.1, grit=0.1)       # beard
     fig.sphere((hx + 2.8, hy + 0.5), 0.75, SKIN, z=6.2)                           # nose
     fig.ellipsoid((hx - 0.4, hy - 2.9), (3.8, 2.5), BRONZE, z=6.5)                 # helmet
     fig.ellipsoid((hx + 0.3, hy - 1.5), (4.6, 0.8), BRONZE, z=6.6, grit=0.03)      # brim
     fig.disc((hx + 1.2, hy - 3.2), 1.0, STEEL, z=6.7)                             # goggle
-    fig.sphere((hx + 3.3, hy - 3.0), 1.3, LAMP, z=6.8, emissive=True)              # headlamp
+    if lamp > 0.5:
+        fig.sphere((hx + 3.3, hy - 3.0), 1.3, LAMP, z=6.8, emissive=True)          # headlamp
+    else:
+        fig.sphere((hx + 3.3, hy - 3.0), 1.3, BRONZE, z=6.8)                      # lamp out
     # near arm (swings), hand
     _, hand = limb(fig, sh, arms[1], -24, 4.2, 4.0, COAT, 1.4, 1.2, 7)
     fig.sphere(hand, 1.2, SKIN, z=7.2)
-    return fig.render(FW, FH, ORIGIN, extra=SKIN_EXTRA + LAMP_EXTRA)
+    w, h, o = size
+    return fig.render(w, h, o, extra=SKIN_EXTRA + LAMP_EXTRA)
 
 
 def pickaxe():
@@ -102,16 +116,28 @@ def main():
     mine = [build(arms=(-150, 150), bob=0.4),      # raise
             build(arms=(-75, 75), bob=0.8),         # strike
             build(arms=(-25, 25), bob=0.6)]         # follow through
-    frames = idle + run + jump + mine
+    hurt = [build(legs=(-18, 20), bends=(30, 20), arms=(60, -80), bob=0.5, rot=-10, eye=False)]
+    frames = idle + run + jump + mine + hurt
+    D = (64, 40, (32, 38))
+    death = [build(legs=(-18, 20), bends=(30, 20), arms=(60, -80), rot=-18, size=D, eye=False),
+             build(legs=(10, 30), bends=(50, 40), arms=(90, -100), rot=-48, shift=(-2, -3), size=D, eye=False),
+             build(legs=(30, 40), bends=(40, 30), arms=(120, -120), rot=-88, shift=(-3, -6), size=D, eye=False),
+             build(legs=(40, 50), bends=(30, 20), arms=(130, -110), rot=-80, shift=(-3, -8), size=D, eye=False, lamp=0.0),
+             build(legs=(35, 45), bends=(30, 25), arms=(125, -115), rot=-90, shift=(-3, -6), size=D, eye=False),
+             build(legs=(35, 45), bends=(30, 25), arms=(125, -115), rot=-90, shift=(-3, -6), size=D, eye=False, lamp=0.0)]
+    rows = [sum((f[y] for f in death), []) for y in range(40)]
+    write_png(SPR + 'prospector_death.png', 64 * len(death), 40, rows)
     rows = [sum((f[y] for f in frames), []) for y in range(FH)]
     write_png(SPR + 'prospector.png', FW * len(frames), FH, rows)
     print('wrote prospector.png (%d frames)' % len(frames))
     pk = pickaxe()
     write_png(SPR + 'pickaxe.png', 24, 16, pk)
     if len(sys.argv) > 1:
+        big = side_by_side(death, 7)
+        write_png(sys.argv[1] + '/prospector_death_preview.png', len(big[0]), len(big), big)
         big = side_by_side(frames, 7)
         write_png(sys.argv[1] + '/prospector_preview.png', len(big[0]), len(big), big)
-        write_gif(sys.argv[1] + '/prospector_run.gif', run * 3, [7] * 24, 8)
+        pass
 
 
 if __name__ == '__main__':

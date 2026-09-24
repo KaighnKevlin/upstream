@@ -78,7 +78,21 @@ func _unhandled_input(event: InputEvent) -> void:
 			cam.zoom = Vector2(maxf(cam.zoom.x - 0.25, 0.5), maxf(cam.zoom.y - 0.25, 0.5))
 
 
+var _hurt_timer := 0.0
+var _dead := false
+
+
 func _physics_process(delta: float) -> void:
+	if _dead:  # just fall and slide to a stop
+		if not is_on_floor():
+			velocity.y += GRAVITY * delta
+		else:
+			velocity.x = move_toward(velocity.x, 0, 1200.0 * delta)
+		move_and_slide()
+		return
+	if _hurt_timer > 0:
+		_hurt_timer -= delta
+
 	# Damage cooldown
 	if _damage_cooldown > 0:
 		_damage_cooldown -= delta
@@ -136,7 +150,9 @@ func _physics_process(delta: float) -> void:
 	# Update animation (only switch when animation changes)
 	if not _is_mining:
 		var new_anim: String
-		if not is_on_floor():
+		if _hurt_timer > 0 and _anim.sprite_frames.has_animation("hurt"):
+			new_anim = "hurt"
+		elif not is_on_floor():
 			new_anim = "jump"
 		elif abs(velocity.x) > 10:
 			new_anim = "walk"
@@ -282,7 +298,10 @@ func launch(launch_velocity: Vector2) -> void:
 
 
 func take_damage(amount: int) -> void:
+	if _dead:
+		return
 	hp = max(0, hp - amount)
+	_hurt_timer = 0.3
 	FX.shake(self, 3.0, 0.15)
 	_damage_cooldown = contact_damage_cooldown
 	hp_changed.emit(hp, max_hp)
@@ -293,7 +312,25 @@ func take_damage(amount: int) -> void:
 	tween.tween_property(_anim, "modulate", Color.WHITE, 0.15)
 
 	if hp <= 0:
-		player_died.emit()
+		_die()
+
+
+func _die() -> void:
+	_dead = true
+	_is_mining = false
+	_pickaxe.visible = false
+	if _anim.sprite_frames.has_animation("death"):
+		_anim.play("death")
+		FX.burst(get_parent(), global_position + Vector2(0, 8), Color(0.55, 0.45, 0.35), 10, 70.0, 0.5, 2.0)
+		# the headlamp gutters out with the last frame
+		for c in get_children():
+			if c is PointLight2D:
+				var t := create_tween()
+				t.tween_interval(0.5)
+				t.tween_property(c, "energy", 0.15, 0.3)
+		await _anim.animation_finished
+		await get_tree().create_timer(0.6).timeout
+	player_died.emit()
 
 
 func _get_tilemap() -> TileMapLayer:

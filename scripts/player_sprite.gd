@@ -21,6 +21,12 @@ static func create_prospector_frames() -> SpriteFrames:
 	_add_frames(sf, tex, "mine", [14, 15, 16], 32, 40, 16.0)
 	sf.set_animation_loop("mine", false)
 	sf.set_animation_loop("jump", false)
+	_add_frames(sf, tex, "hurt", [17], 32, 40, 4.0)
+	sf.set_animation_loop("hurt", false)
+	var death := load("res://assets/sprites/prospector_death.png") as Texture2D
+	if death:
+		_add_frames(sf, death, "death", [0, 1, 2, 3, 4, 5], 64, 40, 9.0)
+		sf.set_animation_loop("death", false)
 	return sf
 
 

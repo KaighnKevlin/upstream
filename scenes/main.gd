@@ -439,7 +439,7 @@ func _on_player_hp_changed(_current: int, _max: int) -> void:
 
 
 func _on_player_died() -> void:
-	_trigger_game_over()
+	_trigger_game_over("PROSPECTOR DOWN")
 
 
 func _update_player_hp_bar() -> void:
@@ -481,12 +481,14 @@ func _update_hp_bar() -> void:
 		_hp_bar_fill.color = Color(0.9, 0.2, 0.1, 1)
 
 
-func _trigger_game_over() -> void:
+func _trigger_game_over(reason := "DOME DESTROYED") -> void:
+	if _game_over:
+		return
 	_game_over = true
 	_game_over_label.visible = true
 	if _game_over_panel:
 		_game_over_panel.visible = true
-	_game_over_label.text = "DOME DESTROYED\nWaves survived: %d\nPress R to restart" % (wave_number - 1)
+	_game_over_label.text = "%s\nWaves survived: %d\nPress R to restart" % [reason, maxi(0, wave_number - 1)]
 
 
 func _unhandled_input(event: InputEvent) -> void:

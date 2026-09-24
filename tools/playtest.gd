@@ -905,6 +905,33 @@ func pounce_rec() -> void:
 		await wait(0.05)
 
 
+func player_death_rec() -> void:
+	# Recording: a titan closes in; the prospector takes a hit, then a fatal one.
+	main._wave_timer = -9999.0
+	main.get_node("Turret").set_physics_process(false)
+	var p: CharacterBody2D = main.get_node("Player")
+	p.global_position = Vector2(1500, 60)
+	p.hp = 18
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.zoom = Vector2(3, 3)
+	cam.position_smoothing_enabled = false
+	cam.global_position = Vector2(1520, 40)
+	await wait(0.5)
+	var t: Node2D = _spawn(0, Vector2(1600, 76))
+	t.speed = 0.0
+	for i in 70:
+		if i == 8:
+			p.take_damage(5)
+			p.launch(Vector2(-120, -120))
+		if i == 24:
+			p.take_damage(999)
+			p.launch(Vector2(-160, -200))
+		await _grab(Rect2(Vector2(1380, -40), Vector2(280, 130)), "pd_%03d" % i, -3)
+		await wait(0.05)
+	await shot("player_game_over")
+
+
 func banner() -> void:
 	main._wave_timer = -9999.0
 	await wait(0.8)
