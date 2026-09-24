@@ -2,6 +2,7 @@ extends Node2D
 
 const ObjectSprites = preload("res://scripts/object_sprites.gd")
 const SFX = preload("res://scripts/sfx.gd")
+const FX = preload("res://scripts/fx.gd")
 
 @export var fire_rate: float = 1.5  # shots per second
 @export var fire_range: float = 500.0
@@ -71,7 +72,6 @@ func _physics_process(delta: float) -> void:
 	bullet.damage = damage_per_shot
 	get_tree().current_scene.add_child(bullet)
 
-	# Muzzle flash
-	var tween := create_tween()
-	tween.tween_property(_barrel, "modulate", Color(1, 1, 0.5), 0.03)
-	tween.tween_property(_barrel, "modulate", Color.WHITE, 0.08)
+	# Muzzle flash (on the visible pixel sprite; the polygon barrel is hidden)
+	FX.flash(_turret_sprite, Color(2.0, 1.8, 1.0), 0.1)
+	FX.burst(get_parent(), global_position + dir * 12, Color(1, 0.9, 0.5), 5, 90.0, 0.15, 1.5, 0.0)

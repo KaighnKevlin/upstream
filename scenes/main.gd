@@ -3,6 +3,7 @@ extends Node2D
 const WorldGen = preload("res://scripts/world_gen.gd")
 const TileSetBuilder = preload("res://scripts/tileset_builder.gd")
 const ObjectSprites = preload("res://scripts/object_sprites.gd")
+const FX = preload("res://scripts/fx.gd")
 
 @export var dome_max_hp: int = 100
 @export var wave_interval: float = 30.0
@@ -21,6 +22,7 @@ var _game_over := false
 var _waves_started := false
 
 var _enemy_scene: PackedScene = preload("res://scenes/enemy.tscn")
+var _dome_sprite: Sprite2D
 
 @onready var _receiver: Area2D = $Receiver
 @onready var _turret: Node2D = $Turret
@@ -54,6 +56,7 @@ func _ready() -> void:
 	dome_spr.scale = Vector2(2.5, 1.5)
 	dome_spr.global_position = Vector2(1200, 72)
 	add_child(dome_spr)
+	_dome_sprite = dome_spr
 
 	# Large light on the dome so surface is always visible
 	var LightTextures := preload("res://scripts/light_textures.gd")
@@ -206,11 +209,20 @@ func _spawn_wave() -> void:
 func _on_enemy_reached_dome(body: Node2D) -> void:
 	if body.is_in_group("enemies") and not _game_over:
 		var dmg: int = body.damage if "damage" in body else 10
-		dome_hp = max(0, dome_hp - dmg)
-		_update_hp_bar()
 		body.queue_free()
-		if dome_hp <= 0:
-			_trigger_game_over()
+		damage_dome(dmg)
+
+
+func damage_dome(amount: int) -> void:
+	if _game_over:
+		return
+	dome_hp = max(0, dome_hp - amount)
+	_update_hp_bar()
+	FX.shake(self, 2.0 + amount * 0.2, 0.3)
+	if _dome_sprite:
+		FX.flash(_dome_sprite, Color(2.2, 0.6, 0.6), 0.25)
+	if dome_hp <= 0:
+		_trigger_game_over()
 
 
 func _on_ammo_changed(current: int, max_ammo: int) -> void:

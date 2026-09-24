@@ -8,6 +8,7 @@ extends Node2D
 
 const ObjectSprites = preload("res://scripts/object_sprites.gd")
 const SFX = preload("res://scripts/sfx.gd")
+const FX = preload("res://scripts/fx.gd")
 
 @onready var _area: Area2D = $Area2D
 @onready var _arrow: Polygon2D = $Arrow
@@ -48,6 +49,7 @@ func _ready() -> void:
 
 func _on_body_entered(body: Node2D) -> void:
 	SFX.play(self, SFX.sfx_bounce())
+	FX.pop(_pixel_sprite, Vector2(1.25, 0.55), 0.18)
 
 	var angle_rad := deg_to_rad(bounce_angle - 90)
 	var direction := Vector2(cos(angle_rad), sin(angle_rad))

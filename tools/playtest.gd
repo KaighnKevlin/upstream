@@ -540,3 +540,44 @@ func gallery() -> void:
 	await shot("gallery_mining")
 	Input.action_release("move_right")
 	key(KEY_J, false)
+
+
+func fx() -> void:
+	# Freeze-frames of the one-shot effects.
+	var p: CharacterBody2D = main.get_node("Player")
+	main._wave_timer = -9999.0
+	await tap(KEY_L)
+	zoom(2.0)
+	# mining debris
+	p.global_position = Vector2(700, 70)
+	await wait(1.0)
+	key(KEY_S, true); key(KEY_J, true)
+	await wait(0.08)
+	await shot("fx_mining")
+	key(KEY_J, false); key(KEY_S, false)
+	# enemy death burst
+	p.global_position = Vector2(1500, 70)
+	await wait(0.8)
+	var g := _spawn(2, Vector2(1560, 40))
+	g.speed = 0.0
+	await wait(0.8)
+	g.take_damage(100)
+	await wait(0.08)
+	await shot("fx_death")
+	# titan death
+	var t := _spawn(0, Vector2(1580, 40))
+	t.speed = 0.0
+	await wait(0.8)
+	t.take_damage(100)
+	await wait(0.1)
+	await shot("fx_titan_death")
+	# hot ingots in the loop
+	await tap(KEY_L)
+	await _build_chain()
+	zoom(1.5)
+	p.global_position = tile_center(Vector2i(76, 26)) + Vector2(-50, -80)
+	await wait(3.0)
+	await shot("fx_hot_ingots")
+	p.global_position = Vector2(1250, 60)
+	await wait(2.0)
+	await shot("fx_receiver")

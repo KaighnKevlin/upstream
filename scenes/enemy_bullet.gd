@@ -44,11 +44,7 @@ func _physics_process(delta: float) -> void:
 	if scene and scene.has_node("DomeZone"):
 		var dome := scene.get_node("DomeZone") as Node2D
 		if global_position.distance_to(dome.global_position) < HIT_RADIUS * 2:
-			# Damage the dome via main script
-			if scene.has_method("_on_enemy_reached_dome"):
-				scene.dome_hp = max(0, scene.dome_hp - damage)
-				scene._update_hp_bar()
-				if scene.dome_hp <= 0:
-					scene._trigger_game_over()
+			if scene.has_method("damage_dome"):
+				scene.damage_dome(damage)
 			queue_free()
 			return

@@ -19,8 +19,12 @@ static func create_player_frames() -> SpriteFrames:
 	# Idle: frame 0
 	_add_frames(sf, tex, "idle", [0], fw, fh, 4.0)
 
-	# Walk: start with walking frame, then idle
-	_add_frames(sf, tex, "walk", [1, 0], fw, fh, 6.0)
+	# Walk: the 6-frame run cycle if it's there, else walking frame + idle
+	var run := load("res://assets/sprites/player_miner_run.png") as Texture2D
+	if run:
+		_add_frames(sf, run, "walk", [0, 1, 2, 3, 4, 5], fw, fh, 11.0)
+	else:
+		_add_frames(sf, tex, "walk", [1, 0], fw, fh, 6.0)
 
 	# Jump: use frame 1 (walking pose works for airborne)
 	_add_frames(sf, tex, "jump", [1], fw, fh, 4.0)

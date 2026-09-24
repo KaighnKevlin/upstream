@@ -2,6 +2,9 @@ extends Area2D
 
 const ObjectSprites = preload("res://scripts/object_sprites.gd")
 const SFX = preload("res://scripts/sfx.gd")
+const FX = preload("res://scripts/fx.gd")
+
+var _spr: Sprite2D
 
 signal ammo_changed(current: int, max_ammo: int)
 
@@ -28,6 +31,7 @@ func _ready() -> void:
 	spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	spr.scale = Vector2(2, 2)
 	add_child(spr)
+	_spr = spr
 
 
 func _on_body_entered(body: Node2D) -> void:
@@ -44,10 +48,8 @@ func _on_body_entered(body: Node2D) -> void:
 		buffer += 1
 		ammo_changed.emit(buffer, max_buffer)
 		_update_bar()
-		var sprite := $Sprite as Polygon2D
-		var tween := create_tween()
-		tween.tween_property(sprite, "scale", Vector2(1.3, 1.3), 0.05)
-		tween.tween_property(sprite, "scale", Vector2(1.0, 1.0), 0.1)
+		FX.pop(_spr, Vector2(1.2, 0.85), 0.16)
+		FX.burst(get_parent(), body.global_position, Color(1.0, 0.85, 0.35), 6, 60.0, 0.35, 1.5)
 	body.queue_free()
 
 

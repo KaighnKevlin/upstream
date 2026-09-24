@@ -2,6 +2,7 @@ extends Area2D
 
 const ObjectSprites = preload("res://scripts/object_sprites.gd")
 const SFX = preload("res://scripts/sfx.gd")
+const FX = preload("res://scripts/fx.gd")
 
 var velocity := Vector2.ZERO
 var damage := 1
@@ -31,6 +32,7 @@ func _physics_process(delta: float) -> void:
 		var tile_pos := tilemap.local_to_map(tilemap.to_local(next_pos))
 		if tilemap.get_cell_source_id(tile_pos) != -1:
 			# Hit a tile — destroy bullet
+			FX.burst(get_parent(), global_position, Color(1, 0.85, 0.4), 4, 60.0, 0.2, 1.5)
 			queue_free()
 			return
 

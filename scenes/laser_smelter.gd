@@ -2,6 +2,7 @@ extends Node2D
 
 const LightTextures = preload("res://scripts/light_textures.gd")
 const SFX = preload("res://scripts/sfx.gd")
+const FX = preload("res://scripts/fx.gd")
 
 ## How much velocity the ore retains after passing through (0.0–1.0).
 @export_range(0.1, 0.9, 0.05) var velocity_retention: float = 0.6
@@ -31,6 +32,7 @@ func _on_body_entered(body: Node2D) -> void:
 	var pos: Vector2 = body.global_position
 
 	SFX.play(self, SFX.sfx_laser())
+	FX.burst(get_parent(), pos, Color(1.0, 0.6, 0.25), 8, 80.0, 0.3, 1.5, 200.0)
 
 	# Remove the ore
 	body.queue_free()

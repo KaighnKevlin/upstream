@@ -18,6 +18,17 @@ const GRAVITY := 980.0
 const SpriteLoader = preload("res://scripts/sprite_loader.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const ObjectSprites = preload("res://scripts/object_sprites.gd")
+const FX = preload("res://scripts/fx.gd")
+
+# Colour of the burst when each type dies
+const DEATH_COLORS := {
+	EnemyType.TITAN: Color(0.62, 0.48, 0.32),
+	EnemyType.GOBLIN: Color(0.4, 0.72, 0.28),
+	EnemyType.SKELETON: Color(0.92, 0.9, 0.96),
+	EnemyType.WIZARD: Color(0.62, 0.32, 0.92),
+}
+
+var _dying := false
 
 var _bullet_scene: PackedScene = preload("res://scenes/enemy_bullet.tscn")
 
@@ -105,7 +116,10 @@ func _physics_process(delta: float) -> void:
 
 
 func take_damage(amount: int) -> void:
+	if _dying:
+		return
 	hp -= amount
+	FX.burst(get_parent(), global_position + Vector2(0, -10), Color(1, 0.9, 0.5), 4, 70.0, 0.25, 1.5)
 	if has_node("AnimatedSprite2D"):
 		var sprite := $AnimatedSprite2D
 		var tween := create_tween()
@@ -116,9 +130,26 @@ func take_damage(amount: int) -> void:
 		tween.tween_property(sprite, "modulate", restore_color, 0.1)
 	if hp <= 0:
 		SFX.play(get_tree().current_scene, SFX.sfx_enemy_die())
-		queue_free()
+		_die()
 	else:
 		SFX.play(self, SFX.sfx_enemy_hit())
+
+
+func _die() -> void:
+	# Leave the group at once so turrets/bullets stop targeting the corpse
+	_dying = true
+	remove_from_group("enemies")
+	set_physics_process(false)
+	$CollisionShape2D.set_deferred("disabled", true)
+	var body_y := -10.0 if enemy_type != EnemyType.TITAN else -40.0
+	FX.burst(get_parent(), global_position + Vector2(0, body_y), DEATH_COLORS[enemy_type],
+		18 if enemy_type != EnemyType.TITAN else 40, 140.0, 0.7, 2.5)
+	var sprite := $AnimatedSprite2D as AnimatedSprite2D
+	sprite.pause()
+	var tween := create_tween().set_parallel()
+	tween.tween_property(sprite, "modulate", Color(3, 3, 3, 0), 0.25)
+	tween.tween_property(sprite, "scale", sprite.scale * Vector2(1.3, 0.6), 0.25)
+	tween.chain().tween_callback(queue_free)
 
 
 func _find_nearest_target() -> Node2D:

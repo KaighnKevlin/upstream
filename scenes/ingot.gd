@@ -7,6 +7,7 @@ var _timer: float = 0.0
 
 
 const ObjectSprites = preload("res://scripts/object_sprites.gd")
+const LightTextures = preload("res://scripts/light_textures.gd")
 
 func _ready() -> void:
 	collision_layer = 2
@@ -21,6 +22,18 @@ func _ready() -> void:
 	spr.texture = ObjectSprites.create_ingot_texture()
 	spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(spr)
+
+	# Fresh out of the laser: glowing hot, cooling to silver
+	spr.modulate = Color(2.6, 1.3, 0.5)
+	var glow := PointLight2D.new()
+	glow.texture = LightTextures.create_radial_light(64)
+	glow.color = Color(1.0, 0.55, 0.2)
+	glow.energy = 0.9
+	add_child(glow)
+	var tween := create_tween().set_parallel()
+	tween.tween_property(spr, "modulate", Color.WHITE, 2.0)
+	tween.tween_property(glow, "energy", 0.0, 2.0)
+	tween.chain().tween_callback(glow.queue_free)
 
 
 func _physics_process(delta: float) -> void:

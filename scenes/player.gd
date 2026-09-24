@@ -28,6 +28,7 @@ const SpriteLoader = preload("res://scripts/sprite_loader.gd")
 const PlayerSprite = preload("res://scripts/player_sprite.gd")
 const LightTextures = preload("res://scripts/light_textures.gd")
 const SFX = preload("res://scripts/sfx.gd")
+const FX = preload("res://scripts/fx.gd")
 
 @onready var _anim: AnimatedSprite2D = $AnimatedSprite2D
 @onready var _pickaxe: Node2D = $Pickaxe
@@ -192,6 +193,8 @@ func _try_mine_at(world_pos: Vector2, start_cooldown := true) -> void:
 	if start_cooldown:
 		_mine_timer = mine_cooldown
 	_play_pickaxe_swing(tile_center)
+	var debris: Color = FX.TILE_COLORS.get(tilemap.get_cell_atlas_coords(tile_pos).x, Color.GRAY)
+	FX.burst(get_parent(), tile_center, debris, 10, 110.0, 0.55)
 	tilemap.set_cell(tile_pos, -1)
 	get_tree().call_group("tile_shading", "mark_dirty", tile_pos)
 	SFX.play(self, SFX.sfx_mine_break())
@@ -240,6 +243,7 @@ func launch(launch_velocity: Vector2) -> void:
 
 func take_damage(amount: int) -> void:
 	hp = max(0, hp - amount)
+	FX.shake(self, 3.0, 0.15)
 	_damage_cooldown = contact_damage_cooldown
 	hp_changed.emit(hp, max_hp)
 
