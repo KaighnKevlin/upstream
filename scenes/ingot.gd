@@ -28,7 +28,7 @@ func _ready() -> void:
 	var glow := PointLight2D.new()
 	glow.texture = LightTextures.create_radial_light(64)
 	glow.color = Color(1.0, 0.55, 0.2)
-	glow.energy = 0.9
+	glow.energy = 0.6
 	add_child(glow)
 	var tween := create_tween().set_parallel()
 	tween.tween_property(spr, "modulate", Color.WHITE, 2.0)

@@ -64,9 +64,10 @@ func _ready() -> void:
 	var light := PointLight2D.new()
 	light.texture = LightTextures.create_radial_light(256)
 	light.texture_scale = 3.0
-	light.energy = 0.7  # stacks with moonlight on the surface; 1.0 blew out nearby sprites
+	light.energy = LAMP_DEEP
 	light.color = Color(1.0, 0.95, 0.8)
 	add_child(light)
+	_lamp = light
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -78,6 +79,12 @@ func _unhandled_input(event: InputEvent) -> void:
 			cam.zoom = Vector2(maxf(cam.zoom.x - 0.25, 0.5), maxf(cam.zoom.y - 0.25, 0.5))
 
 
+# Headlamp: full strength underground, dimmed on the moonlit surface where
+# it would stack with the moon and dome lights and bleach sprites
+const LAMP_DEEP := 0.7
+const LAMP_SURFACE := 0.2
+const SURFACE_Y := 96.0
+var _lamp: PointLight2D
 var _hurt_timer := 0.0
 var _dead := false
 
@@ -92,6 +99,9 @@ func _physics_process(delta: float) -> void:
 		return
 	if _hurt_timer > 0:
 		_hurt_timer -= delta
+	if _lamp:
+		var depth := clampf((global_position.y - SURFACE_Y) / 48.0, 0.0, 1.0)
+		_lamp.energy = lerpf(LAMP_SURFACE, LAMP_DEEP, depth)
 
 	# Damage cooldown
 	if _damage_cooldown > 0:

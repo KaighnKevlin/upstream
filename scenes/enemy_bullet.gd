@@ -27,7 +27,7 @@ func _ready() -> void:
 	var glow := PointLight2D.new()
 	glow.texture = preload("res://scripts/light_textures.gd").create_radial_light(64)
 	glow.color = Color(0.45, 0.8, 0.9)
-	glow.energy = 0.8
+	glow.energy = 0.5
 	add_child(glow)
 
 

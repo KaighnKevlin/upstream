@@ -1113,6 +1113,33 @@ func rig_rec() -> void:
 		await wait(0.03)
 
 
+func light_check() -> void:
+	# Stills where lights stack: soldiers + titan by the dome with the player
+	# close, and the drill rig next to the laser. Compare across light changes.
+	main._wave_timer = -9999.0
+	main.get_node("Turret").set_physics_process(false)
+	await _build_chain()
+	var p: CharacterBody2D = main.get_node("Player")
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	p.global_position = Vector2(1290, 60)
+	for spec in [[2, Vector2(1330, 76)], [2, Vector2(1360, 76)], [0, Vector2(1420, 76)]]:
+		var e: Node2D = _spawn(spec[0], spec[1])
+		e.speed = 0.0
+	cam.zoom = Vector2(3, 3)
+	cam.global_position = Vector2(1330, 30)
+	await wait(0.8)
+	await shot("light_surface")
+	for b in root.get_node("BuildSystem")._placed_buildings:
+		if b.has_method("_eject_ore"):
+			p.global_position = b.global_position + Vector2(-20, -40)
+			cam.zoom = Vector2(4, 4)
+			cam.global_position = b.global_position + Vector2(0, -20)
+	await wait(0.6)
+	await shot("light_rig")
+
+
 func banner() -> void:
 	main._wave_timer = -9999.0
 	await wait(0.8)

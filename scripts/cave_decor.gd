@@ -79,7 +79,7 @@ func _place(cell: Vector2i, support: Vector2i, piece: int, hanging: bool) -> voi
 		var light := PointLight2D.new()
 		light.texture = LightTextures.create_radial_light(64)
 		light.color = Color(0.45, 0.85, 0.95)
-		light.energy = 0.9 if piece != MUSHROOMS else 0.55
+		light.energy = 0.6 if piece != MUSHROOMS else 0.4
 		light.texture_scale = 2.4
 		light.position = Vector2(8, 10)
 		spr.add_child(light)

@@ -115,7 +115,7 @@ func _ready() -> void:
 				var glow := PointLight2D.new()
 				glow.texture = preload("res://scripts/light_textures.gd").create_radial_light(128)
 				glow.color = Color(0.5, 0.85, 0.95)
-				glow.energy = 0.7
+				glow.energy = 0.45
 				glow.position = Vector2(0, -20)
 				add_child(glow)
 		anim.play("walk")

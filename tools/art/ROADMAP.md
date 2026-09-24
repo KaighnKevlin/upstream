@@ -164,5 +164,12 @@ bottom of the log.
 - gen_machines.py miner2(): miner_rig.png, 8 frames of 24x28; figure (0,0) 1px under the centre like v1, and miner.gd offsets it 3px up so the flange sits where v1's did. 10 fps. Steam puff moved up to the funnel. v1 (miner.png) kept as fallback.
 - miner.gd light 0.6 -> 0.3, cyan, at the funnel.
 - playtest: rig_rec (close-up of the rig in the working chain).
-- OPEN ISSUE, lighting: where several PointLights overlap (rig + laser + player lamp) sprites bleach toward white. Worth a pass: lower energies globally, or cap with a light_mask / blend mode, and check the titan and dome under the dome light too.
+- Lighting overexposure: addressed in pass 27 (LIGHT BUDGET).
+
+### Pass 27 — LIGHT BUDGET
+Lights are additive over a 0.08 CanvasModulate and the framebuffer clips at 1.0, so light brass goes white wherever the total passes ~1.1. On the surface near the dome it was 0.08 + moon 0.6 + dome 0.4 + headlamp 0.7 = ~1.8.
+- Rule: ambient + moon + dome + headlamp(surface) <= ~1.1; headlamp(deep) + any one machine/effect light <= ~1.2.
+- Now: moon 0.5, dome 0.3, headlamp 0.2 on the surface ramping to 0.7 over the first 48px underground (player.gd LAMP_*), laser 0.45, upstream 0.4, caster core 0.45, enemy bolt 0.5, hot ingot 0.6, crystals 0.6 / mushrooms 0.4, rig 0.3. Transient flashes (scuttler blast 2.2) left alone on purpose.
+- playtest light_check: stills of soldiers + titan by the dome with the player close, and the rig by the laser. Before/after in the pass notes.
+- The rig still reads pale: that's its own steel/glow palette, not lighting.
 
