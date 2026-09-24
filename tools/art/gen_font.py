@@ -8,6 +8,7 @@ Caps and digits use rows 1-6 (the baseline is under row 6), lowercase has a
 builds a FontFile from it (glyph widths are measured from the image, so the
 font is proportional).
 assets/ui/panel.png: 24x24 brass frame for a NinePatchRect (8px margins).
+assets/ui/arrow.png: 18x18 off-screen enemy marker, pointing right.
 """
 import sys
 from pixtools import write_png
@@ -121,6 +122,16 @@ def panel():
     return img
 
 
+def arrow():
+    """Off-screen enemy marker: brass chevron pointing right, cyan core."""
+    from clockwork import Figure, BRONZE, GLOW
+    fig = Figure()
+    fig.capsule((-5, -6), (4, 0), 1.8, BRONZE, z=0)
+    fig.capsule((-5, 6), (4, 0), 1.8, BRONZE, z=0)
+    fig.sphere((-3, 0), 2.2, GLOW, z=1, emissive=True)
+    return fig.render(18, 18, (9, 9))
+
+
 def main():
     import os
     out = os.path.join(os.path.dirname(__file__), '../../assets/ui')
@@ -138,6 +149,7 @@ def main():
                     img[cy + y][cx + x] = (255, 255, 255, 255)
     write_png(out + '/font.png', W, H, img)
     write_png(out + '/panel.png', 24, 24, panel())
+    write_png(out + '/arrow.png', 18, 18, arrow())
     missing = [chr(c) for c in range(33, 127) if chr(c) not in G]
     print('wrote assets/ui/font.png; no glyph for:', ''.join(missing))
 

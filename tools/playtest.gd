@@ -884,3 +884,16 @@ func deaths_rec() -> void:
 			await _grab(Rect2(Vector2(1540, -30), Vector2(260, 130)), "death_%03d" % i, -3)
 			await wait(0.06)
 			i += 1
+
+
+func banner() -> void:
+	main._wave_timer = -9999.0
+	await wait(0.8)
+	await tap(KEY_P)
+	await wait(0.6)
+	await shot("banner")
+	await wait(2.5)
+	await shot("offscreen_marker")
+	main.damage_dome(200)
+	await wait(0.4)
+	await shot("game_over")

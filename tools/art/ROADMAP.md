@@ -76,3 +76,6 @@ bottom of the log.
 - pass 12: clockwork deaths. debris.png (brass/steel gears, bolt, spring, plate, core glass);
   FX.debris() spawns physics bits (terrain-only collision, bounce 0.45, fade ~2s).
   Small enemies burst into 5-7 bits; the titan spills 8 from its core as it falls.
+- pass 13: wave banner (brass plate drops in: WAVE n + roster), pulsing off-screen
+  enemy marker with count (assets/ui/arrow.png), brass game-over plate. HUD labels use
+  NEAREST filtering (linear bled the neighbouring atlas cell as thin bars).

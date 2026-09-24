@@ -27,6 +27,15 @@ var _waves_started := false
 
 var _enemy_scene: PackedScene = preload("res://scenes/enemy.tscn")
 var _dome_sprite: Sprite2D
+var _banner: NinePatchRect
+var _banner_title: Label
+var _banner_sub: Label
+var _arrow: Sprite2D
+var _arrow_count: Label
+var _arrow_t := 0.0
+var _game_over_panel: NinePatchRect
+
+const ENEMY_NAMES := ["titan", "scuttler", "soldier", "caster"]
 
 @onready var _receiver: Area2D = $Receiver
 @onready var _turret: Node2D = $Turret
@@ -120,6 +129,7 @@ func _style_hud() -> void:
 		var l := hud.get_node(n) as Label
 		var spec: Array = layout[n]
 		l.position = spec[0]
+		l.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST  # no bleed between atlas cells
 		l.add_theme_font_override("font", PixelFont.get_font())
 		l.add_theme_font_size_override("font_size", spec[1])
 		l.add_theme_color_override("font_color", spec[2])
@@ -142,6 +152,108 @@ func _style_hud() -> void:
 		hud.move_child(rim, bg.get_index())
 	_update_hp_bar()
 	_update_player_hp_bar()
+	_build_banner_and_markers()
+
+
+func _hud_label(text: String, size: int, color: Color) -> Label:
+	var l := Label.new()
+	l.text = text
+	l.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	l.add_theme_font_override("font", PixelFont.get_font())
+	l.add_theme_font_size_override("font_size", size)
+	l.add_theme_color_override("font_color", color)
+	l.add_theme_color_override("font_shadow_color", HUD_SHADOW)
+	l.add_theme_constant_override("shadow_offset_x", 2)
+	l.add_theme_constant_override("shadow_offset_y", 2)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	return l
+
+
+func _brass_panel(pos: Vector2, size: Vector2) -> NinePatchRect:
+	var p := NinePatchRect.new()
+	p.texture = preload("res://assets/ui/panel.png")
+	p.patch_margin_left = 8
+	p.patch_margin_top = 8
+	p.patch_margin_right = 8
+	p.patch_margin_bottom = 8
+	p.position = pos
+	p.size = size
+	return p
+
+
+func _build_banner_and_markers() -> void:
+	var hud := $CanvasLayer
+	# wave banner: a brass plate that drops in from the top
+	_banner = _brass_panel(Vector2(390, -120), Vector2(500, 96))
+	hud.add_child(_banner)
+	_banner_title = _hud_label("", 40, HUD_TEXT)
+	_banner_title.position = Vector2(0, 12)
+	_banner_title.size = Vector2(500, 44)
+	_banner.add_child(_banner_title)
+	_banner_sub = _hud_label("", 20, Color(0.55, 0.88, 0.9))
+	_banner_sub.position = Vector2(0, 58)
+	_banner_sub.size = Vector2(500, 24)
+	_banner.add_child(_banner_sub)
+	# off-screen enemy marker on the right edge
+	_arrow = Sprite2D.new()
+	_arrow.texture = preload("res://assets/ui/arrow.png")
+	_arrow.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_arrow.scale = Vector2(2, 2)
+	_arrow.visible = false
+	hud.add_child(_arrow)
+	_arrow_count = _hud_label("", 20, HUD_TEXT)
+	_arrow_count.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_arrow_count.size = Vector2(60, 24)
+	_arrow_count.visible = false
+	hud.add_child(_arrow_count)
+	# game-over plate, shown behind the game-over text
+	_game_over_panel = _brass_panel(Vector2(370, 236), Vector2(540, 150))
+	_game_over_panel.visible = false
+	hud.add_child(_game_over_panel)
+	hud.move_child(_game_over_panel, _game_over_label.get_index())
+	_game_over_label.size = Vector2(540, 150)
+	_game_over_label.position = Vector2(370, 236)
+	_game_over_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_game_over_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+
+
+func _show_banner(title: String, sub: String) -> void:
+	_banner_title.text = title
+	_banner_sub.text = sub
+	var tween := create_tween()
+	tween.tween_property(_banner, "position:y", 96.0, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_interval(1.8)
+	tween.tween_property(_banner, "position:y", -120.0, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+
+
+func _process(delta: float) -> void:
+	_update_offscreen_marker(delta)
+
+
+func _update_offscreen_marker(delta: float) -> void:
+	# Pulsing arrow on the right edge while enemies are out of view there
+	var cam := get_viewport().get_camera_2d()
+	if cam == null or _arrow == null:
+		return
+	var view := get_viewport().get_visible_rect().size
+	var right := cam.get_screen_center_position().x + view.x / 2.0 / cam.zoom.x
+	var count := 0
+	var nearest: Node2D = null
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if e.global_position.x > right - 8:
+			count += 1
+			if nearest == null or e.global_position.x < nearest.global_position.x:
+				nearest = e
+	_arrow.visible = count > 0 and not _game_over
+	_arrow_count.visible = _arrow.visible
+	if not _arrow.visible:
+		return
+	_arrow_t += delta
+	var sy: float = (get_viewport().get_canvas_transform() * (nearest.global_position + Vector2(0, -20))).y
+	sy = clampf(sy, 120.0, 610.0)
+	_arrow.position = Vector2(view.x - 26 + sin(_arrow_t * 8.0) * 4.0, sy)
+	_arrow_count.text = "x%d" % count
+	_arrow_count.position = Vector2(view.x - 110, sy - 12)
 
 
 func _rect_poly(x0: float, y0: float, x1: float, y1: float) -> PackedVector2Array:
@@ -261,6 +373,14 @@ func _spawn_wave() -> void:
 	wave_number += 1
 	var count := enemies_per_wave_base + wave_number
 	_wave_label.text = "WAVE %d!" % wave_number
+	var kinds := {}
+	for i in count:
+		var t := i if i < 4 else i % 4
+		kinds[t] = kinds.get(t, 0) + 1
+	var parts := []
+	for t in kinds:
+		parts.append("%d %s%s" % [kinds[t], ENEMY_NAMES[t], "s" if kinds[t] > 1 else ""])
+	_show_banner("WAVE %d" % wave_number, "  ".join(parts))
 
 	var surface_y := 40  # spawn above ground, gravity drops them
 	var spawn_x := WorldGen.WORLD_WIDTH * WorldGen.TILE_SIZE - 30  # just inside right boundary
@@ -364,6 +484,8 @@ func _update_hp_bar() -> void:
 func _trigger_game_over() -> void:
 	_game_over = true
 	_game_over_label.visible = true
+	if _game_over_panel:
+		_game_over_panel.visible = true
 	_game_over_label.text = "DOME DESTROYED\nWaves survived: %d\nPress R to restart" % (wave_number - 1)
 
 
