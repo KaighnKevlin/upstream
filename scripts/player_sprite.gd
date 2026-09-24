@@ -4,6 +4,23 @@ extends Node
 # Frame 0: idle, Frame 1: walking
 
 
+## The prospector (tools/art/gen_player.py): 32x40 frames, body centred.
+## Returns null if the sheet is missing so the caller can fall back.
+static func create_prospector_frames() -> SpriteFrames:
+	var tex := load("res://assets/sprites/prospector.png") as Texture2D
+	if tex == null:
+		return null
+	var sf := SpriteFrames.new()
+	if sf.has_animation("default"):
+		sf.remove_animation("default")
+	_add_frames(sf, tex, "idle", [0, 1, 2, 3], 32, 40, 5.0)
+	_add_frames(sf, tex, "walk", [4, 5, 6, 7, 8, 9, 10, 11], 32, 40, 14.0)
+	_add_frames(sf, tex, "jump", [12, 13], 32, 40, 6.0)
+	_add_frames(sf, tex, "attack", [0], 32, 40, 4.0)
+	sf.set_animation_loop("jump", false)
+	return sf
+
+
 static func create_player_frames() -> SpriteFrames:
 	var tex := load("res://assets/sprites/player-miner-walking-sheet.png") as Texture2D
 	if tex == null:

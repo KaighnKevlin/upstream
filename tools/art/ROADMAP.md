@@ -34,7 +34,7 @@ bottom of the log.
 - [x] Scuttler (replaces goblin): bronze beetle, gear, headlamp core, wind-up key
 - [x] Tesla caster (replaces wizard): hovering orb, twin coils, arcs + discharge, cyan bolt
 - [x] Clockwork soldier (replaces skeleton): shield + spear, walk (8) + thrust (6)
-- [ ] Player miner: redraw to sit with the clockwork world
+- [x] Player: prospector (brass helmet + headlamp, slate coat, brass tank): idle 4, run 8, jump 2. Kaighn's hand-drawn miner sheets kept as a fallback
 - [x] Ore (3 rock+copper chunks, tumble), brass ingot, spring trampoline
 - [x] Miner drill rig (4-frame pump, steam puff), arc smelter (brass electrodes + live lightning)
 - [x] Dome observatory: glass (45% alpha) + brass ribs + riveted plinth with intake grate; cannon on the crown swivels to aim; ammo gauge strip on the rail
@@ -62,3 +62,6 @@ bottom of the log.
 - pass 7: gen_dome.py. Turret moved onto the crown (1200, 36); receiver sprite hidden,
   the plinth grate stands in for it. Dome light 0.55 -> 0.4. Next: the player miner,
   then the HUD (brass frame, pixel font), then the upstream lift shaft art.
+- pass 8: gen_player.py prospector, wired in via player_sprite.create_prospector_frames().
+  Next: HUD (brass frame, pixel font), upstream lift shaft art, a mining swing animation
+  for the prospector (the pickaxe is still the old polygon), titan second attack.

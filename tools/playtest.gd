@@ -646,7 +646,7 @@ func titan_vs_player() -> void:
 		var mid: float = (p.global_position.x + t.global_position.x) / 2.0 + 10
 		cam.global_position = Vector2(mid, 38)
 		await process_frame
-		await _grab(Rect2(Vector2(mid - 170, -44), Vector2(340, 150)), "rec_%03d" % i, 4)
+		await _grab(Rect2(Vector2(mid - 170, -44), Vector2(340, 150)), "rec_%03d" % i, -2)
 		var anim: AnimatedSprite2D = t.get_node("AnimatedSprite2D")
 		var attacking := anim.animation == "attack"
 		if was_attacking and not attacking:

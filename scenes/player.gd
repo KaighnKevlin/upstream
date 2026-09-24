@@ -37,9 +37,12 @@ const FX = preload("res://scripts/fx.gd")
 func _ready() -> void:
 	hp = max_hp
 	add_to_group("player")
-	var frames := PlayerSprite.create_player_frames()
+	var frames := PlayerSprite.create_prospector_frames()
 	if frames:
 		_anim.sprite_frames = frames
+		_anim.scale = Vector2.ONE  # drawn at game scale; the old miner sheet was 1.25x
+	elif PlayerSprite.create_player_frames():
+		_anim.sprite_frames = PlayerSprite.create_player_frames()
 	else:
 		_anim.sprite_frames = SpriteLoader.create_goblin_frames()
 	_anim.play("idle")
