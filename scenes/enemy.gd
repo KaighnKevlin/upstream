@@ -158,7 +158,10 @@ func _die() -> void:
 	remove_from_group("enemies")
 	set_physics_process(false)
 	$CollisionShape2D.set_deferred("disabled", true)
-	var body_y := -10.0 if enemy_type != EnemyType.TITAN else -40.0
+	if enemy_type == EnemyType.TITAN and $AnimatedSprite2D.sprite_frames.has_animation("death"):
+		_titan_die()
+		return
+	var body_y := -10.0
 	FX.burst(get_parent(), global_position + Vector2(0, body_y), DEATH_COLORS[enemy_type],
 		18 if enemy_type != EnemyType.TITAN else 40, 140.0, 0.7, 2.5)
 	var sprite := $AnimatedSprite2D as AnimatedSprite2D
@@ -167,6 +170,22 @@ func _die() -> void:
 	tween.tween_property(sprite, "modulate", Color(3, 3, 3, 0), 0.25)
 	tween.tween_property(sprite, "scale", sprite.scale * Vector2(1.3, 0.6), 0.25)
 	tween.chain().tween_callback(queue_free)
+
+
+func _titan_die() -> void:
+	var sprite := $AnimatedSprite2D as AnimatedSprite2D
+	sprite.play("death")
+	# the core bursts: steam and cyan sparks, then it keels over
+	FX.burst(get_parent(), global_position + Vector2(0, -45), Color(0.55, 0.85, 0.9), 14, 150.0, 0.5, 2.0)
+	FX.burst(get_parent(), global_position + Vector2(0, -40), Color(0.85, 0.85, 0.8, 0.8), 10, 50.0, 1.0, 3.0, -60.0)
+	FX.shake(self, 3.0, 0.2)
+	await sprite.animation_finished
+	FX.burst(get_parent(), global_position + Vector2(_facing * 20, 8), Color(0.55, 0.45, 0.35), 18, 110.0, 0.6, 2.5)
+	FX.shake(self, 4.0, 0.2)
+	await get_tree().create_timer(1.4).timeout
+	var tween := create_tween()
+	tween.tween_property(sprite, "modulate:a", 0.0, 0.6)
+	tween.tween_callback(queue_free)
 
 
 func _find_nearest_target() -> Node2D:
@@ -278,14 +297,19 @@ func _on_titan_frame() -> void:
 func _create_titan_frames() -> SpriteFrames:
 	var walk := load("res://assets/sprites/titan_walk.png") as Texture2D
 	var attack := load("res://assets/sprites/titan_attack.png") as Texture2D
+	var idle := load("res://assets/sprites/titan_idle.png") as Texture2D
+	var death := load("res://assets/sprites/titan_death.png") as Texture2D
 	if walk == null or attack == null:
 		return _create_titan_frames_old()
 	var sf := SpriteFrames.new()
 	sf.remove_animation("default")
 	var fw := 120
 	var fh := 120
-	for spec in [["walk", walk, 8, 8.0, true], ["idle", walk, 1, 4.0, true],
-			["attack", attack, 8, 11.0, false]]:
+	var specs := [["walk", walk, 8, 8.0, true], ["attack", attack, 8, 11.0, false]]
+	specs.append(["idle", idle, 6, 6.0, true] if idle else ["idle", walk, 1, 4.0, true])
+	if death:
+		specs.append(["death", death, 8, 10.0, false])
+	for spec in specs:
 		sf.add_animation(spec[0])
 		sf.set_animation_speed(spec[0], spec[3])
 		sf.set_animation_loop(spec[0], spec[4])

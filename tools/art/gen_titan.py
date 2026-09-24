@@ -127,26 +127,59 @@ def rot(p, pivot, deg):
     return (pivot[0] + x * c - y * s, pivot[1] + x * s + y * c)
 
 
-def blit(canvas, part, pivot=(0, 0), deg=0.0, dx=0.0, dy=0.0):
-    """Rotate part by deg around pivot, then translate; nearest sampling via
-    inverse mapping so there are no holes."""
+# 2D affine transforms as (a, b, c, d, tx, ty): p' = (a*x + b*y + tx, c*x + d*y + ty)
+IDENT = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+
+
+def m_rot(deg, pivot=(0, 0)):
+    r = math.radians(deg); c, s = math.cos(r), math.sin(r)
+    px, py = pivot
+    return (c, -s, s, c, px - c * px + s * py, py - s * px - c * py)
+
+
+def m_tr(dx, dy):
+    return (1.0, 0.0, 0.0, 1.0, dx, dy)
+
+
+def m_mul(A, B):
+    """A after B."""
+    a1, b1, c1, d1, x1, y1 = A; a2, b2, c2, d2, x2, y2 = B
+    return (a1 * a2 + b1 * c2, a1 * b2 + b1 * d2, c1 * a2 + d1 * c2, c1 * b2 + d1 * d2,
+            a1 * x2 + b1 * y2 + x1, c1 * x2 + d1 * y2 + y1)
+
+
+def m_apply(M, p):
+    a, b, c, d, tx, ty = M
+    return (a * p[0] + b * p[1] + tx, c * p[0] + d * p[1] + ty)
+
+
+def blit_m(canvas, part, M, remap=None):
+    """Draw part through affine M (nearest sampling via the inverse, so no
+    holes). remap: optional {rgba: rgba} colour substitution."""
     if not part: return
     xs = [p[0] for p in part]; ys = [p[1] for p in part]
-    corners = [rot(c, pivot, deg) for c in ((min(xs), min(ys)), (max(xs), min(ys)),
-                                            (min(xs), max(ys)), (max(xs), max(ys)))]
-    x0 = int(min(c[0] for c in corners) + dx) - 1; x1 = int(max(c[0] for c in corners) + dx) + 2
-    y0 = int(min(c[1] for c in corners) + dy) - 1; y1 = int(max(c[1] for c in corners) + dy) + 2
-    a = math.radians(-deg); c, s = math.cos(a), math.sin(a)
+    corners = [m_apply(M, c) for c in ((min(xs), min(ys)), (max(xs), min(ys)),
+                                       (min(xs), max(ys)), (max(xs), max(ys)))]
+    x0 = int(min(c[0] for c in corners)) - 1; x1 = int(max(c[0] for c in corners)) + 2
+    y0 = int(min(c[1] for c in corners)) - 1; y1 = int(max(c[1] for c in corners)) + 2
+    a, b, c, d, tx, ty = M
+    det = a * d - b * c
+    ia, ib, ic, id_ = d / det, -b / det, -c / det, a / det
     for y in range(y0, y1):
         cy = y + OY
         if cy < 0 or cy >= CH: continue
         for x in range(x0, x1):
             cx = x + OX
             if cx < 0 or cx >= CW: continue
-            rx, ry = x - dx - pivot[0], y - dy - pivot[1]
-            sx = int(round(pivot[0] + rx * c - ry * s)); sy = int(round(pivot[1] + rx * s + ry * c))
-            px = part.get((sx, sy))
-            if px: canvas[cy][cx] = px
+            rx, ry = x - tx, y - ty
+            px = part.get((int(round(ia * rx + ib * ry)), int(round(ic * rx + id_ * ry))))
+            if px:
+                canvas[cy][cx] = remap.get(px, px) if remap else px
+
+
+def blit(canvas, part, pivot=(0, 0), deg=0.0, dx=0.0, dy=0.0, remap=None):
+    """Rotate part by deg around pivot, then translate."""
+    blit_m(canvas, part, m_mul(m_tr(dx, dy), m_rot(deg, pivot)), remap)
 
 
 ARM_L = math.dist(SHOULDER_L, GRIP_L)
@@ -323,5 +356,119 @@ def main():
         write_png(d + '/titan_parts.png', w, h, m)
 
 
+
+
+
+# ── idle and death: whole-body transforms ───────────────────────────────
+
+HIP_C = (175, 458)      # between the hips: the body tips around this
+# glowing-core colours (palette cyans) and what they become
+_hex = lambda h: (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16), 255)
+GLOW = [_hex(h) for h in ('73bac3', '78c6cd', '90bcc4', 'abd3d4', 'cde3dc')]
+PULSE = dict(zip(GLOW, [_hex(h) for h in ('90bcc4', 'abd3d4', 'cde3dc', 'cde3dc', 'cde3dc')]))
+DIM = [dict(zip(GLOW, [_hex(h) for h in row])) for row in (
+    ('709092', '738877', '709092', '90bcc4', 'abd3d4'),   # flickering
+    ('5f7c83', '5f7c83', '709092', '709092', '93a29c'),   # dying
+    ('4f3d43', '4f3d43', '5f7c83', '5f7c83', '605d55'),   # dark
+)]
+
+
+def render_body(parts, pose):
+    """Like render(), but the upper body (torso, pads, arms, held axe) takes a
+    tilt around HIP_C, and the axe can be let go ('axe_free': (x, y, deg)).
+    pose['glow']: None, 'pulse' or 0-2 (dimming stages)."""
+    canvas = [[(0, 0, 0, 0)] * CW for _ in range(CH)]
+    bx, by = pose.get('body', (0, 0))
+    tilt = pose.get('tilt', 0)
+    lf, lb = pose.get('legs', (0, 0))
+    lx, ly = pose.get('legs_shift', (bx * 0.5, by * 0.5))
+    al, ar = pose.get('arms', (0, 0))
+    g = pose.get('glow')
+    remap = PULSE if g == 'pulse' else (DIM[g] if isinstance(g, int) else None)
+    B = m_mul(m_tr(bx, by), m_rot(tilt, HIP_C))
+    blit_m(canvas, parts['back_leg'], m_mul(m_tr(lx, ly), m_rot(lb, HIP_B)), remap)
+    blit_m(canvas, parts['front_leg'], m_mul(m_tr(lx, ly), m_rot(lf, HIP_F)), remap)
+    free = pose.get('axe_free')
+    free_m = None
+    if free:  # dropped axe: offset from its resting place, rotated about its middle
+        fx, fy, fdeg = free
+        free_m = m_mul(m_tr(fx, fy), m_rot(fdeg, GRIP_C))
+        if not pose.get('axe_front'):
+            blit_m(canvas, parts['axe'], free_m)
+    blit_m(canvas, parts['torso'], B, remap)
+    blit_m(canvas, parts['left_arm'], m_mul(B, m_rot(al, SHOULDER_L)), remap)
+    if not free:
+        hand = rot(GRIP_R, SHOULDER_R, ar)
+        axe_m = m_mul(B, m_mul(m_tr(hand[0] - GRIP_R[0], hand[1] - GRIP_R[1]),
+                               m_rot(pose.get('axe', 0), GRIP_R)))
+        blit_m(canvas, parts['axe'], axe_m)
+    blit_m(canvas, parts['right_arm'], m_mul(B, m_rot(ar, SHOULDER_R)), remap)
+    blit_m(canvas, parts['pad_l'], B, remap)
+    blit_m(canvas, parts['pad_r'], B, remap)
+    if free_m and pose.get('axe_front'):
+        blit_m(canvas, parts['axe'], free_m)
+    return canvas
+
+
+def idle_poses(n=6):
+    poses = []
+    for i in range(n):
+        s = math.sin(i / n * 2 * math.pi)
+        poses.append({'body': (0, 4 + 4 * s), 'legs_shift': (0, 0), 'arms': (1.5 * s, 1.5 * s),
+                      'axe': 1.5 * s, 'glow': 'pulse' if i in (1, 2) else None})
+    return poses
+
+
+LEG_LEN = 225   # hip to sole, reference px
+LEG_HALF = 40   # half a leg's thickness
+
+
+def _hip_drop(deg):
+    """How far the hips sink when both legs fold to deg, feet on the ground."""
+    r = math.radians(deg)
+    return 687 - LEG_LEN * math.cos(r) - LEG_HALF * math.sin(r) - 462
+
+
+def _death_pose(legs, dx, tilt, arms, glow, axe=None, axe_front=False, bounce=0):
+    d = max(0.0, _hip_drop(legs))
+    return {'body': (dx, d - bounce), 'tilt': tilt, 'legs': (legs, legs), 'legs_shift': (dx * 0.4, d),
+            'arms': arms, 'glow': glow, 'axe_free': axe, 'axe_front': axe_front}
+
+
+# recoil → knees give → pitches forward, axe slips and lands in front →
+# face down, one settle bounce, core fades out
+DEATH = [
+    {'body': (-6, 0), 'tilt': -6, 'arms': (8, 6), 'glow': None},
+    _death_pose(10, 4, 6, (-4, -8), 0),
+    _death_pose(26, 10, 16, (-10, -16), 0, axe=(30, 40, 25)),
+    _death_pose(46, 20, 34, (-18, -24), 1, axe=(80, 95, 12)),
+    _death_pose(64, 34, 56, (-30, -36), 1, axe=(125, 112, -4), axe_front=True),
+    _death_pose(78, 46, 78, (-44, -48), 2, axe=(125, 112, -4), axe_front=True),
+    _death_pose(78, 46, 76, (-44, -48), 2, axe=(125, 112, -4), axe_front=True, bounce=8),
+    _death_pose(78, 46, 78, (-44, -48), 2, axe=(125, 112, -4), axe_front=True),
+]
+
+
+def build_body(poses, parts, pal):
+    return [downscale(render_body(parts, p), CW, CH, FW, FH, pal, scale=SCALE) for p in poses]
+
+
+def main_extra(preview=None):
+    w, h, ref = load_reference()
+    pal = load_palette()
+    parts = split_parts(ref, w, h)
+    idle = build_body(idle_poses(), parts, pal)
+    death = build_body(DEATH, parts, pal)
+    write_png(OUT + 'titan_idle.png', FW * len(idle), FH, strip(idle))
+    write_png(OUT + 'titan_death.png', FW * len(death), FH, strip(death))
+    print('wrote titan_idle.png (%d), titan_death.png (%d)' % (len(idle), len(death)))
+    if preview:
+        big = side_by_side(idle, 4); write_png(preview + '/titan_idle_preview.png', len(big[0]), len(big), big)
+        big = side_by_side(death, 4); write_png(preview + '/titan_death_preview.png', len(big[0]), len(big), big)
+        write_gif(preview + '/titan_idle.gif', idle, [14] * len(idle), 4)
+        write_gif(preview + '/titan_death.gif', death + [death[-1]], [8, 8, 8, 8, 8, 10, 12, 80, 60], 4)
+
+
 if __name__ == '__main__':
     main()
+    main_extra(sys.argv[1] if len(sys.argv) > 1 else None)

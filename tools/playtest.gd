@@ -677,3 +677,37 @@ func _grab(region: Rect2, label: String, div: int) -> void:
 	crop.resize(crop.get_width() / div, crop.get_height() / div, Image.INTERPOLATE_NEAREST)
 	crop.save_png("%s/%s.png" % [out_dir, label])
 	Engine.time_scale = ts
+
+
+func titan_death() -> void:
+	# Recording: titan chops at the player, gets shot down, collapses.
+	var p: CharacterBody2D = main.get_node("Player")
+	main._wave_timer = -9999.0
+	main.get_node("Turret").set_physics_process(false)
+	p.global_position = Vector2(1700, 60)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.zoom = Vector2(3, 3)
+	cam.position_smoothing_enabled = false
+	cam.global_position = Vector2(1760, 38)
+	await wait(1.0)
+	var t := _spawn(0, Vector2(1800, 76))
+	await wait(0.25)
+	var region := Rect2(Vector2(1590, -44), Vector2(340, 150))
+	var killed := false
+	for i in 95:
+		await _grab(region, "death_%03d" % i, 4)
+		# shotgun blast every so often, aimed at the titan's chest
+		if i % 9 == 4 and is_instance_valid(t) and not t._dying:
+			var m := InputEventMouseMotion.new()
+			m.position = world_to_screen(t.global_position + Vector2(0, -40))
+			Input.parse_input_event(m)
+			root.warp_mouse(m.position)
+			key(KEY_F, true)
+		else:
+			key(KEY_F, false)
+		if i == 40 and is_instance_valid(t):
+			t.take_damage(100)  # finish it so the recording shows the collapse
+			killed = true
+		await wait(0.08)
+	log_line("titan_death recorded; killed=%s" % killed)
