@@ -59,6 +59,50 @@ def trampoline():
     return fig.render(44, 22, (22, 3))
 
 
+# Split trampoline: a fixed base, and a spring + plate that the game tilts to
+# the launch angle (the plate faces where it throws) and animates on a hit.
+SPRING_REST = 8.0
+TOP_FW, TOP_FH, TOP_O = 48, 28, (24, 26)     # pivot (spring foot) at TOP_O
+
+
+def tramp_base():
+    fig = Figure()
+    fig.box((-12, 0, 12, 4.5), DARK, z=0, bevel=1.2)
+    for x in (-9, 9):
+        fig.sphere((x, 2.3), 0.8, STEEL, z=0.5)
+    # brass hinge block the spring stands on
+    fig.box((-4, -1.5, 4, 1.5), BRONZE, z=1, bevel=0.8)
+    fig.disc((0, 0), 1.1, STEEL, z=1.2)
+    return fig.render(28, 8, (14, 2))
+
+
+def tramp_top(length, splay=0.0):
+    """Spring of `length` px from the pivot (0, 0) up to the plate.
+    splay widens the coil when it's crushed."""
+    fig = Figure()
+    turns = 3
+    n = turns * 2
+    w = 5 + splay
+    for k in range(n):
+        y0 = -length * k / n; y1 = -length * (k + 1) / n
+        front = k % 2 == 0
+        fig.capsule((-w if front else w, y0), (w if front else -w, y1), 0.65,
+                    STEEL if front else DARK, z=2 if front else 1, grit=0.02)
+    for x in (-8, 8):  # telescoping guide rods
+        fig.capsule((x * 0.9, -0.5), (x, -length), 0.6, BRONZE, z=1.5)
+    top = -length
+    fig.box((-20, top - 4.5, 20, top), BRONZE, z=3, bevel=1.5)
+    fig.box((-18, top - 5.7, 18, top - 3.8), DARK, z=3.5, bevel=0.6, grit=0.02)
+    for x in (-17, 17):
+        fig.sphere((x, top - 1.6), 0.8, STEEL, z=3.6)
+    fig.sphere((0, top - 1.8), 1.1, GLOW, z=3.7, emissive=True)   # little status core
+    return fig.render(TOP_FW, TOP_FH, TOP_O)
+
+
+# rest, then on a hit: crush, bottom out, rebound past rest, settle
+TRAMP_FRAMES = [(SPRING_REST, 0), (5.0, 1.0), (3.2, 2.0), (6.5, 0.8), (11.0, 0), (7.0, 0.3), (8.8, 0), (SPRING_REST, 0)]
+
+
 def debris():
     """Clockwork debris for deaths: 6 pieces, 8x8 each."""
     pieces = []
@@ -82,6 +126,10 @@ def main():
     write_png(SPR + 'ore.png', 36, 12, rows)
     ing = ingot(); write_png(SPR + 'ingot.png', 14, 8, ing)
     tr = trampoline(); write_png(SPR + 'trampoline.png', 44, 22, tr)
+    write_png(SPR + 'trampoline_base.png', 28, 8, tramp_base())
+    tops = [tramp_top(l, sp) for l, sp in TRAMP_FRAMES]
+    write_png(SPR + 'trampoline_top.png', TOP_FW * len(tops), TOP_FH,
+              [sum((f[y] for f in tops), []) for y in range(TOP_FH)])
     deb = debris()
     write_png(SPR + 'debris.png', 48, 8, [sum((d[y] for d in deb), []) for y in range(8)])
     print('wrote ore.png, ingot.png, trampoline.png, debris.png')
@@ -89,6 +137,16 @@ def main():
         pad = lambda f, w, h: [row + [(0, 0, 0, 0)] * (w - len(row)) for row in f] + [[(0, 0, 0, 0)] * w] * (h - len(f))
         big = side_by_side([pad(o, 12, 22) for o in ores] + [pad(ing, 14, 22), tr] + [pad(d, 8, 22) for d in deb], 10)
         write_png(sys.argv[1] + '/items_preview.png', len(big[0]), len(big), big)
+        base = tramp_base()
+        comp = []
+        for t in tops:   # stack each top frame on the base for the preview
+            f = [row[:] for row in t] + [[(0, 0, 0, 0)] * TOP_FW for _ in range(6)]
+            for y, row in enumerate(base):
+                for x, px in enumerate(row):
+                    if px[3]: f[TOP_O[1] - 2 + y][TOP_O[0] - 14 + x] = px
+            comp.append(f)
+        big = side_by_side(comp, 6)
+        write_png(sys.argv[1] + '/tramp_preview.png', len(big[0]), len(big), big)
 
 
 if __name__ == '__main__':

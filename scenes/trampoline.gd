@@ -18,6 +18,8 @@ const FX = preload("res://scripts/fx.gd")
 @onready var _force_line: Polygon2D = $ForceLine
 
 var _pixel_sprite: Sprite2D
+var _rig: Node2D            # base + animated spring/plate, tilted to the launch angle
+var _top: AnimatedSprite2D
 
 enum DragMode { NONE, BODY, ANGLE, FORCE }
 var _selected := false
@@ -37,13 +39,7 @@ func _ready() -> void:
 	_hide_handles()
 
 	# Add pixel art sprite
-	_pixel_sprite = Sprite2D.new()
-	# brass plate on a coil spring (tools/art/gen_items.py); the plate's top
-	# sits 3px into the 22px texture, so shift it onto the pivot
-	_pixel_sprite.texture = preload("res://assets/sprites/trampoline.png")
-	_pixel_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	_pixel_sprite.offset = Vector2(0, 8)
-	add_child(_pixel_sprite)
+	_build_rig()
 	_sprite.visible = false  # hide polygon
 	_arrow.color = Color(0.45, 0.8, 0.85, 0.6)  # aim hint, in the cores' cyan
 
@@ -52,7 +48,10 @@ func _ready() -> void:
 
 func _on_body_entered(body: Node2D) -> void:
 	SFX.play(self, SFX.sfx_bounce())
-	FX.pop(_pixel_sprite, Vector2(1.25, 0.55), 0.18)
+	if _top:
+		_top.play("bounce")
+	else:
+		FX.pop(_pixel_sprite, Vector2(1.25, 0.55), 0.18)
 
 	var angle_rad := deg_to_rad(bounce_angle - 90)
 	var direction := Vector2(cos(angle_rad), sin(angle_rad))
@@ -72,6 +71,48 @@ func _on_body_entered(body: Node2D) -> void:
 		var perpendicular: Vector2 = incoming - direction * along_tramp
 		var new_vel: Vector2 = direction * bounce_force + perpendicular * 0.4
 		body.launch(new_vel)
+
+
+## Brass plate on a coil spring (tools/art/gen_items.py): a fixed base and
+## an animated top that crushes and rebounds on each bounce. The node origin
+## is the plate's top; the spring's foot is 14px below it.
+func _build_rig() -> void:
+	var top_tex := load("res://assets/sprites/trampoline_top.png") as Texture2D
+	if top_tex == null:
+		_pixel_sprite = Sprite2D.new()
+		_pixel_sprite.texture = preload("res://assets/sprites/trampoline.png")
+		_pixel_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		_pixel_sprite.offset = Vector2(0, 8)
+		add_child(_pixel_sprite)
+		return
+	_rig = Node2D.new()
+	add_child(_rig)
+	var base := Sprite2D.new()
+	base.texture = load("res://assets/sprites/trampoline_base.png")
+	base.centered = false
+	base.offset = Vector2(-14, -2)
+	base.position = Vector2(0, 14)
+	base.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_rig.add_child(base)
+	_top = AnimatedSprite2D.new()
+	var sf := SpriteFrames.new()
+	sf.remove_animation("default")
+	for spec in [["idle", [0]], ["bounce", [1, 2, 3, 4, 5, 6, 7]]]:
+		sf.add_animation(spec[0])
+		sf.set_animation_speed(spec[0], 20.0)
+		sf.set_animation_loop(spec[0], false)
+		for i in spec[1]:
+			var a := AtlasTexture.new()
+			a.atlas = top_tex
+			a.region = Rect2(i * 48, 0, 48, 28)
+			sf.add_frame(spec[0], a)
+	_top.sprite_frames = sf
+	_top.centered = false
+	_top.offset = Vector2(-24, -26)
+	_top.position = Vector2(0, 14)
+	_top.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_top.play("idle")
+	_rig.add_child(_top)
 
 
 func _launch_dir() -> Vector2:
@@ -191,6 +232,8 @@ func _update_visuals() -> void:
 	_sprite.rotation = deg_to_rad(bounce_angle)
 	if _pixel_sprite:
 		_pixel_sprite.rotation = deg_to_rad(bounce_angle)
+	if _rig:
+		_rig.rotation = deg_to_rad(bounce_angle)
 
 	var dir := _launch_dir()
 	var perp := dir.rotated(PI / 2)

@@ -1024,6 +1024,36 @@ func gun_rec() -> void:
 		await wait(0.03)
 
 
+func tramp_rec() -> void:
+	# Recording: ore dropped onto two trampolines, one flat, one tilted.
+	main._wave_timer = -9999.0
+	var p: CharacterBody2D = main.get_node("Player")
+	p.global_position = Vector2(1000, 60)
+	var t1: Node2D = preload("res://scenes/trampoline.tscn").instantiate()
+	t1.global_position = Vector2(1560, 80)
+	main.add_child(t1)
+	var t2: Node2D = preload("res://scenes/trampoline.tscn").instantiate()
+	t2.global_position = Vector2(1660, 80)
+	t2.bounce_angle = -35.0
+	t2.bounce_force = 520.0
+	main.add_child(t2)
+	t2._update_visuals()
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.zoom = Vector2(3, 3)
+	cam.position_smoothing_enabled = false
+	cam.global_position = Vector2(1610, 20)
+	await wait(0.5)
+	for i in 60:
+		if i % 15 == 0:
+			for x in [1560, 1660]:
+				var ore: Node2D = preload("res://scenes/ore.tscn").instantiate()
+				ore.global_position = Vector2(x, -40)
+				main.add_child(ore)
+		await _grab(Rect2(Vector2(1500, -70), Vector2(220, 170)), "tr_%03d" % i, -3)
+		await wait(0.03)
+
+
 func banner() -> void:
 	main._wave_timer = -9999.0
 	await wait(0.8)
