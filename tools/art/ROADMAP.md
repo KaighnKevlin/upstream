@@ -30,7 +30,7 @@ bottom of the log.
 
 - [x] Titan walk (8) + two-handed chop (8)
 - [x] Titan idle (6, core pulses) + death (8: buckle, pitch forward, axe drops, core fades)
-- [ ] Titan second attack (sweep / ground slam)
+- [x] Titan second attack: low rising sweep (8), used vs the player (MELEE vs_player); chop stays for the dome
 - [x] Scuttler (replaces goblin): bronze beetle, gear, headlamp core, wind-up key
 - [x] Tesla caster (replaces wizard): hovering orb, twin coils, arcs + discharge, cyan bolt
 - [x] Clockwork soldier (replaces skeleton): shield + spear, walk (8) + thrust (6)
@@ -68,3 +68,4 @@ bottom of the log.
 - pass 9: HUD. Font sizes must be multiples of 10 (integer scaling). Missing glyphs:
   $&*@\\^`{|}~ (add to gen_font.py G if needed). Next: lift shaft art, prospector
   pickaxe swing, titan second attack, wave banner.
+- pass 10: titan sweep. MELEE entries can carry vs_player {anim, impact, knock, damage}.

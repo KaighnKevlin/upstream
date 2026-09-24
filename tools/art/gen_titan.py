@@ -312,6 +312,22 @@ ATTACK = resolve([
 ])
 
 
+SWEEP = resolve([
+    # low rising sweep: wind the axe back behind, scoop it low across the
+    # ground, follow through high in front. Impact on frame 4.
+    {'body': (0, 4), 'axe_at': ((182, 437), 0)},
+    {'body': (-10, 8), 'legs': (4, -4), 'axe_at': ((110, 410), 150)},
+    {'body': (-16, 12), 'legs': (8, -6), 'axe_at': ((95, 400), 175)},
+    {'body': (0, 16), 'legs': (0, 0), 'axe_at': ((190, 470), 95),
+     'smear_at': [((105, 410), 170), ((130, 440), 145), ((160, 462), 120), ((190, 470), 95)]},
+    {'body': (14, 10), 'legs': (-12, 6), 'axe_at': ((290, 380), -10),
+     'smear_at': [((215, 470), 65), ((250, 450), 35), ((275, 415), 10)]},
+    {'body': (12, 4), 'legs': (-12, 6), 'axe_at': ((300, 300), -45)},
+    {'body': (6, 4), 'legs': (-5, 3), 'axe_at': ((240, 380), -15)},
+    {'body': (1, 4), 'axe_at': ((190, 432), -3)},
+])
+
+
 def build(poses, parts, pal):
     frames = []
     for p in poses:
@@ -335,13 +351,17 @@ def main():
     parts = split_parts(ref, w, h)
     walk = build(walk_poses(), parts, pal)
     attack = build(ATTACK, parts, pal)
+    sweep = build(SWEEP, parts, pal)
     write_png(OUT + 'titan_walk.png', FW * len(walk), FH, strip(walk))
     write_png(OUT + 'titan_attack.png', FW * len(attack), FH, strip(attack))
+    write_png(OUT + 'titan_sweep.png', FW * len(sweep), FH, strip(sweep))
     print('wrote titan_walk.png (%d frames), titan_attack.png (%d frames)' % (len(walk), len(attack)))
     if len(sys.argv) > 1:
         d = sys.argv[1]
         big = side_by_side(walk, 4); write_png(d + '/titan_walk_preview.png', len(big[0]), len(big), big)
         big = side_by_side(attack, 4); write_png(d + '/titan_attack_preview.png', len(big[0]), len(big), big)
+        big = side_by_side(sweep, 4); write_png(d + '/titan_sweep_preview.png', len(big[0]), len(big), big)
+        write_gif(d + '/titan_sweep.gif', sweep + [sweep[0]], [10, 9, 12, 5, 6, 14, 10, 10, 40], 4)
         # part map for checking the masks
         colors = {'torso': (200, 160, 90), 'left_arm': (80, 160, 255), 'right_arm': (60, 220, 160),
                   'axe': (240, 240, 240), 'front_leg': (230, 90, 90), 'back_leg': (170, 60, 200),

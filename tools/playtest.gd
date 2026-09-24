@@ -648,7 +648,7 @@ func titan_vs_player() -> void:
 		await process_frame
 		await _grab(Rect2(Vector2(mid - 170, -44), Vector2(340, 150)), "rec_%03d" % i, -2)
 		var anim: AnimatedSprite2D = t.get_node("AnimatedSprite2D")
-		var attacking := anim.animation == "attack"
+		var attacking := anim.animation == "attack" or anim.animation == "sweep"
 		if was_attacking and not attacking:
 			chops += 1
 			if chops == 2:

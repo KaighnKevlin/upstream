@@ -36,13 +36,16 @@ var _dying := false
 # weapon (see the generators in tools/art/).
 const MELEE := {
 	EnemyType.TITAN: {"damage": 12, "cooldown": 1.6, "reach_dome": 105.0, "reach_player": 58.0,
-		"impact": 5, "body_offset": 12.0, "knock": Vector2(260, -240), "hit_x": 42.0, "heavy": true},
+		"impact": 5, "body_offset": 12.0, "knock": Vector2(260, -240), "hit_x": 42.0, "heavy": true,
+		# against the player it uses a low rising sweep instead of the chop
+		"vs_player": {"anim": "sweep", "impact": 4, "knock": Vector2(380, -150), "damage": 10}},
 	EnemyType.SOLDIER: {"damage": 7, "cooldown": 1.3, "reach_dome": 62.0, "reach_player": 42.0,
 		"impact": 2, "body_offset": 13.0, "knock": Vector2(170, -140), "hit_x": 36.0, "heavy": false},
 }
 var _facing := -1.0
 var _chop_cooldown := 0.0
 var _chop_target: Node2D
+var _attack_anim := "attack"
 
 var _bullet_scene: PackedScene = preload("res://scenes/enemy_bullet.tscn")
 
@@ -255,7 +258,7 @@ func _shoot_at(target: Node2D) -> void:
 func _melee_process(delta: float) -> void:
 	var anim := $AnimatedSprite2D as AnimatedSprite2D
 	_chop_cooldown -= delta
-	var swinging := anim.animation == "attack" and anim.is_playing()
+	var swinging := anim.animation == _attack_anim and anim.is_playing()
 	var m: Dictionary = MELEE[enemy_type]
 	var target := _melee_target(m)
 	if swinging:
@@ -266,7 +269,11 @@ func _melee_process(delta: float) -> void:
 		if _chop_cooldown <= 0:
 			_chop_target = target
 			_chop_cooldown = m.cooldown
-			anim.play("attack")
+			_attack_anim = "attack"
+			if target.is_in_group("player") and m.has("vs_player") \
+					and anim.sprite_frames.has_animation(m.vs_player.anim):
+				_attack_anim = m.vs_player.anim
+			anim.play(_attack_anim)
 		else:
 			anim.play("idle")
 	else:
@@ -293,7 +300,9 @@ func _melee_target(m: Dictionary) -> Node2D:
 func _on_melee_frame() -> void:
 	var anim := $AnimatedSprite2D as AnimatedSprite2D
 	var m: Dictionary = MELEE[enemy_type]
-	if _dying or anim.animation != "attack" or anim.frame != m.impact:
+	if _attack_anim != "attack":
+		m = m.merged(m.vs_player, true)  # the variant's impact frame, knockback, damage
+	if _dying or anim.animation != _attack_anim or anim.frame != m.impact:
 		return
 	var hit := global_position + Vector2(_facing * m.hit_x, 10 if m.heavy else -8)
 	if m.heavy:  # axe into the ground: dust, sparks, big shake
@@ -356,6 +365,9 @@ func _create_titan_frames() -> SpriteFrames:
 	var fw := 120
 	var fh := 120
 	var specs := [["walk", walk, 8, 8.0, true], ["attack", attack, 8, 11.0, false]]
+	var sweep := load("res://assets/sprites/titan_sweep.png") as Texture2D
+	if sweep:
+		specs.append(["sweep", sweep, 8, 12.0, false])
 	specs.append(["idle", idle, 6, 6.0, true] if idle else ["idle", walk, 1, 4.0, true])
 	if death:
 		specs.append(["death", death, 8, 10.0, false])
