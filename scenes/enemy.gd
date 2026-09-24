@@ -1,6 +1,6 @@
 extends CharacterBody2D
 
-enum EnemyType { TITAN, SCUTTLER, SKELETON, CASTER }
+enum EnemyType { TITAN, SCUTTLER, SOLDIER, CASTER }
 
 @export var enemy_type: EnemyType = EnemyType.TITAN
 @export var speed: float = 60.0
@@ -24,22 +24,22 @@ const FX = preload("res://scripts/fx.gd")
 const DEATH_COLORS := {
 	EnemyType.TITAN: Color(0.62, 0.48, 0.32),
 	EnemyType.SCUTTLER: Color(0.72, 0.58, 0.35),
-	EnemyType.SKELETON: Color(0.92, 0.9, 0.96),
+	EnemyType.SOLDIER: Color(0.92, 0.9, 0.96),
 	EnemyType.CASTER: Color(0.55, 0.85, 0.9),
 }
 
 var _dying := false
 
-# Titan: walks up to the dome (or the player) and chops with its axe; damage
-# lands on the impact frame of the attack animation.
-const TITAN_CHOP_DAMAGE := 12
-const TITAN_CHOP_COOLDOWN := 1.6
-const TITAN_REACH_DOME := 105.0
-const TITAN_REACH_PLAYER := 58.0
-const TITAN_IMPACT_FRAME := 5
-# Frames are 120px wide with the body 12px left of centre, leaving room for
-# the axe in front (tools/art/gen_titan.py).
-const TITAN_BODY_OFFSET := 12.0
+# Melee types walk up to the dome (or the player), stop and swing; damage
+# lands on the impact frame of the "attack" animation. body_offset: how far
+# the body sits left of the frame centre, leaving room in front for the
+# weapon (see the generators in tools/art/).
+const MELEE := {
+	EnemyType.TITAN: {"damage": 12, "cooldown": 1.6, "reach_dome": 105.0, "reach_player": 58.0,
+		"impact": 5, "body_offset": 12.0, "knock": Vector2(260, -240), "hit_x": 42.0, "heavy": true},
+	EnemyType.SOLDIER: {"damage": 7, "cooldown": 1.3, "reach_dome": 62.0, "reach_player": 42.0,
+		"impact": 2, "body_offset": 13.0, "knock": Vector2(170, -140), "hit_x": 36.0, "heavy": false},
+}
 var _facing := -1.0
 var _chop_cooldown := 0.0
 var _chop_target: Node2D
@@ -48,9 +48,9 @@ var _bullet_scene: PackedScene = preload("res://scenes/enemy_bullet.tscn")
 
 # Stats per type: [speed, hp, damage, scale]
 const TYPE_STATS := {
-	EnemyType.TITAN:    [25.0,  15, 30, 1.0],  # slow, tanky; chops for TITAN_CHOP_DAMAGE
+	EnemyType.TITAN:    [25.0,  15, 30, 1.0],  # slow, tanky; melee stats in MELEE
 	EnemyType.SCUTTLER: [100.0, 2,  5,  1.0],  # small, fast clockwork beetle
-	EnemyType.SKELETON: [30.0,  8,  20, 2.2],
+	EnemyType.SOLDIER:  [30.0,  8,  20, 1.0],  # shield-and-spear automaton
 	EnemyType.CASTER:   [35.0,  4,  0,  1.0],  # hovering tesla sentinel, shoots bolts
 }
 
@@ -77,7 +77,7 @@ func _ready() -> void:
 			EnemyType.TITAN:
 				anim.sprite_frames = _create_titan_frames()
 				anim.offset.y = -49
-				anim.frame_changed.connect(_on_titan_frame)
+				anim.frame_changed.connect(_on_melee_frame)
 				# Bigger collision box for titan (new shape, don't modify shared one)
 				var titan_shape := RectangleShape2D.new()
 				titan_shape.size = Vector2(40, 60)
@@ -86,8 +86,11 @@ func _ready() -> void:
 			EnemyType.SCUTTLER:
 				anim.sprite_frames = _strip_frames("res://assets/sprites/scuttler_walk.png", 44, 36, 6, 14.0)
 				anim.offset.y = -3
-			EnemyType.SKELETON:
-				anim.sprite_frames = _create_skeleton_frames()
+			EnemyType.SOLDIER:
+				anim.sprite_frames = _strip_frames("res://assets/sprites/soldier_walk.png", 60, 50, 8, 10.0)
+				_add_strip_anim(anim.sprite_frames, "attack", "res://assets/sprites/soldier_attack.png", 60, 50, 6, 12.0)
+				anim.offset.y = -10
+				anim.frame_changed.connect(_on_melee_frame)
 			EnemyType.CASTER:
 				anim.sprite_frames = _strip_frames("res://assets/sprites/caster_hover.png", 40, 46, 6, 9.0)
 				_add_strip_anim(anim.sprite_frames, "attack", "res://assets/sprites/caster_attack.png", 40, 46, 6, 12.0)
@@ -108,9 +111,9 @@ func _physics_process(delta: float) -> void:
 	else:
 		velocity.y = 0
 
-	# Titan walks until something is in axe reach, then chops
-	if enemy_type == EnemyType.TITAN:
-		_titan_process(delta)
+	# Melee types walk until something is in reach, then attack
+	if MELEE.has(enemy_type):
+		_melee_process(delta)
 		move_and_slide()
 		return
 
@@ -249,11 +252,12 @@ func _shoot_at(target: Node2D) -> void:
 		$AnimatedSprite2D.play("attack")
 
 
-func _titan_process(delta: float) -> void:
+func _melee_process(delta: float) -> void:
 	var anim := $AnimatedSprite2D as AnimatedSprite2D
 	_chop_cooldown -= delta
 	var swinging := anim.animation == "attack" and anim.is_playing()
-	var target := _titan_target()
+	var m: Dictionary = MELEE[enemy_type]
+	var target := _melee_target(m)
 	if swinging:
 		velocity.x = 0
 	elif target:
@@ -261,7 +265,7 @@ func _titan_process(delta: float) -> void:
 		_facing = signf(target.global_position.x - global_position.x)
 		if _chop_cooldown <= 0:
 			_chop_target = target
-			_chop_cooldown = TITAN_CHOP_COOLDOWN
+			_chop_cooldown = m.cooldown
 			anim.play("attack")
 		else:
 			anim.play("idle")
@@ -271,39 +275,44 @@ func _titan_process(delta: float) -> void:
 		anim.play("walk")
 	# sprite faces right; keep the body (not the frame centre) on the origin
 	anim.flip_h = _facing < 0
-	anim.offset.x = TITAN_BODY_OFFSET if _facing > 0 else -TITAN_BODY_OFFSET
+	anim.offset.x = m.body_offset if _facing > 0 else -m.body_offset
 
 
-func _titan_target() -> Node2D:
+func _melee_target(m: Dictionary) -> Node2D:
 	var scene := get_tree().current_scene
 	var player := scene.get_node_or_null("Player") as Node2D
-	if player and absf(player.global_position.x - global_position.x) < TITAN_REACH_PLAYER \
+	if player and absf(player.global_position.x - global_position.x) < m.reach_player \
 			and absf(player.global_position.y - global_position.y) < 60:
 		return player
 	var dome := scene.get_node_or_null("DomeZone") as Node2D
-	if dome and absf(dome.global_position.x - global_position.x) < TITAN_REACH_DOME:
+	if dome and absf(dome.global_position.x - global_position.x) < m.reach_dome:
 		return dome
 	return null
 
 
-func _on_titan_frame() -> void:
+func _on_melee_frame() -> void:
 	var anim := $AnimatedSprite2D as AnimatedSprite2D
-	if _dying or anim.animation != "attack" or anim.frame != TITAN_IMPACT_FRAME:
+	var m: Dictionary = MELEE[enemy_type]
+	if _dying or anim.animation != "attack" or anim.frame != m.impact:
 		return
-	# the blade hits the ground ~40px in front of the body
-	var hit := global_position + Vector2(_facing * 42, 10)
-	FX.burst(get_parent(), hit, Color(0.55, 0.45, 0.35), 16, 120.0, 0.5, 2.5)
-	FX.burst(get_parent(), hit + Vector2(0, -6), Color(0.85, 0.95, 1.0), 6, 160.0, 0.2, 1.5, 0.0)
-	FX.shake(self, 5.0, 0.25)
-	SFX.play(self, SFX.sfx_mine_break())
+	var hit := global_position + Vector2(_facing * m.hit_x, 10 if m.heavy else -8)
+	if m.heavy:  # axe into the ground: dust, sparks, big shake
+		FX.burst(get_parent(), hit, Color(0.55, 0.45, 0.35), 16, 120.0, 0.5, 2.5)
+		FX.burst(get_parent(), hit + Vector2(0, -6), Color(0.85, 0.95, 1.0), 6, 160.0, 0.2, 1.5, 0.0)
+		FX.shake(self, 5.0, 0.25)
+		SFX.play(self, SFX.sfx_mine_break())
+	else:  # spear thrust: a glint at the tip
+		FX.burst(get_parent(), hit, Color(0.85, 0.95, 1.0), 5, 90.0, 0.15, 1.5, 0.0)
+		SFX.play(self, SFX.sfx_enemy_hit())
 	if not is_instance_valid(_chop_target):
 		return
 	if _chop_target.has_method("take_damage"):
-		_chop_target.take_damage(TITAN_CHOP_DAMAGE)
+		_chop_target.take_damage(m.damage)
 		if _chop_target.has_method("launch"):
-			_chop_target.launch(Vector2(_facing * 260, -240))
+			var k: Vector2 = m.knock
+			_chop_target.launch(Vector2(_facing * k.x, k.y))
 	elif get_tree().current_scene.has_method("damage_dome"):
-		get_tree().current_scene.damage_dome(TITAN_CHOP_DAMAGE)
+		get_tree().current_scene.damage_dome(m.damage)
 
 
 func _add_strip_anim(sf: SpriteFrames, anim_name: String, path: String, fw: int, fh: int,
@@ -397,15 +406,3 @@ func _create_titan_frames_old() -> SpriteFrames:
 		sf.add_frame(anim_name, atlas)
 
 	return sf
-
-
-func _create_skeleton_frames() -> SpriteFrames:
-	var tex := load("res://assets/sprites/skeleton.png") as Texture2D
-	return SpriteLoader.create_frames_from_sheet(tex, {
-		"idle": {"row": 0, "frames": 4, "speed": 6.0},
-		"walk": {"row": 5, "frames": 4, "speed": 6.0},
-		"attack": {"row": 1, "frames": 4, "speed": 8.0},
-		"jump": {"row": 2, "frames": 3, "speed": 6.0},
-		"damage": {"row": 3, "frames": 2, "speed": 8.0, "loop": false},
-		"death": {"row": 4, "frames": 4, "speed": 8.0, "loop": false},
-	})

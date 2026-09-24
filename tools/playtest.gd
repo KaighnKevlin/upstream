@@ -753,3 +753,27 @@ func caster() -> void:
 		await _grab(Rect2(Vector2(1540, -24), Vector2(360, 128)), "caster_%03d" % i, 3)
 		await wait(0.08)
 	log_line("caster: player hp %d -> %d" % [hp0, p.hp])
+
+
+func soldier() -> void:
+	# Recording: two clockwork soldiers advance on the player and thrust.
+	main._wave_timer = -9999.0
+	main.get_node("Turret").set_physics_process(false)
+	var p: CharacterBody2D = main.get_node("Player")
+	p.global_position = Vector2(1640, 60)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.zoom = Vector2(3, 3)
+	cam.position_smoothing_enabled = false
+	await wait(0.8)
+	var s1 := _spawn(2, Vector2(1740, 76))
+	_spawn(2, Vector2(1790, 76))
+	await wait(0.3)
+	var hp0: int = p.hp
+	for i in 90:
+		var mid: float = (p.global_position.x + s1.global_position.x) / 2.0 if is_instance_valid(s1) else 1700.0
+		cam.global_position = Vector2(mid + 20, 40)
+		await process_frame
+		await _grab(Rect2(Vector2(mid - 130, -20), Vector2(300, 124)), "soldier_%03d" % i, 3)
+		await wait(0.08)
+	log_line("soldier: player hp %d -> %d" % [hp0, p.hp])

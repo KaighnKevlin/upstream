@@ -33,7 +33,7 @@ bottom of the log.
 - [ ] Titan second attack (sweep / ground slam)
 - [x] Scuttler (replaces goblin): bronze beetle, gear, headlamp core, wind-up key
 - [x] Tesla caster (replaces wizard): hovering orb, twin coils, arcs + discharge, cyan bolt
-- [ ] Clockwork soldier (replaces skeleton)
+- [x] Clockwork soldier (replaces skeleton): shield + spear, walk (8) + thrust (6)
 - [ ] Player miner: redraw to sit with the clockwork world
 - [ ] Ore and ingot look; trampoline redesign (spring-loaded brass plate)
 - [ ] Dome (brass and glass), turret, receiver, laser, miner building
@@ -49,3 +49,6 @@ bottom of the log.
   (EnemyType.GOBLIN renamed SCUTTLER).
 - pass 3: clockwork.bolt() lightning; tesla caster hover (6) + attack (6), self-lit;
   enemy bolt restyled cyan with glow. WIZARD renamed CASTER.
+- pass 4: soldier. Melee generalised: enemy.gd MELEE table (damage, cooldown, reach,
+  impact frame, body offset, knockback) drives titan + soldier. SKELETON renamed SOLDIER.
+  Player light 1.0 -> 0.7. All asset-pack enemies now replaced.

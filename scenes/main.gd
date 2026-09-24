@@ -196,7 +196,7 @@ func _spawn_wave() -> void:
 		match i:
 			0: type = 0  # TITAN
 			1: type = 1  # SCUTTLER
-			2: type = 2  # SKELETON
+			2: type = 2  # SOLDIER
 			3: type = 3  # CASTER
 			_: type = i % 4
 

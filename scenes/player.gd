@@ -48,7 +48,7 @@ func _ready() -> void:
 	var light := PointLight2D.new()
 	light.texture = LightTextures.create_radial_light(256)
 	light.texture_scale = 3.0
-	light.energy = 1.0
+	light.energy = 0.7  # stacks with moonlight on the surface; 1.0 blew out nearby sprites
 	light.color = Color(1.0, 0.95, 0.8)
 	add_child(light)
 
