@@ -53,6 +53,7 @@ bottom of the log.
 - [x] Cave dressing: cyan crystal clusters (lit), glowing mushrooms (lit), fossil gears, stalactites, roots near the surface, hanging chains
 - [x] Dome cannon v2: breech block with pressure core, cooling fins, muzzle brake; barrel kicks back along its axis, muzzle flash + smoke
 - [x] Ore/ingot flight: tapered speed streaks (dusty tan for ore, hot orange cooling with the bar for ingots), dust puff on hard landings
+- [x] Drill rig v2 (8 frames, 24x28): flywheel + crank + piston, sweeping pressure gauge, funnel that pumps
 - [x] HUD: own 5x7 proportional pixel font (gen_font.py -> FontFile at runtime, scripts/pixel_font.gd), brass 9-slice panels, rimmed bars
 
 ## Log
@@ -158,4 +159,10 @@ bottom of the log.
 ### Pass 25 — flight trails
 - scripts/flight_trail.gd (new): top-level Line2D child that records the body's position only above min_speed (140), tapers (width curve) and fades (gradient), and shrinks away once the body slows, so resting ore draws nothing.
 - ore.gd: tan trail + a dust puff on hard contacts (speed > 120, 0.25 s cooldown). ingot.gd: orange trail whose modulate cools over 2 s with the glow. Physics untouched.
+
+### Pass 26 — drill rig v2
+- gen_machines.py miner2(): miner_rig.png, 8 frames of 24x28; figure (0,0) 1px under the centre like v1, and miner.gd offsets it 3px up so the flange sits where v1's did. 10 fps. Steam puff moved up to the funnel. v1 (miner.png) kept as fallback.
+- miner.gd light 0.6 -> 0.3, cyan, at the funnel.
+- playtest: rig_rec (close-up of the rig in the working chain).
+- OPEN ISSUE, lighting: where several PointLights overlap (rig + laser + player lamp) sprites bleach toward white. Worth a pass: lower energies globally, or cap with a light_mask / blend mode, and check the titan and dome under the dome light too.
 

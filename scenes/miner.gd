@@ -19,6 +19,9 @@ var _spr: Sprite2D
 const FX = preload("res://scripts/fx.gd")
 
 
+var _frames := 4
+
+
 func _ready() -> void:
 	# Replace polygon with pixel sprite
 	if has_node("Sprite"):
@@ -29,22 +32,30 @@ func _ready() -> void:
 		$Light.visible = false
 	# clockwork drill rig, nozzle pumping (tools/art/gen_machines.py)
 	_spr = Sprite2D.new()
-	_spr.texture = preload("res://assets/sprites/miner.png")
-	_spr.hframes = 4
+	var rig := load("res://assets/sprites/miner_rig.png") as Texture2D
+	if rig:  # v2: flywheel, crank and piston, gauge (8 frames, 24x28)
+		_spr.texture = rig
+		_spr.hframes = 8
+		_spr.offset = Vector2(0, -3)  # its flange sits where v1's did
+		_frames = 8
+	else:
+		_spr.texture = preload("res://assets/sprites/miner.png")
+		_spr.hframes = 4
 	_spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(_spr)
 
 	var light := PointLight2D.new()
 	light.texture = LightTextures.create_radial_light(128)
 	light.texture_scale = 1.0
-	light.energy = 0.6
-	light.color = Color(0.4, 0.6, 1.0)
+	light.energy = 0.3  # 0.6 bleached the brass to white up close
+	light.color = Color(0.5, 0.8, 0.95)
+	light.position = Vector2(0, -6)
 	add_child(light)
 
 
 func _physics_process(delta: float) -> void:
 	_anim_t += delta
-	_spr.frame = int(_anim_t * 8.0) % 4
+	_spr.frame = int(_anim_t * 10.0) % _frames
 	_timer += delta
 	if _timer >= eject_interval:
 		_timer -= eject_interval
@@ -66,7 +77,7 @@ func _eject_ore() -> void:
 	get_tree().current_scene.add_child(ore)
 	ore.apply_central_impulse(direction * eject_force)
 	# a puff of steam from the nozzle
-	FX.burst(get_parent(), global_position + Vector2(0, -10), Color(0.85, 0.85, 0.8, 0.8), 6, 40.0, 0.6, 2.5, -40.0)
+	FX.burst(get_parent(), global_position + Vector2(0, -14), Color(0.85, 0.85, 0.8, 0.8), 6, 40.0, 0.6, 2.5, -40.0)
 	FX.pop(_spr, Vector2(0.9, 1.15), 0.15)
 
 

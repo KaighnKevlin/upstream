@@ -1089,6 +1089,30 @@ func caves() -> void:
 		await shot("cave_%d" % k)
 
 
+func rig_rec() -> void:
+	# Recording: close-up of the drill rig in the working chain.
+	main._wave_timer = -9999.0
+	await _build_chain()
+	var rig: Node2D = null
+	for b in root.get_node("BuildSystem")._placed_buildings:
+		if b.has_method("_eject_ore"):
+			rig = b
+	if rig == null:
+		log_line("no rig")
+		return
+	var p: CharacterBody2D = main.get_node("Player")
+	p.global_position = rig.global_position + Vector2(-30, -60)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.zoom = Vector2(4, 4)
+	cam.position_smoothing_enabled = false
+	cam.global_position = rig.global_position + Vector2(0, -20)
+	await wait(0.5)
+	for i in 48:
+		await _grab(Rect2(rig.global_position + Vector2(-40, -70), Vector2(80, 90)), "rig_%03d" % i, -4)
+		await wait(0.03)
+
+
 func banner() -> void:
 	main._wave_timer = -9999.0
 	await wait(0.8)
