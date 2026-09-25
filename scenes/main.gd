@@ -100,7 +100,8 @@ func _ready() -> void:
 	else:
 		_wave_label.text = "Get an ingot into the dome to begin"
 	if sandbox:
-		_wave_label.text = "SANDBOX - press P for a wave"
+		_wave_label.text = "SANDBOX - god tools top right"
+		_make_god_label()
 	_build_mode_label.text = ""
 	_style_hud()
 	# the playtest harness passes user args (-- scenario out_dir): no title then
@@ -324,6 +325,8 @@ func _show_banner(title: String, sub: String) -> void:
 
 
 func _process(delta: float) -> void:
+	if sandbox:
+		_god_pour(delta)
 	_update_offscreen_marker(delta)
 
 
@@ -617,6 +620,80 @@ func _trigger_game_over(reason := "DOME DESTROYED") -> void:
 	_game_over_label.text = "%s\nWaves survived: %d\nPress R to restart" % [reason, maxi(0, wave_number - 1)]
 
 
+# ── sandbox god tools ──────────────────────────────────────────────────
+# G spawns the chosen enemy at the cursor (H picks which), O drops ore at
+# the cursor (hold it to pour), K clears every enemy off the map.
+
+var _god_type := 0
+var _god_label: Label
+
+
+func _make_god_label() -> void:
+	_god_label = Label.new()
+	_god_label.add_theme_font_override("font", PixelFont.get_font())
+	_god_label.add_theme_font_size_override("font_size", 16)
+	_god_label.add_theme_color_override("font_color", HUD_TEXT_DIM)
+	_god_label.add_theme_color_override("font_shadow_color", HUD_SHADOW)
+	_god_label.add_theme_constant_override("shadow_offset_x", 2)
+	_god_label.add_theme_constant_override("shadow_offset_y", 2)
+	_god_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_god_label.position = Vector2(770, 40)
+	_god_label.size = Vector2(490, 40)
+	$CanvasLayer.add_child(_god_label)
+	_update_god_label()
+
+
+func _update_god_label() -> void:
+	if _god_label:
+		_god_label.text = "P wave   G spawn %s   H change\nO drop ore (hold to pour)   K clear enemies" % ENEMY_NAMES[_god_type].to_upper()
+
+
+var _pour_t := 0.0
+const POUR_EVERY := 0.07
+
+
+func _drop_ore(at: Vector2) -> void:
+	var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+	o.global_position = at + Vector2(randf_range(-3, 3), 0)
+	add_child(o)
+
+
+func _god_pour(delta: float) -> void:
+	if not Input.is_key_pressed(KEY_O) or _game_over:
+		return
+	_pour_t += delta
+	if _pour_t >= POUR_EVERY:
+		_pour_t = 0.0
+		_drop_ore(get_global_mouse_position())
+
+
+func _god_key(event: InputEventKey) -> void:
+	var at := get_global_mouse_position()
+	match event.keycode:
+		KEY_O:
+			if not event.echo:
+				_drop_ore(at)
+				_pour_t = -0.25  # holding: a short pause, then a steady pour (_process)
+		KEY_G:
+			if event.echo:
+				return
+			var e := _enemy_scene.instantiate()
+			e.add_to_group("enemies")
+			e.setup(_god_type)
+			e.global_position = at
+			e.direction = -1.0 if at.x > 1200 else 1.0  # toward the dome
+			add_child(e)
+		KEY_H:
+			if not event.echo:
+				_god_type = (_god_type + 1) % ENEMY_NAMES.size()
+				_update_god_label()
+		KEY_K:
+			if not event.echo:
+				for e in get_tree().get_nodes_in_group("enemies"):
+					if is_instance_valid(e) and e.has_method("take_damage"):
+						e.take_damage(999)
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed:
 		if _game_over and event.keycode == KEY_R:
@@ -626,6 +703,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_waves_started = true
 			_wave_timer = 0.0
 			_spawn_wave()
+		if sandbox and not _game_over:
+			_god_key(event)
 		# Cheat: L to toggle lighting (see underground)
 		if event.keycode == KEY_L:
 			if _canvas_mod.color.r < 0.5:

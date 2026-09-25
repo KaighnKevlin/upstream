@@ -2025,3 +2025,38 @@ func pit_trap() -> void:
 		log_line("t=%2d %s | bumper hits %d" % [s + 1, "; ".join(parts), bm.hits])
 		if s % 4 == 1:
 			await shot("pit_%02d" % s)
+
+
+func god() -> void:
+	# Sandbox god tools: G spawns the chosen enemy at the cursor, H cycles
+	# the type, O drops ore (held: pours), K clears enemies.
+	main._wave_timer = -9999.0
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.0, 2.0)
+	cam.global_position = Vector2(1560, 0)
+	await wait(0.3)
+	var vp := main.get_viewport()
+	get_root().warp_mouse(vp.get_canvas_transform() * Vector2(1600, 40))
+	await wait(0.1)
+	await tap(KEY_G)
+	await tap(KEY_H)
+	await tap(KEY_H)
+	get_root().warp_mouse(vp.get_canvas_transform() * Vector2(1680, 40))
+	await wait(0.1)
+	await tap(KEY_G)
+	var types := []
+	for e in get_nodes_in_group("enemies"):
+		types.append("%s@%d" % [e.enemy_type, int(e.global_position.x)])
+	log_line("spawned: %s" % [types])
+	get_root().warp_mouse(vp.get_canvas_transform() * Vector2(1520, -60))
+	await wait(0.1)
+	var ore0 := get_nodes_in_group("ore").size()
+	await hold(KEY_O, 0.8)
+	log_line("ore poured while holding O: %d" % [get_nodes_in_group("ore").size() - ore0])
+	await wait(0.4)
+	await shot("god")
+	await tap(KEY_K)
+	await wait(1.5)
+	log_line("after K: enemies %d" % get_nodes_in_group("enemies").size())
