@@ -116,7 +116,7 @@ func _place_catch() -> void:
 		_catch.position = _bucket_at(_arm.rotation) + Vector2(0, -3)
 
 
-func _on_catch(body: Node2D) -> void:
+func _on_catch(body) -> void:   # untyped: a deferred call can arrive after the body was freed
 	if _busy or not is_instance_valid(body) or not body is RigidBody2D:
 		return
 	_busy = true

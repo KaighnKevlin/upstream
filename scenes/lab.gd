@@ -126,7 +126,7 @@ func _update_label() -> void:
 		_label.text = "%s %d  [%d/%d]" % [t.name, Tech.level(t.id) + 1, progress.get(t.id, 0), t.cost]
 
 
-func _on_intake(b: Node2D) -> void:
+func _on_intake(b) -> void:   # untyped: a deferred call can arrive after the body was freed
 	if not is_instance_valid(b) or not b is RigidBody2D:
 		return
 	if b.get("kind") == "flask" and _flasks < HOLD:

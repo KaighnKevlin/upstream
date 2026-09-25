@@ -233,11 +233,11 @@ func _fire(ore: RigidBody2D, vel: Vector2) -> void:
 
 
 ## Stacking, settling and freezing of stored ore: scripts/ore_store.gd.
-func _stack_on(body: Node2D) -> void:
+func _stack_on(body) -> void:   # untyped: a deferred call can arrive after the body was freed
 	if is_instance_valid(body):
 		OreStore.on(body, _store)
 
 
-func _stack_off(body: Node2D) -> void:
+func _stack_off(body) -> void:   # untyped: a deferred call can arrive after the body was freed
 	if is_instance_valid(body):
 		OreStore.off(body, _store)

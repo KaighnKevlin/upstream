@@ -112,7 +112,7 @@ func _key(b: Node) -> String:
 	return k + "_ingot" if b.is_in_group("ingots") else k
 
 
-func _on_intake(b: Node2D) -> void:
+func _on_intake(b) -> void:   # untyped: a deferred call can arrive after the body was freed
 	if not is_instance_valid(b) or not b is RigidBody2D or b.has_meta("caught_by"):
 		return
 	var need: Dictionary = RECIPES[recipe]["in"]

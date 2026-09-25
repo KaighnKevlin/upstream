@@ -101,7 +101,9 @@ func power() -> float:
 	return clampf(omega / RATED * Tech.mult("buckets"), 0.0, 1.0)
 
 
-func _on_intake(body: Node2D) -> void:
+func _on_intake(body) -> void:   # untyped: a deferred call can arrive after the body was freed
+	if not is_instance_valid(body):
+		return
 	var o := body as RigidBody2D
 	if o == null or o.freeze or o.has_meta("caught_by") or o.get_meta("wheel_cool", 0.0) > Time.get_ticks_msec() / 1000.0:
 		return

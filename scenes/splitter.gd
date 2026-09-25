@@ -71,7 +71,7 @@ func _target_tilt() -> float:
 	return TILT * side
 
 
-func _on_left(body: Node2D) -> void:
+func _on_left(body) -> void:   # untyped: a deferred call can arrive after the body was freed
 	if not is_instance_valid(body):
 		return
 	passed[0 if body.global_position.x < global_position.x else 1] += 1
