@@ -1,6 +1,6 @@
 extends Node
 
-enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, TURRET, SPIKES, CATAPULT, CHUTE, SPLITTER, BUMPER, BELT, BELLOWS }
+enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, TURRET, SPIKES, CATAPULT, CHUTE, SPLITTER, BUMPER, BELT, BELLOWS, PENDULUM }
 
 var current_build: BuildType = BuildType.NONE
 var _ghost: Node2D = null
@@ -21,6 +21,7 @@ var _scenes := {
 	BuildType.BUMPER: preload("res://scenes/bumper.tscn"),
 	BuildType.BELT: preload("res://scenes/belt.tscn"),
 	BuildType.BELLOWS: preload("res://scenes/bellows.tscn"),
+	BuildType.PENDULUM: preload("res://scenes/pendulum.tscn"),
 }
 
 var _ghost_colors := {
@@ -37,6 +38,7 @@ var _ghost_colors := {
 	BuildType.BUMPER: Color(1.0, 0.85, 0.5, 0.5),
 	BuildType.BELT: Color(1.0, 0.85, 0.5, 0.5),
 	BuildType.BELLOWS: Color(1.0, 0.85, 0.5, 0.5),
+	BuildType.PENDULUM: Color(1.0, 0.85, 0.5, 0.5),
 }
 
 signal build_mode_changed(build_type: BuildType)
@@ -72,6 +74,8 @@ func _input(event: InputEvent) -> void:
 				_set_build(BuildType.BELT)
 			KEY_V:
 				_set_build(BuildType.BELLOWS)
+			KEY_M:
+				_set_build(BuildType.PENDULUM)
 			KEY_ESCAPE, KEY_Q:
 				_set_build(BuildType.NONE)
 

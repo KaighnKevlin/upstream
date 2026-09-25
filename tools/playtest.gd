@@ -1967,7 +1967,7 @@ func bumper_rec() -> void:
 	await wait(0.3)
 	log_line("bumper stands at %s" % [bm.global_position])
 	await shot("bumper")
-	var e: CharacterBody2D = _spawn(2, Vector2(1640, 60))
+	var e: CharacterBody2D = _spawn(2, Vector2(1760, 60))
 	var hp0: int = e.hp
 	var min_x := 9999.0
 	var max_back := 0.0
@@ -2422,3 +2422,41 @@ func bellows_rec() -> void:
 	b.queue_free()
 	await wait(1.5)
 	log_line("magpie seeking with a fan blowing at it: at %s v %s" % [m.global_position.round(), m.velocity.round()])
+
+
+func pendulum_rec() -> void:
+	# Ore thrown at a hanging ball sets it swinging; a big swing smashes a
+	# soldier walking into it.
+	main._wave_timer = -9999.0
+	await wait(0.3)   # the harness's cleared showcase is gone by now
+	var pd: Node2D = preload("res://scenes/pendulum.tscn").instantiate()
+	pd.global_position = Vector2(1700, -40)
+	main.add_child(pd)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.2, 2.2)
+	cam.global_position = Vector2(1700, 20)
+	await wait(0.3)
+	log_line("chain length %.0f, ball rests at %s" % [pd.length, (pd.global_position + pd.ball_pos()).round()])
+	await shot("hanging")
+	var max_theta := 0.0
+	for k in 5:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.global_position = pd.global_position + pd.ball_pos() + Vector2(-70, -6)
+		o.linear_velocity = Vector2(480, -40)
+		main.add_child(o)
+		for f in 25:
+			await physics_frame
+			max_theta = maxf(max_theta, absf(pd.theta))
+	log_line("after 5 ore hits: max swing %.0f deg, omega %.2f" % [rad_to_deg(max_theta), pd.omega])
+	# big swing into a walking soldier
+	pd.theta = deg_to_rad(-70)
+	pd.omega = 0.0
+	var e: CharacterBody2D = _spawn(2, Vector2(1760, 60))
+	var hp0: int = e.hp
+	for f in 120:
+		await physics_frame
+		if f % 4 == 0 and f < 80:
+			await _grab(Rect2(Vector2(1560, -80), Vector2(300, 190)), "pend_%03d" % (f / 4), -2)
+	log_line("soldier hp %d -> %s, pendulum smashes %d, soldier now at %s" % [hp0, e.hp if is_instance_valid(e) else "dead", pd.hits, e.global_position.round() if is_instance_valid(e) else "-"])
