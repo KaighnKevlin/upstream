@@ -80,8 +80,10 @@ func _ready() -> void:
 	shape.position = Vector2(0, (BIN_BOTTOM - 40) / 2.0)
 	_store.add_child(shape)
 	add_child(_store)
-	_store.body_entered.connect(_stack_on)
-	_store.body_exited.connect(_stack_off)
+	# deferred: freezing/unfreezing bodies isn't allowed inside the physics
+	# callback that reports the overlap
+	_store.body_entered.connect(_stack_on, CONNECT_DEFERRED)
+	_store.body_exited.connect(_stack_off, CONNECT_DEFERRED)
 	_build_plate()
 
 
@@ -297,8 +299,10 @@ func dump() -> void:
 
 ## Stacking, settling and freezing of stored ore: scripts/ore_store.gd.
 func _stack_on(body: Node2D) -> void:
-	OreStore.on(body)
+	if is_instance_valid(body):
+		OreStore.on(body, _store)
 
 
 func _stack_off(body: Node2D) -> void:
-	OreStore.off(body)
+	if is_instance_valid(body):
+		OreStore.off(body, _store)

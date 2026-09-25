@@ -1600,6 +1600,53 @@ func stack_check() -> void:
 	await shot("stacked")
 
 
+func pile_rec() -> void:
+	# Close-up: ore trickling into a hopper and a turret, then the turret
+	# firing through its load. For judging how piles look and behave.
+	main._wave_timer = -9999.0
+	var hop: Node2D = preload("res://scenes/hopper.tscn").instantiate()
+	hop.global_position = Vector2(1500, 22)
+	main.add_child(hop)
+	var tur: Node2D = preload("res://scenes/funnel_turret.tscn").instantiate()
+	tur.global_position = Vector2(1600, 40)
+	main.add_child(tur)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(4.0, 4.0)
+	cam.global_position = Vector2(1550, -10)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5
+	var i := 0
+	for k in 22:
+		for x in [1500, 1600]:
+			var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+			o.global_position = Vector2(x + rng.randf_range(-14, 14), -110)
+			main.add_child(o)
+			o.linear_velocity = Vector2(rng.randf_range(-40, 40), rng.randf_range(0, 120))
+		for f in 3:
+			await _grab(Rect2(Vector2(1440, -90), Vector2(220, 170)), "pile_%03d" % i, -4)
+			await wait(0.05)
+			i += 1
+	for f in 20:
+		await _grab(Rect2(Vector2(1440, -90), Vector2(220, 170)), "pile_%03d" % i, -4)
+		await wait(0.05)
+		i += 1
+	var e: Node2D = _spawn(2, Vector2(1840, 76))
+	e.hp = 999
+	for f in 70:
+		await _grab(Rect2(Vector2(1440, -90), Vector2(220, 170)), "pile_%03d" % i, -4)
+		await wait(0.05)
+		i += 1
+	for b in tur._store.get_overlapping_bodies():
+		log_line("  in turret: local %s v %s frozen %s contacts %d" % [tur.to_local(b.global_position).round(), b.linear_velocity.round(), b.freeze, b.get_contact_count()])
+	var frozen_floating := 0
+	for b in tur._store.get_overlapping_bodies():
+		if b.freeze and b.get_contact_count() == 0:
+			frozen_floating += 1
+	log_line("turret stored %d (frozen with no contacts: %d), hopper %d" % [tur._store.get_overlapping_bodies().size(), frozen_floating, hop.stored_count()])
+
+
 func banner() -> void:
 	main._wave_timer = -9999.0
 	await wait(0.8)

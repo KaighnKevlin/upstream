@@ -23,6 +23,10 @@ var _barrel: Sprite2D
 var _aim := -PI / 2
 var _cool := 0.0
 var _flash: AnimatedSprite2D
+var _agitate := 0.0
+var _shake := 14.0          # feeder strength; escalates while nothing drops
+var _last_in_tube := 0
+const MAG_HOLDS := 3        # ore in the magazine tube below the funnel
 
 
 func _ready() -> void:
@@ -61,8 +65,10 @@ func _ready() -> void:
 	s.position = Vector2(0, (MAG_BOTTOM - 78) / 2.0)
 	_store.add_child(s)
 	add_child(_store)
-	_store.body_entered.connect(_stack_on)
-	_store.body_exited.connect(_stack_off)
+	# deferred: freezing/unfreezing bodies isn't allowed inside the physics
+	# callback that reports the overlap
+	_store.body_entered.connect(_stack_on, CONNECT_DEFERRED)
+	_store.body_exited.connect(_stack_off, CONNECT_DEFERRED)
 	_flash = AnimatedSprite2D.new()
 	var sf := SpriteFrames.new()
 	sf.set_animation_speed("default", 24.0)
@@ -123,6 +129,7 @@ func _physics_process(delta: float) -> void:
 		return
 	_cool -= delta
 	OreStore.settle(_store, delta)
+	_feed(delta)
 	var target := _nearest_enemy()
 	if target:
 		var sol = _solve(target)
@@ -133,6 +140,31 @@ func _physics_process(delta: float) -> void:
 				if not ammo.is_empty():
 					_fire(ammo[0], sol)
 	_barrel.rotation = lerp_angle(_barrel.rotation, _aim, 0.2)
+
+
+## Vibratory feeder: if pieces are sitting up in the funnel while the tube
+## below has room, give the pile a light shake so they drop in instead of
+## wedging across the neck (the way grain arches in a real hopper).
+func _feed(delta: float) -> void:
+	_agitate -= delta
+	if _agitate > 0:
+		return
+	_agitate = 0.35
+	var in_tube := 0
+	var in_funnel := 0
+	for b in _store.get_overlapping_bodies():
+		if b is RigidBody2D:
+			if to_local(b.global_position).y > MAG_TOP:
+				in_tube += 1
+			else:
+				in_funnel += 1
+	if in_funnel > 0 and in_tube < MAG_HOLDS:
+		# escalate while the arch holds (no new piece reached the tube)
+		_shake = 14.0 if in_tube > _last_in_tube else minf(_shake * 1.6, 90.0)
+		OreStore.rattle(_store, _shake)
+	else:
+		_shake = 14.0
+	_last_in_tube = in_tube
 
 
 func _nearest_enemy() -> Node2D:
@@ -184,6 +216,7 @@ func _fire(ore: RigidBody2D, vel: Vector2) -> void:
 	_flash.play()
 	FX.burst(get_parent(), global_position + dir * MUZZLE, Color(0.8, 0.8, 0.78, 0.6), 4, 20.0, 0.8, 2.5, -40.0)
 	SFX.play(self, SFX.sfx_turret_fire())
+	OreStore.rattle(_store, 25.0)  # the recoil shakes the magazine: the column drops, jams clear
 	var kick := create_tween()
 	kick.tween_property(_barrel, "offset", Vector2(-9, -6), 0.04)
 	kick.tween_property(_barrel, "offset", Vector2(-5, -6), 0.18)
@@ -191,8 +224,10 @@ func _fire(ore: RigidBody2D, vel: Vector2) -> void:
 
 ## Stacking, settling and freezing of stored ore: scripts/ore_store.gd.
 func _stack_on(body: Node2D) -> void:
-	OreStore.on(body)
+	if is_instance_valid(body):
+		OreStore.on(body, _store)
 
 
 func _stack_off(body: Node2D) -> void:
-	OreStore.off(body)
+	if is_instance_valid(body):
+		OreStore.off(body, _store)
