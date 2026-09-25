@@ -2314,3 +2314,58 @@ func magpie_rec() -> void:
 			misses.append(int(near[k]))
 	log_line("closest approach of fast ore to the magpie: %s" % [misses])
 	log_line("with turrets: magpie %s, hp %s, dropped its load %d times, stole %s" % ["alive" if is_instance_valid(m2) else "gone", m2.hp if is_instance_valid(m2) else "-", drops, m2.stolen if is_instance_valid(m2) else "?"])
+
+
+func shield_rec() -> void:
+	# Ore at the shieldbearer's front glances off; from above or behind it hurts.
+	main._wave_timer = -9999.0
+	var e: CharacterBody2D = _spawn(5, Vector2(1680, 60))
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(3.0, 3.0)
+	await wait(0.8)
+	cam.global_position = e.global_position + Vector2(0, -30)
+	await shot("walking")
+	var tests := [["front", Vector2(-90, -20), Vector2(520, -40)], ["above", Vector2(0, -110), Vector2(0, 150)],
+		["behind", Vector2(90, -20), Vector2(-520, -40)], ["front again", Vector2(-90, -24), Vector2(520, -60)]]
+	for t in tests:
+		var hp0: int = e.hp
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.global_position = e.global_position + t[1]
+		o.linear_velocity = t[2]
+		main.add_child(o)
+		for f in 30:
+			await physics_frame
+			cam.global_position = e.global_position + Vector2(0, -30)
+			if f == 9 or f == 12:
+				await _grab(Rect2(e.global_position - Vector2(90, 80), Vector2(180, 100)), "shield_%s_%d" % [t[0].replace(" ", "_"), f], -3)
+		log_line("%s: hp %d -> %d, ore now moving %s" % [t[0], hp0, e.hp, o.linear_velocity.round() if is_instance_valid(o) else "-"])
+		await wait(0.4)
+
+
+func shield_turret() -> void:
+	# A shieldbearer walks at a turret: held fire while it faces it, shots in
+	# the back once it has walked past.
+	main._wave_timer = -9999.0
+	var t: Node2D = preload("res://scenes/funnel_turret.tscn").instantiate()
+	t.global_position = Vector2(1560, 40)
+	main.add_child(t)
+	await wait(0.3)
+	for k in 6:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.global_position = t.global_position + Vector2(0, -90 - k * 16)
+		main.add_child(o)
+	await wait(2.0)
+	var e: CharacterBody2D = _spawn(5, Vector2(1800, 60))
+	var passed_at := -1.0
+	for s in 40:
+		await wait(0.5)
+		if not is_instance_valid(e):
+			log_line("t=%.1f shieldbearer destroyed" % (s * 0.5))
+			break
+		if passed_at < 0 and e.global_position.x < t.global_position.x:
+			passed_at = s * 0.5
+		if s % 4 == 0:
+			log_line("t=%.1f bearer x %d hp %d, turret shots %d ammo %d" % [s * 0.5, e.global_position.x, e.hp, t.shots, t._loaded().size()])
+	log_line("walked past the turret at t=%s" % passed_at)

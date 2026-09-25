@@ -39,7 +39,7 @@ var _arrow_count: Label
 var _arrow_t := 0.0
 var _game_over_panel: NinePatchRect
 
-const ENEMY_NAMES := ["titan", "scuttler", "soldier", "caster", "ornithopter", "magpie"]
+const ENEMY_NAMES := ["titan", "scuttler", "soldier", "caster", "ornithopter", "shieldbearer", "magpie"]
 
 @onready var _receiver: Area2D = $Receiver
 @onready var _turret: Node2D = $Turret
@@ -493,7 +493,10 @@ func _spawn_wave() -> void:
 		kinds[4] = fliers
 	var magpies := wave_number / 2   # ore thieves join from wave 2
 	if magpies > 0:
-		kinds[5] = magpies
+		kinds[6] = magpies
+	var bearers := (wave_number + 1) / 3   # shieldbearers from wave 2, one more every third wave
+	if bearers > 0:
+		kinds[5] = bearers
 	var parts := []
 	for t in kinds:
 		parts.append("%d %s%s" % [kinds[t], ENEMY_NAMES[t], "s" if kinds[t] > 1 else ""])
@@ -519,6 +522,14 @@ func _spawn_wave() -> void:
 		enemy.global_position = Vector2(spawn_x - i * 20, surface_y)
 		enemy.direction = -1.0
 		add_child(enemy)
+
+	for k in bearers:
+		var sb := _enemy_scene.instantiate()
+		sb.add_to_group("enemies")
+		sb.setup(5)  # SHIELDBEARER
+		sb.global_position = Vector2(spawn_x - (count + k) * 20, surface_y)
+		sb.direction = -1.0
+		add_child(sb)
 
 	for k in magpies:
 		var mp: Node2D = preload("res://scenes/magpie.tscn").instantiate()

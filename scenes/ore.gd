@@ -58,6 +58,12 @@ func _check_enemy_hit() -> void:
 		var c: Vector2 = e.hit_center()
 		if global_position.distance_to(c) < e.hit_radius() + 7.0:
 			_hurt_cooldown = 0.35
+			if e.has_method("shield_blocks"):
+				var n: Vector2 = e.shield_blocks(global_position, linear_velocity)
+				if n != Vector2.ZERO:  # glances off the tower shield
+					linear_velocity = linear_velocity.bounce(n) * 0.6 + Vector2(0, -60)
+					e.shield_clang(global_position)
+					return
 			e.take_damage(clampi(int(_prev_speed / 110.0), 1, 6))
 			var away := (global_position - c).normalized()
 			linear_velocity = linear_velocity.bounce(away) * 0.35 if linear_velocity.dot(away) < 0 else linear_velocity * 0.5

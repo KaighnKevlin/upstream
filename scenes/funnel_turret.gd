@@ -179,6 +179,8 @@ func _nearest_enemy() -> Node2D:
 	for e in get_tree().get_nodes_in_group("enemies"):
 		if not is_instance_valid(e) or ("_dying" in e and e._dying):
 			continue
+		if e.has_method("shield_faces") and e.shield_faces(global_position):
+			continue  # a tower shield turned this way: the shot would only glance off
 		var d: float = e.global_position.distance_to(global_position)
 		if d < best_d:
 			best_d = d

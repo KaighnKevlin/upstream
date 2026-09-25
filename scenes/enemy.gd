@@ -1,6 +1,6 @@
 extends CharacterBody2D
 
-enum EnemyType { TITAN, SCUTTLER, SOLDIER, CASTER, ORNITHOPTER }
+enum EnemyType { TITAN, SCUTTLER, SOLDIER, CASTER, ORNITHOPTER, SHIELDBEARER }
 
 @export var enemy_type: EnemyType = EnemyType.TITAN
 @export var speed: float = 60.0
@@ -27,12 +27,14 @@ const DEATH_COLORS := {
 	EnemyType.SOLDIER: Color(0.92, 0.9, 0.96),
 	EnemyType.CASTER: Color(0.55, 0.85, 0.9),
 	EnemyType.ORNITHOPTER: Color(0.72, 0.58, 0.35),
+	EnemyType.SHIELDBEARER: Color(0.6, 0.66, 0.66),
 }
 
 var _dying := false
 const POUNCE_RANGE := 78.0
 const CLIMB_SPEED := {
 	EnemyType.TITAN: 16.0, EnemyType.SCUTTLER: 42.0, EnemyType.SOLDIER: 26.0, EnemyType.CASTER: 30.0,
+	EnemyType.SHIELDBEARER: 20.0,
 }
 
 # Melee types walk up to the dome (or the player), stop and swing; damage
@@ -46,6 +48,9 @@ const MELEE := {
 		"vs_player": {"anim": "sweep", "impact": 4, "knock": Vector2(380, -150), "damage": 10}},
 	EnemyType.SOLDIER: {"damage": 7, "cooldown": 1.3, "reach_dome": 62.0, "reach_player": 42.0,
 		"impact": 2, "body_offset": 13.0, "knock": Vector2(170, -140), "hit_x": 36.0, "heavy": false},
+	# shield bash: short reach, a hard shove
+	EnemyType.SHIELDBEARER: {"damage": 6, "cooldown": 1.5, "reach_dome": 58.0, "reach_player": 38.0,
+		"impact": 2, "body_offset": 13.0, "knock": Vector2(300, -170), "hit_x": 30.0, "heavy": false},
 }
 var _facing := -1.0
 var _chop_cooldown := 0.0
@@ -66,6 +71,7 @@ const TYPE_STATS := {
 	EnemyType.SOLDIER:  [30.0,  8,  20, 1.0],  # shield-and-spear automaton
 	EnemyType.CASTER:   [35.0,  4,  0,  1.0],  # hovering tesla sentinel, shoots bolts
 	EnemyType.ORNITHOPTER: [55.0, 3, 6, 1.0],  # flier; damage is per bomb
+	EnemyType.SHIELDBEARER: [24.0, 10, 20, 1.0],  # tower shield: ore from the front glances off
 }
 
 
@@ -111,6 +117,12 @@ func _ready() -> void:
 				if ResourceLoader.exists("res://assets/sprites/soldier_idle.png"):
 					anim.sprite_frames.remove_animation("idle")
 					_add_strip_anim(anim.sprite_frames, "idle", "res://assets/sprites/soldier_idle.png", 60, 50, 6, 6.0, true)
+				anim.offset.y = -10
+				anim.frame_changed.connect(_on_melee_frame)
+			EnemyType.SHIELDBEARER:
+				anim.sprite_frames = _strip_frames("res://assets/sprites/shieldbearer_walk.png", 60, 50, 8, 9.0)
+				_add_strip_anim(anim.sprite_frames, "attack", "res://assets/sprites/shieldbearer_attack.png", 60, 50, 6, 12.0)
+				_add_strip_anim(anim.sprite_frames, "death", "res://assets/sprites/shieldbearer_death.png", 60, 50, 6, 10.0)
 				anim.offset.y = -10
 				anim.frame_changed.connect(_on_melee_frame)
 			EnemyType.CASTER:
@@ -231,14 +243,52 @@ func _physics_process(delta: float) -> void:
 # where hits land on each body (sparks, chips), relative to the origin
 const HIT_Y := {
 	EnemyType.TITAN: -45.0, EnemyType.SCUTTLER: -10.0, EnemyType.SOLDIER: -16.0,
-	EnemyType.CASTER: -18.0, EnemyType.ORNITHOPTER: 0.0,
+	EnemyType.CASTER: -18.0, EnemyType.ORNITHOPTER: 0.0, EnemyType.SHIELDBEARER: -16.0,
 }
 
 
 const HIT_RADIUS := {
 	EnemyType.TITAN: 26.0, EnemyType.SCUTTLER: 12.0, EnemyType.SOLDIER: 13.0,
-	EnemyType.CASTER: 13.0, EnemyType.ORNITHOPTER: 14.0,
+	EnemyType.CASTER: 13.0, EnemyType.ORNITHOPTER: 14.0, EnemyType.SHIELDBEARER: 14.0,
 }
+
+
+## Shieldbearer: does its tower shield stop something at `at` moving with
+## `vel`? It covers the facing side from the feet up to just over the helm,
+## against things coming at the front. Drops from above and hits from
+## behind get through. Returns the shield's outward normal, or ZERO.
+const SHIELD_TOP := -42.0     # above the origin (the feet)
+func shield_blocks(at: Vector2, vel: Vector2) -> Vector2:
+	if enemy_type != EnemyType.SHIELDBEARER or _dying:
+		return Vector2.ZERO
+	var facing := _facing if MELEE.has(enemy_type) else direction
+	var rel := at - global_position
+	var front := rel.x * facing > 2.0              # on the shield side
+	var below_top := rel.y > SHIELD_TOP
+	var incoming := vel.x * facing < -20.0         # moving at the face
+	var from_above := vel.y > absf(vel.x) * 1.5 and rel.y < SHIELD_TOP + 10  # a drop onto the helm
+	if front and below_top and incoming and not from_above:
+		return Vector2(facing, 0)
+	return Vector2.ZERO
+
+
+## Is the shield turned toward `from`? (Turrets don't waste ore on it.)
+func shield_faces(from: Vector2) -> bool:
+	if enemy_type != EnemyType.SHIELDBEARER or _dying:
+		return false
+	var facing := _facing if MELEE.has(enemy_type) else direction
+	return (from.x - global_position.x) * facing > 0
+
+
+## Something glanced off the shield: sparks and a ring of steel, the bearer
+## rocks back a touch.
+func shield_clang(at: Vector2) -> void:
+	FX.burst(get_parent(), at, Color(1.0, 0.9, 0.6), 7, 130.0, 0.2, 1.2)
+	SFX.play(self, SFX.sfx_clink())
+	var sprite := $AnimatedSprite2D as AnimatedSprite2D
+	var jolt := create_tween()
+	jolt.tween_property(sprite, "position:x", -_facing * 1.5, 0.04)
+	jolt.tween_property(sprite, "position:x", 0.0, 0.1)
 
 
 ## Body centre and radius for things that hit by proximity (ore, bullets).
@@ -307,7 +357,8 @@ func _die() -> void:
 	if enemy_type == EnemyType.TITAN and $AnimatedSprite2D.sprite_frames.has_animation("death"):
 		_titan_die()
 		return
-	if enemy_type == EnemyType.SOLDIER and $AnimatedSprite2D.sprite_frames.has_animation("death"):
+	if (enemy_type == EnemyType.SOLDIER or enemy_type == EnemyType.SHIELDBEARER) \
+			and $AnimatedSprite2D.sprite_frames.has_animation("death"):
 		_soldier_die()
 		return
 	if enemy_type == EnemyType.CASTER and $AnimatedSprite2D.sprite_frames.has_animation("death"):

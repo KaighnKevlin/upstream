@@ -57,6 +57,13 @@ func _physics_process(delta: float) -> void:
 		if not is_instance_valid(enemy):
 			continue
 		if global_position.distance_to(enemy.global_position) < HIT_RADIUS:
+			if enemy.has_method("shield_blocks"):
+				var n: Vector2 = enemy.shield_blocks(global_position, velocity)
+				if n != Vector2.ZERO:  # pellets spang off the tower shield
+					velocity = velocity.bounce(n) * 0.5
+					enemy.shield_clang(global_position)
+					_bounces = MAX_BOUNCES
+					return
 			if enemy.has_method("take_damage"):
 				enemy.take_damage(damage)
 			queue_free()
