@@ -506,6 +506,10 @@ func start_meteor_shower() -> void:
 
 
 func _tick_meteors(delta: float) -> void:
+	if _storm_in > 0:
+		_storm_in -= delta
+		if _storm_in <= 0:
+			start_storm()
 	if _shower_in > 0:
 		_shower_in -= delta
 		if _shower_in <= 0:
@@ -527,9 +531,24 @@ func _tick_meteors(delta: float) -> void:
 	meteors += 1
 
 
+const STORM_CHANCE := 0.25
+var _storm_in := -1.0
+var storm: Node2D = null   # the current thunderstorm (scripts/storm.gd)
+
+
+func start_storm() -> void:
+	if is_instance_valid(storm):
+		return
+	storm = preload("res://scripts/storm.gd").new()
+	add_child(storm)
+	_show_banner("THUNDERSTORM", "lightning finds tall metal: tesla coils drink it")
+
+
 func _spawn_wave() -> void:
 	if wave_number >= 1 and randf() < SHOWER_CHANCE:
 		_shower_in = 12.0
+	elif wave_number >= 2 and randf() < STORM_CHANCE:
+		_storm_in = 8.0
 	wave_number += 1
 	var count := enemies_per_wave_base + wave_number
 	_wave_label.text = "WAVE %d!" % wave_number
@@ -767,7 +786,7 @@ func _make_god_label() -> void:
 
 func _update_god_label() -> void:
 	if _god_label:
-		_god_label.text = "P wave   G spawn %s   H change\nO pour ore   K clear enemies\nF5 save   F6 meteors   F9 load" % ENEMY_NAMES[_god_type].to_upper()
+		_god_label.text = "P wave   G spawn %s   H change\nO pour ore   K clear enemies\nF5 save  F6 meteors  F7 storm  F9 load" % ENEMY_NAMES[_god_type].to_upper()
 
 
 var _pour_t := 0.0
@@ -821,6 +840,9 @@ func _god_key(event: InputEventKey) -> void:
 		KEY_F6:
 			if not event.echo:
 				start_meteor_shower()
+		KEY_F7:
+			if not event.echo:
+				start_storm()
 		KEY_F9:
 			if not event.echo:
 				if not SandboxSave.has_save():

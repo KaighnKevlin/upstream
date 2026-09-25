@@ -3503,3 +3503,34 @@ func harpoon_rec() -> void:
 	main.add_child(mp)
 	await wait(5.0)
 	log_line("magpie: %s | fired %d downed %d" % ["down" if not is_instance_valid(mp) or mp._dying else "flying", hb.fired, hb.downed])
+
+
+func storm_rec() -> void:
+	# F7 on the showcase: a thunderstorm over the east front (tesla coil,
+	# walkers, loose ore).
+	var sc := preload("res://scripts/sandbox_showcase.gd")
+	await wait(0.2)
+	sc.build(main)
+	main._wave_timer = -9999.0
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.3, 1.3)
+	cam.global_position = Vector2(1900, -20)
+	await wait(1.0)
+	var te: Node2D = null
+	for n in get_nodes_in_group("showcase"):
+		if n.get_script().resource_path.get_file() == "tesla.gd":
+			te = n
+	te.charge = 2
+	for k in 4:
+		_spawn(2 if k % 2 else 1, Vector2(1980 + k * 50, 60))
+	await tap(KEY_F7)
+	var st = main.storm
+	for s in 14:
+		await wait(1.0)
+		if s % 4 == 0:
+			st._strike()
+			await physics_frame
+			await shot("storm_bolt_%02d" % s)
+	log_line("storm: strikes %d, tesla charged by lightning %d (charge now %d), ore smelted %d" % [st.strikes if is_instance_valid(st) else -1, st.charged if is_instance_valid(st) else -1, te.charge, st.smelted if is_instance_valid(st) else -1])
