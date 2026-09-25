@@ -3432,3 +3432,37 @@ func grapple_rec() -> void:
 	g.fire(o.global_position)
 	await wait(1.0)
 	log_line("drag: ore distance %d -> %d" % [d0, o.global_position.distance_to(p.global_position)])
+
+
+func airship_rec() -> void:
+	# An airship crosses over a ditch, hovers short of the dome and lowers
+	# three troops; a second one is shot down and crashes.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.5, 1.5)
+	cam.global_position = Vector2(1600, -40)
+	var ab: Node2D = preload("res://scenes/airship.tscn").instantiate()
+	ab.global_position = Vector2(1900, -150)
+	main.add_child(ab)
+	Engine.time_scale = 2.0
+	for s in 14:
+		await wait(1.0)
+		cam.global_position = Vector2(ab.global_position.x - 60, -40) if is_instance_valid(ab) else cam.global_position
+		log_line("t=%2d airship x%d state %d dropped %d" % [s * 2, ab.global_position.x if is_instance_valid(ab) else -1, ab._state if is_instance_valid(ab) else -1, ab.dropped if is_instance_valid(ab) else -1])
+		if s % 2 == 1:
+			await shot("air_%02d" % s)
+	Engine.time_scale = 1.0
+	var ab2: Node2D = preload("res://scenes/airship.tscn").instantiate()
+	ab2.global_position = Vector2(1800, -150)
+	main.add_child(ab2)
+	cam.global_position = Vector2(1760, -40)
+	await wait(1.0)
+	ab2.take_damage(99)
+	for f in 8:
+		await wait(0.35)
+		if f % 2 == 0:
+			await shot("air_fall_%d" % f)
+	log_line("shot down: valid %s" % is_instance_valid(ab2))
