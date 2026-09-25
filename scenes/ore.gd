@@ -8,6 +8,7 @@ var _timer: float = 0.0
 
 const ObjectSprites = preload("res://scripts/object_sprites.gd")
 const FX = preload("res://scripts/fx.gd")
+const SFX = preload("res://scripts/sfx.gd")
 
 func _ready() -> void:
 	add_to_group("ore")
@@ -61,13 +62,34 @@ func _check_enemy_hit() -> void:
 			return
 
 func _on_impact(other: Node) -> void:
+	_knock_sound(other)
 	if _puff_cooldown > 0 or linear_velocity.length() < 120:
 		return
 	_puff_cooldown = 0.25
 	FX.burst(get_parent(), global_position + Vector2(0, 5), Color(0.55, 0.45, 0.35, 0.8), 4, 45.0, 0.35, 1.5)
 
 
+## Knock on landing: louder the harder it hit, by what it hit.
+var _knock_cooldown := 0.0
+
+func _knock_sound(other: Node) -> void:
+	var speed := _prev_speed  # before the contact took it away
+	# in a funnel the feeder keeps jostling the pile: only real arrivals knock
+	var quiet := 170.0 if has_meta("store_material") else 90.0
+	if speed < quiet or _knock_cooldown > 0:
+		return
+	_knock_cooldown = 0.12
+	var surface := "ground"
+	if other is RigidBody2D:
+		surface = "ore"
+	elif other is StaticBody2D:
+		surface = "metal"
+	var k := clampf(inverse_lerp(90.0, 700.0, speed), 0.0, 1.0)
+	SFX.play_small(self, SFX.sfx_ore_knock(surface), lerpf(-26.0, -10.0, k), lerpf(1.12, 0.92, k))
+
+
 func _physics_process(delta: float) -> void:
+	_knock_cooldown -= delta
 	_puff_cooldown -= delta
 	_hurt_cooldown -= delta
 	_prev_speed = linear_velocity.length()

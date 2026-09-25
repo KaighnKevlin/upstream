@@ -123,6 +123,27 @@ static func sfx_clink() -> AudioStreamWAV:
 		return _wav(b, 0.45))
 
 
+## Loose ore knocking into something. surface: "ground" (a dull thud with
+## grit), "metal" (a machine's steel: a small tink), "ore" (stone on stone:
+## a dry click, what a filling funnel sounds like).
+static func sfx_ore_knock(surface: String) -> AudioStreamWAV:
+	return _sound("ore_knock_" + surface, func(r: RandomNumberGenerator):
+		var b := _buf(0.16)
+		match surface:
+			"metal":
+				_metal(b, r.randf_range(1300, 1700), 0.35, 0.035)
+				_tone(b, 240, 150, 0.35, 0.015)
+			"ore":
+				_noise(b, 0.5, 0.006, 5000, 0.0, true, r)
+				_metal(b, r.randf_range(2200, 2800), 0.12, 0.012)
+				_tone(b, 520, 380, 0.25, 0.008)
+			_:
+				_tone(b, r.randf_range(95, 130), 60, 0.7, 0.03)
+				_noise(b, 0.45, 0.02, 1800, 0.0, false, r)
+				_noise(b, 0.2, 0.006, 5000, 0.004, true, r)
+		return _wav(b, 0.5))
+
+
 static func sfx_shotgun() -> AudioStreamWAV:
 	return _sound("shotgun", func(r: RandomNumberGenerator):
 		var b := _buf(0.45)
@@ -214,12 +235,33 @@ static func create_sample(freq: float, duration: float, volume: float = 0.3,
 	return _wav(b, volume * 2.0)
 
 
-static func play(node: Node, stream: AudioStreamWAV) -> void:
-	var pitch := randf_range(0.93, 1.07)
+## Many small sounds at once (a pour, a pile settling) are capped: at most
+## BUSY_MAX of them start in any BUSY_WINDOW; the rest are skipped.
+const BUSY_MAX := 4
+const BUSY_WINDOW := 0.1
+static var _busy: Array[float] = []
+static var small_played := 0   # counters, for tests
+static var small_skipped := 0
+
+
+static func play_small(node: Node, stream: AudioStreamWAV, volume_db: float, pitch: float) -> void:
+	var now := Time.get_ticks_msec() / 1000.0
+	while not _busy.is_empty() and now - _busy[0] > BUSY_WINDOW:
+		_busy.pop_front()
+	if _busy.size() >= BUSY_MAX:
+		small_skipped += 1
+		return
+	small_played += 1
+	_busy.append(now)
+	play(node, stream, volume_db, pitch)
+
+
+static func play(node: Node, stream: AudioStreamWAV, volume_db := -6.0, pitch_base := 1.0) -> void:
+	var pitch := randf_range(0.93, 1.07) * pitch_base
 	if node is Node2D:
 		var player := AudioStreamPlayer2D.new()
 		player.stream = stream
-		player.volume_db = -6
+		player.volume_db = volume_db
 		player.pitch_scale = pitch
 		player.max_distance = 400.0
 		player.attenuation = 2.0
@@ -229,7 +271,7 @@ static func play(node: Node, stream: AudioStreamWAV) -> void:
 	else:
 		var player := AudioStreamPlayer.new()
 		player.stream = stream
-		player.volume_db = -6
+		player.volume_db = volume_db
 		player.pitch_scale = pitch
 		node.add_child(player)
 		player.play()

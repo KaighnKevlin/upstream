@@ -2060,3 +2060,31 @@ func god() -> void:
 	await tap(KEY_K)
 	await wait(1.5)
 	log_line("after K: enemies %d" % get_nodes_in_group("enemies").size())
+
+
+func knock_rec() -> void:
+	# Ore knocks: a single drop on dirt, one onto a chute, then a pour into a
+	# turret funnel (the voice cap keeps a pour from becoming noise).
+	var S = preload("res://scripts/sfx.gd")
+	main._wave_timer = -9999.0
+	var ch: Node2D = preload("res://scenes/chute.tscn").instantiate()
+	ch.global_position = Vector2(1500, 0)
+	main.add_child(ch)
+	var tu: Node2D = preload("res://scenes/funnel_turret.tscn").instantiate()
+	tu.global_position = Vector2(1700, 40)
+	main.add_child(tu)
+	await wait(0.3)
+	for at in [Vector2(1450, -40), Vector2(1520, -80)]:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.global_position = at
+		main.add_child(o)
+		await wait(1.0)
+		log_line("drop at %s: knocks played %d" % [at, S.small_played])
+	var p0: int = S.small_played
+	for k in 20:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.global_position = Vector2(1700 + randf_range(-6, 6), -120)
+		main.add_child(o)
+		await wait(0.07)
+	await wait(2.0)
+	log_line("pour of 20 into the funnel: knocks played %d, skipped by the cap %d" % [S.small_played - p0, S.small_skipped])
