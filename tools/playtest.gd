@@ -1994,3 +1994,34 @@ func bumper_rec() -> void:
 	await wait(0.3)
 	await hold(KEY_D, 0.6)
 	log_line("player after walking into it: %s v %s, bumper hits %d" % [p.global_position.round(), p.velocity.round(), bm.hits])
+
+
+func pit_trap() -> void:
+	# Showcase with the turrets off: do walkers end up in the pit, and does
+	# the bumper on the lip keep them there?
+	var sc := preload("res://scripts/sandbox_showcase.gd")
+	await wait(0.2)
+	sc.build(main)
+	main._wave_timer = -9999.0
+	var bm: Node2D = null
+	for n in get_nodes_in_group("showcase"):
+		if n.has_method("_loaded"):
+			n.set_physics_process(false)
+		if n.has_method("_on_touch"):
+			bm = n
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.2, 2.2)
+	cam.global_position = Vector2(1900, 30)
+	var es := [_spawn(2, Vector2(2080, 40)), _spawn(0, Vector2(2130, 40)), _spawn(1, Vector2(2040, 40))]
+	var names := ["soldier", "titan", "scuttler"]
+	for s in 30:
+		await wait(1.0)
+		var parts := []
+		for i in es.size():
+			var e = es[i]
+			parts.append("%s %s" % [names[i], ("x%d y%d hp%d" % [e.global_position.x, e.global_position.y, e.hp]) if is_instance_valid(e) else "dead"])
+		log_line("t=%2d %s | bumper hits %d" % [s + 1, "; ".join(parts), bm.hits])
+		if s % 4 == 1:
+			await shot("pit_%02d" % s)

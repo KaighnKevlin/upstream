@@ -9,7 +9,8 @@ extends Node
 ##     drop hopper (pre-filled) by the dome, plate underneath, where melee
 ##       enemies stop to attack
 ##     tapper -> tilted trampoline -> funnel turret (keeps it loaded)
-##     spiked pit further out: enemies climbing out are easy turret targets
+##     spiked pit further out: enemies climbing out are easy turret targets,
+##       and a bumper on the near lip bats them back in
 ##     tapper -> catapult -> back over into the hopper, so the trap rearms
 ##     tapper -> splitter -> a chute each way -> two funnel turrets
 ##
@@ -27,6 +28,7 @@ const EAST_TRAMP_SET := Vector2(15, 800)    # plate angle, bounce force
 const TURRET_AT := Vector2(1580, 40)
 const HOPPER_AT := Vector2(1300, 22)
 const PIT := Rect2i(117, 6, 4, 3)           # tiles: x, y, w, h
+const PIT_BUMPER := Vector2(1860, 90)       # on the pit's near lip: bats climbers back in
 const FEED_TAPPER := Vector2i(97, 7)
 const FEED_TAPPER_AIM := Vector2(-46, 330)  # lobs left into the catapult's bucket
 const CATAPULT_AT := Vector2(1408, 80)
@@ -96,6 +98,7 @@ static func build(main: Node) -> void:
 		var ch: Node2D = preload("res://scenes/chute.tscn").instantiate()
 		ch.end_offset = ends[1] - ends[0]
 		_add_node(main, ch, ends[0])
+	_add(main, preload("res://scenes/bumper.tscn"), PIT_BUMPER)
 	for x in [PIT.position.x + 1, PIT.position.x + 2]:
 		var sp: Node2D = preload("res://scenes/spikes.tscn").instantiate()
 		_add_node(main, sp, tm.to_global(tm.map_to_local(Vector2i(x, PIT.end.y - 1))))
