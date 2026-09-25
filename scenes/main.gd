@@ -614,6 +614,7 @@ var _build_names := {
 	12: "Build: BELT (drag start to end)",
 	13: "Build: BELLOWS (click to aim)",
 	14: "Build: PENDULUM (pivot; ore swings it)",
+	15: "Build: GRAVITY WHEEL (powers belts, fans)",
 }
 
 

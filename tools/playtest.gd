@@ -2517,3 +2517,38 @@ func iron_rec() -> void:
 		main.add_child(o)
 	await wait(0.8)
 	await shot("side_by_side")
+
+
+func wheel_rec() -> void:
+	# Ore poured into a gravity wheel's intake turns it; it tips the ore out
+	# at the bottom and powers a belt in reach. Then iron.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var w: Node2D = preload("res://scenes/gravity_wheel.tscn").instantiate()
+	w.global_position = Vector2(1640, 0)
+	main.add_child(w)
+	var b: Node2D = preload("res://scenes/belt.tscn").instantiate()
+	b.global_position = Vector2(1720, 40)
+	b.end_offset = Vector2(100, 0)
+	main.add_child(b)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.6, 2.6)
+	cam.global_position = w.global_position + Vector2(40, 0)
+	await wait(0.6)
+	log_line("wheel axle at %s; idle: omega %.2f power %.2f, belt rate %.2f" % [w.global_position.round(), w.omega, w.power(), b.rate])
+	var intake: Vector2 = w.to_global(w._intake.position)
+	for kind in ["copper", "iron"]:
+		for k in 16:
+			var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+			o.kind = kind
+			o.global_position = intake + Vector2(randf_range(-2, 2), -50)
+			main.add_child(o)
+			for f in 24:
+				await physics_frame
+				if kind == "copper" and k < 6 and f % 6 == 0:
+					await _grab(Rect2(w.global_position - Vector2(70, 60), Vector2(200, 110)), "wheel_%03d" % (k * 4 + f / 6), -3)
+		log_line("%s stream (2.5/s for 6.4 s): omega %.2f power %.2f, dumped %d, belt rate %.2f" % [kind, w.omega, w.power(), w.dumped, b.rate])
+	await wait(4.0)
+	log_line("stream stopped 4 s ago: omega %.2f power %.2f belt rate %.2f" % [w.omega, w.power(), b.rate])

@@ -9,9 +9,12 @@ extends "res://scenes/chute.gd"
 const SPEED := 110.0
 const GRIP := 14.0            # how fast riders are brought up to belt speed (1/s)
 const GRAV := Vector2(0, 980)
+const Power = preload("res://scripts/power.gd")
 
 var _grip: Area2D
 var _phase := 0.0
+var rate := Power.UNPOWERED   # 0.35 unpowered .. 1 driven by a gravity wheel
+var _rate_t := 0.0
 
 
 func _init() -> void:
@@ -47,6 +50,13 @@ func _rebuilt() -> void:
 func _physics_process(delta: float) -> void:
 	if _grip == null:
 		return
+	if not is_in_group("power_users"):
+		add_to_group("power_users")
+	_rate_t -= delta
+	if _rate_t <= 0:
+		_rate_t = 0.25
+		rate = Power.rate_at(get_tree(), global_position)
+	var speed := SPEED * rate
 	var dir := run_dir()
 	for body in _grip.get_overlapping_bodies():
 		var b := body as RigidBody2D
@@ -55,7 +65,7 @@ func _physics_process(delta: float) -> void:
 		var v := b.linear_velocity
 		# hold it against gravity along the belt, then pull it to belt speed
 		v -= dir * GRAV.dot(dir) * delta
-		v += dir * (SPEED - v.dot(dir)) * minf(1.0, GRIP * delta)
+		v += dir * (speed - v.dot(dir)) * minf(1.0, GRIP * delta)
 		b.linear_velocity = v
 		b.angular_velocity *= 0.8   # carried, not rolling
 		b.sleeping = false
@@ -65,7 +75,7 @@ func _physics_process(delta: float) -> void:
 
 func _process(delta: float) -> void:
 	if _grip:
-		_phase = fmod(_phase + SPEED * delta, CLEAT_GAP)
+		_phase = fmod(_phase + SPEED * rate * delta, CLEAT_GAP)
 		queue_redraw()
 
 

@@ -17,6 +17,9 @@ const NOZZLE := 22.0           # mouth distance from the pivot
 const HANDLE_MIN := 24.0
 const HANDLE_MAX := 110.0
 const POST_MAX := 220.0
+const Power = preload("res://scripts/power.gd")
+var rate := Power.UNPOWERED   # 0.35 unpowered .. 1 driven by a gravity wheel
+var _rate_t := 0.0
 
 ## Aim in degrees (0 = straight up, positive = right), and wind speed.
 @export_range(-180, 180, 1) var aim_angle: float = 70.0
@@ -103,12 +106,19 @@ func wind_at(p: Vector2) -> Vector2:
 	var dir := _aim_dir()
 	var along := (p - global_position).dot(dir) - NOZZLE
 	var k := clampf(1.0 - along / reach() * 0.7, 0.3, 1.0)
-	return dir * wind_speed * k
+	return dir * wind_speed * rate * k
 
 
 func _physics_process(delta: float) -> void:
 	if _area == null:
 		return
+	if not is_in_group("power_users"):
+		add_to_group("power_users")
+	_rate_t -= delta
+	if _rate_t <= 0:
+		_rate_t = 0.25
+		rate = Power.rate_at(get_tree(), global_position)
+		_spr.speed_scale = wind_speed * rate / 300.0
 	for body in _area.get_overlapping_bodies():
 		var b := body as RigidBody2D
 		if b == null or b.freeze or b.has_meta("caught_by") or b.has_meta("store_material"):
