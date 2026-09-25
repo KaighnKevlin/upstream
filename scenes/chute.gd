@@ -18,6 +18,7 @@ const LIP := 7.0              # little stop at the high end so landings don't ro
 ## The other end of the rail, relative to where it was placed.
 @export var end_offset := Vector2(84, 36)
 
+var has_lip := true          # belts carry ore up past their high end: no stop
 var _body: StaticBody2D
 var _posts: Array[Line2D] = []
 var _selected := false
@@ -71,14 +72,21 @@ func _rebuild() -> void:
 	rail.one_way_collision = true
 	rail.one_way_collision_margin = 4.0
 	_body.add_child(rail)
-	var high := a if a.y < b.y else b
-	var lip := CollisionShape2D.new()
-	var ls := SegmentShape2D.new()
-	ls.a = high
-	ls.b = high + Vector2(0, -LIP)
-	lip.shape = ls
-	_body.add_child(lip)
+	if has_lip:
+		var high := a if a.y < b.y else b
+		var lip := CollisionShape2D.new()
+		var ls := SegmentShape2D.new()
+		ls.a = high
+		ls.b = high + Vector2(0, -LIP)
+		lip.shape = ls
+		_body.add_child(lip)
+	_rebuilt()
 	_build_posts()
+
+
+## For subclasses (the belt adds its grip area).
+func _rebuilt() -> void:
+	pass
 
 
 func _build_posts() -> void:
@@ -141,13 +149,23 @@ func _draw() -> void:
 		var r := a + t * k - n * 3
 		draw_rect(Rect2(r.round() - Vector2(0.5, 0.5), Vector2(1, 1)), BRASS)
 		k += 20.0
+	_draw_surface(a, b, t, n, l)
 	# stop at the high end, brass caps on both ends
 	var high := a if a.y < b.y else b
-	draw_line(high + Vector2(0, 1), high + Vector2(0, -LIP), DARK, 4.0)
-	draw_line(high + Vector2(0, 0), high + Vector2(0, -LIP + 1), STEEL, 2.0)
+	if has_lip:
+		draw_line(high + Vector2(0, 1), high + Vector2(0, -LIP), DARK, 4.0)
+		draw_line(high + Vector2(0, 0), high + Vector2(0, -LIP + 1), STEEL, 2.0)
 	for p in [a, b]:
 		draw_rect(Rect2((p - n * 2).round() - Vector2(2, 2), Vector2(4, 4)), DARK)
 		draw_rect(Rect2((p - n * 2).round() - Vector2(1, 1), Vector2(2, 2)), BRASS)
+	_draw_selected()
+
+
+func _draw_surface(_a: Vector2, _b: Vector2, _t: Vector2, _n: Vector2, _l: float) -> void:
+	pass
+
+
+func _draw_selected() -> void:
 	if _selected:
 		draw_line(Vector2.ZERO, end_offset, Color(1.0, 0.7, 0.2, 0.35), 1.0)
 		var h := end_offset

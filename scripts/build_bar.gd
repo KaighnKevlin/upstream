@@ -4,9 +4,9 @@ extends Control
 ## click the selected slot again to cancel. The slot for the current build
 ## lights up. Hovering a slot shows its name.
 
-const SLOT := Vector2(58, 46)
+const SLOT := Vector2(53, 46)
 const GAP := 5.0
-const ICON_BOX := Vector2(48, 36)
+const ICON_BOX := Vector2(44, 34)
 
 const DARK := Color(0.1, 0.09, 0.07)
 const WELL := Color(0.16, 0.13, 0.1)
@@ -18,7 +18,7 @@ const KEY_COL := Color(0.9, 0.82, 0.62)
 const PIECES := [
 	[1, "1", "Trampoline"], [2, "2", "Vein tapper"], [3, "3", "Laser smelter"],
 	[4, "4", "Upstream lift"], [5, "5", "Drop hopper"], [6, "6", "Funnel turret"],
-	[7, "7", "Spikes"], [8, "8", "Catapult"], [9, "9", "Chute"], [10, "0", "Splitter"], [11, "B", "Bumper"],
+	[7, "7", "Spikes"], [8, "8", "Catapult"], [9, "9", "Chute"], [10, "0", "Splitter"], [11, "B", "Bumper"], [12, "C", "Conveyor belt"],
 ]
 
 var font: Font
@@ -152,13 +152,16 @@ func _build_icon(slot: Node2D, t: int) -> void:
 		8:
 			_part(art, S + "catapult_base.png", Rect2(), Vector2(-18, -12))
 			_part(art, S + "catapult_arm.png", Rect2(), Vector2(-4, -6))
-		9, 10, 11:
-			var n: Node2D = load(["res://scenes/chute.tscn", "res://scenes/splitter.tscn", "res://scenes/bumper.tscn"][t - 9]).instantiate()
+		9, 10, 11, 12:
+			var n: Node2D = load(["res://scenes/chute.tscn", "res://scenes/splitter.tscn", "res://scenes/bumper.tscn", "res://scenes/belt.tscn"][t - 9]).instantiate()
 			n.set_meta("ghost", true)   # no physics, just the drawing
 			n.set_process_input(false)
 			if t == 9:
 				n.end_offset = Vector2(56, 24)
 				n.position = Vector2(-28, -12)
+			elif t == 12:
+				n.end_offset = Vector2(56, -16)
+				n.position = Vector2(-28, 8)
 			art.add_child(n)
 	# fit: small pieces at 1:1 (crisp), big ones scaled down smoothly
 	var box := _bounds(art)
@@ -187,7 +190,7 @@ func _bounds(art: Node2D) -> Rect2:
 		elif c.has_method("_on_touch"):
 			cr = Rect2(c.position + Vector2(-11, -27), Vector2(22, 27))
 		elif "end_offset" in c:
-			cr = Rect2(c.position + Vector2(0, -8), Vector2(56, 34))
+			cr = Rect2(c.position + Vector2(0, minf(0.0, c.end_offset.y) - 8), Vector2(56, absf(c.end_offset.y) + 12))
 		else:
 			cr = Rect2(c.position + Vector2(-18, -18), Vector2(36, 26))
 		r = cr if first else r.merge(cr)

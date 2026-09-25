@@ -2126,3 +2126,58 @@ func chute_draw() -> void:
 	await wait(1.2)
 	log_line("ore dropped on it now at %s" % [o.global_position.round()])
 	await shot("placed")
+
+
+func belt_rec() -> void:
+	# Belts carry ore the way they were drawn: flat, and up a slope.
+	main._wave_timer = -9999.0
+	var specs := [[Vector2(1440, 40), Vector2(120, 0)], [Vector2(1600, 60), Vector2(140, -50)], [Vector2(1480, -60), Vector2(110, -60)]]
+	var belts := []
+	for sp in specs:
+		var b: Node2D = preload("res://scenes/belt.tscn").instantiate()
+		b.global_position = sp[0]
+		b.end_offset = sp[1]
+		main.add_child(b)
+		belts.append(b)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.4, 2.4)
+	cam.global_position = Vector2(1610, 0)
+	await wait(0.3)
+	var ores := []
+	for b in belts:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.global_position = b.global_position + b.end_offset * 0.1 + Vector2(0, -30)
+		main.add_child(o)
+		ores.append(o)
+	var reached := [-1, -1, -1]
+	for f in 180:
+		await physics_frame
+		for i in 3:
+			var o: RigidBody2D = ores[i]
+			var b: Node2D = belts[i]
+			if reached[i] < 0 and is_instance_valid(o) and (o.global_position - b.global_position).dot(b.run_dir()) > b.end_offset.length() - 4:
+				reached[i] = f
+		if f % 6 == 0 and f < 120:
+			await _grab(Rect2(Vector2(1420, -110), Vector2(360, 220)), "belt_%03d" % (f / 6), -2)
+	for i in 3:
+		var slope := rad_to_deg(-belts[i].run_dir().angle())
+		log_line("belt %d (%.0f deg up, %.0f px): ore reached the far end at frame %d; now %s" % [i, slope, belts[i].end_offset.length(), reached[i], ores[i].global_position.round() if is_instance_valid(ores[i]) else "gone"])
+	await shot("belts")
+
+
+func ray_probe() -> void:
+	var b: Node2D = preload("res://scenes/belt.tscn").instantiate()
+	b.global_position = Vector2(1480, -60)
+	b.end_offset = Vector2(110, -60)
+	main.add_child(b)
+	for c in b.get_children():
+		if c is Line2D:
+			log_line("post %s" % [c.points])
+	await wait(0.3)
+	var space: PhysicsDirectSpaceState2D = main.get_world_2d().direct_space_state
+	for x in [1590.0, 1500.0, 1300.0]:
+		var q := PhysicsRayQueryParameters2D.create(Vector2(x, -118), Vector2(x, 102), 1)
+		var hit: Dictionary = space.intersect_ray(q)
+		log_line("ray at x=%d: %s" % [x, [hit.get("position"), hit.get("collider")] if not hit.is_empty() else "none"])

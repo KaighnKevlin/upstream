@@ -1,6 +1,6 @@
 extends Node
 
-enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, TURRET, SPIKES, CATAPULT, CHUTE, SPLITTER, BUMPER }
+enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, TURRET, SPIKES, CATAPULT, CHUTE, SPLITTER, BUMPER, BELT }
 
 var current_build: BuildType = BuildType.NONE
 var _ghost: Node2D = null
@@ -19,6 +19,7 @@ var _scenes := {
 	BuildType.CHUTE: preload("res://scenes/chute.tscn"),
 	BuildType.SPLITTER: preload("res://scenes/splitter.tscn"),
 	BuildType.BUMPER: preload("res://scenes/bumper.tscn"),
+	BuildType.BELT: preload("res://scenes/belt.tscn"),
 }
 
 var _ghost_colors := {
@@ -33,6 +34,7 @@ var _ghost_colors := {
 	BuildType.CHUTE: Color(1.0, 0.85, 0.5, 0.5),
 	BuildType.SPLITTER: Color(1.0, 0.85, 0.5, 0.5),
 	BuildType.BUMPER: Color(1.0, 0.85, 0.5, 0.5),
+	BuildType.BELT: Color(1.0, 0.85, 0.5, 0.5),
 }
 
 signal build_mode_changed(build_type: BuildType)
@@ -64,10 +66,12 @@ func _input(event: InputEvent) -> void:
 				_set_build(BuildType.SPLITTER)
 			KEY_B:
 				_set_build(BuildType.BUMPER)
+			KEY_C:
+				_set_build(BuildType.BELT)
 			KEY_ESCAPE, KEY_Q:
 				_set_build(BuildType.NONE)
 
-	# Chutes are drawn: press at the top end, drag, release at the other end
+	# Chutes and belts are drawn: press at the top end, drag, release at the other end
 	if event is InputEventMouseButton and not event.pressed and event.button_index == MOUSE_BUTTON_LEFT \
 			and _drag_from != null:
 		_place_chute(_drag_from, _get_world_mouse_pos() - _drag_from)
@@ -80,7 +84,7 @@ func _input(event: InputEvent) -> void:
 		for r in ui_rects:
 			if (r.call() as Rect2).has_point(event.position):
 				return  # the HUD handles it
-		if event.button_index == MOUSE_BUTTON_LEFT and current_build == BuildType.CHUTE:
+		if event.button_index == MOUSE_BUTTON_LEFT and current_build in [BuildType.CHUTE, BuildType.BELT]:
 			var at := _get_world_mouse_pos()
 			if _can_place(at):
 				_drag_from = at
@@ -115,7 +119,7 @@ const DRAG_MIN := 12.0
 
 
 func _place_chute(from: Vector2, off: Vector2) -> void:
-	var building: Node2D = _scenes[BuildType.CHUTE].instantiate()
+	var building: Node2D = _scenes[current_build].instantiate()
 	building.global_position = from
 	if off.length() >= DRAG_MIN:  # a plain click keeps the default slope
 		building.end_offset = off.normalized() * clampf(off.length(), building.LEN_MIN, building.LEN_MAX)
