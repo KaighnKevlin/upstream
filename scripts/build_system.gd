@@ -5,6 +5,7 @@ enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, TURRET, SPIKE
 var current_build: BuildType = BuildType.NONE
 var _ghost: Node2D = null
 var _placed_buildings: Array[Node2D] = []
+var ui_rects: Array[Callable] = []   # screen rects (HUD) that clicks don't build/remove through
 
 var _scenes := {
 	BuildType.TRAMPOLINE: preload("res://scenes/trampoline.tscn"),
@@ -64,6 +65,9 @@ func _input(event: InputEvent) -> void:
 
 	# Place building on click
 	if event is InputEventMouseButton and event.pressed:
+		for r in ui_rects:
+			if (r.call() as Rect2).has_point(event.position):
+				return  # the HUD handles it
 		if event.button_index == MOUSE_BUTTON_LEFT and current_build != BuildType.NONE:
 			_place_building()
 			get_viewport().set_input_as_handled()

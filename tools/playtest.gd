@@ -1895,3 +1895,54 @@ func probe() -> void:
 	var tm := tilemap()
 	for c in [Vector2i(84, 7), Vector2i(97, 7), Vector2i(103, 7), Vector2i(117, 6)]:
 		log_line("cell %s -> %s" % [c, tm.to_global(tm.map_to_local(c))])
+
+
+func showcase_wave() -> void:
+	# Press P on the starting layout: do the defences hold?
+	var sc := preload("res://scripts/sandbox_showcase.gd")
+	await wait(0.2)
+	sc.build(main)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.3, 1.3)
+	cam.global_position = Vector2(1640, -20)
+	await wait(6.0)
+	await tap(KEY_P)
+	var dome0: float = main.dome_hp if "dome_hp" in main else -1.0
+	for s in 30:
+		await wait(1.0)
+		var es := get_nodes_in_group("enemies")
+		var desc := []
+		for e in es:
+			desc.append("%s@%d" % [e.get("enemy_type"), int(e.global_position.x)])
+		log_line("t=%2d enemies %d %s dome %s" % [s + 1, es.size(), desc, main.get("dome_hp")])
+		if s % 3 == 0:
+			await shot("wave_%02d" % s)
+
+
+func buildbar() -> void:
+	main._wave_timer = -9999.0
+	await wait(0.5)
+	await shot("bar")
+	var bar: Control = null
+	for c in main.get_node("CanvasLayer").get_children():
+		if c.has_method("_slot_at"):
+			bar = c
+	# click the Chute slot (index 8) through the real input path
+	var at: Vector2 = bar.get_global_rect().position + bar._slot_rect(8).get_center()
+	get_root().warp_mouse(at)
+	await wait(0.1)
+	for pressed in [true, false]:
+		var ev := InputEventMouseButton.new()
+		ev.button_index = MOUSE_BUTTON_LEFT
+		ev.pressed = pressed
+		ev.position = at
+		ev.global_position = at
+		Input.parse_input_event(ev)
+		await process_frame
+	await wait(0.2)
+	var bs := get_root().get_node("BuildSystem")
+	log_line("after clicking slot: build=%d, buildings placed=%d" % [bs.current_build, bs._placed_buildings.size()])
+	await shot("bar_selected")
+	await tap(KEY_Q)
