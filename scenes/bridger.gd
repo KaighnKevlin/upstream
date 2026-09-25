@@ -126,6 +126,8 @@ func _try_deploy() -> bool:
 	var cell := tm.local_to_map(tm.to_local(nose))
 	if tm.get_cell_source_id(cell) != -1:
 		return false                         # ground ahead
+	if preload("res://scenes/trapdoor.gd").covers(get_tree(), nose.x, global_position.y):
+		return false                         # looks like ground: it rolls on
 	# is it a real drop (not a one-tile dip)?
 	if tm.get_cell_source_id(cell + Vector2i(0, 1)) != -1:
 		return false

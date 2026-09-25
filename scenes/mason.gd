@@ -141,6 +141,8 @@ func _pick_cell() -> Vector2i:
 	var nose := Vector2i(tm.local_to_map(tm.to_local(global_position + Vector2(direction * 12.0, 4.0))).x, ground.y)
 	if tm.get_cell_source_id(nose) != -1 or tm.get_cell_source_id(nose + Vector2i.UP) != -1:
 		return none
+	if preload("res://scenes/trapdoor.gd").covers(get_tree(), global_position.x + direction * 12.0, global_position.y):
+		return none                     # turf over there: nothing to fill
 	var dir := int(direction)
 	var cols := []
 	for k in MAX_GAP:

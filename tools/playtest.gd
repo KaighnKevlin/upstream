@@ -2994,3 +2994,50 @@ func mason_rec() -> void:
 			log_line("t=%4.1f filled %d/24 | masons %s | soldier %s" % [f / 60.0, filled,
 				", ".join(ms.map(func(m): return ("x%d bricks %d laid %d" % [m.global_position.x, m.bricks, m.laid]) if is_instance_valid(m) else "gone")),
 				("x%d y%d" % [so.global_position.x, so.global_position.y]) if is_instance_valid(so) else "gone"])
+
+
+func trapdoor_rec() -> void:
+	# Two trapdoors cover a 6-wide pit. A soldier, a bridge engine and a mason
+	# walk in: the doors spring under each (the cart and the mason take the
+	# turf for ground, so no bridge and no bricks), then wind shut.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var tm: TileMapLayer = main.get_node("TileMapLayer")
+	var WG := preload("res://scripts/world_gen.gd")
+	for x in range(100, 106):
+		for y in range(6, 10):
+			tm.set_cell(Vector2i(x, y), -1)
+	for x in range(99, 107):
+		for y in range(5, 11):
+			WG.reframe_around(tm, Vector2i(x, y))
+			get_root().get_tree().call_group("tile_shading", "mark_dirty", Vector2i(x, y))
+	var doors := []
+	for cx in [101, 104]:
+		var d: Node2D = preload("res://scenes/trapdoor.tscn").instantiate()
+		d.global_position = Vector2(cx * 16 + 8, 6 * 16 + 8)
+		main.add_child(d)
+		doors.append(d)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(3.2, 3.2)
+	cam.global_position = Vector2(1650, 90)
+	await wait(0.5)
+	await _grab(Rect2(Vector2(1560, 20), Vector2(200, 150)), "trap_closed", -4)
+	var so = _spawn(2, Vector2(1730, 60))
+	var br: Node2D = preload("res://scenes/bridger.tscn").instantiate()
+	br.global_position = Vector2(1800, 80)
+	main.add_child(br)
+	var ms: Node2D = preload("res://scenes/mason.tscn").instantiate()
+	ms.global_position = Vector2(1870, 80)
+	main.add_child(ms)
+	for f in 1200:
+		await physics_frame
+		if f % 20 == 0 and f < 600:
+			await _grab(Rect2(Vector2(1560, 20), Vector2(200, 150)), "trap_%03d" % (f / 20), -4)
+		if f % 120 == 0:
+			log_line("t=%4.1f soldier y%d | cart x%d y%d bridges %d | mason x%d y%d laid %d | doors sprung %d/%d open %s/%s" % [f / 60.0,
+				so.global_position.y if is_instance_valid(so) else -1,
+				br.global_position.x, br.global_position.y, br.bridges,
+				ms.global_position.x, ms.global_position.y, ms.laid,
+				doors[0].sprung, doors[1].sprung, doors[0].is_open, doors[1].is_open])

@@ -1,6 +1,6 @@
 extends Node
 
-enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, TURRET, SPIKES, CATAPULT, CHUTE, SPLITTER, BUMPER, BELT, BELLOWS, PENDULUM, WHEEL, ASSEMBLER, LAB, TESLA, FLAMER }
+enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, TURRET, SPIKES, CATAPULT, CHUTE, SPLITTER, BUMPER, BELT, BELLOWS, PENDULUM, WHEEL, ASSEMBLER, LAB, TESLA, FLAMER, TRAPDOOR }
 
 var current_build: BuildType = BuildType.NONE
 var _ghost: Node2D = null
@@ -27,6 +27,7 @@ var _scenes := {
 	BuildType.LAB: preload("res://scenes/lab.tscn"),
 	BuildType.TESLA: preload("res://scenes/tesla.tscn"),
 	BuildType.FLAMER: preload("res://scenes/flamer.tscn"),
+	BuildType.TRAPDOOR: preload("res://scenes/trapdoor.tscn"),
 }
 
 var _ghost_colors := {
@@ -49,6 +50,7 @@ var _ghost_colors := {
 	BuildType.LAB: Color(1.0, 0.85, 0.5, 0.5),
 	BuildType.TESLA: Color(1.0, 0.85, 0.5, 0.5),
 	BuildType.FLAMER: Color(1.0, 0.85, 0.5, 0.5),
+	BuildType.TRAPDOOR: Color(1.0, 0.85, 0.5, 0.6),
 }
 
 signal build_mode_changed(build_type: BuildType)
@@ -96,6 +98,8 @@ func _input(event: InputEvent) -> void:
 				_set_build(BuildType.TESLA)
 			KEY_I:
 				_set_build(BuildType.FLAMER)
+			KEY_X:
+				_set_build(BuildType.TRAPDOOR)
 			KEY_ESCAPE, KEY_Q:
 				_set_build(BuildType.NONE)
 
@@ -135,7 +139,7 @@ func _process(_delta: float) -> void:
 		return
 	if _ghost != null:
 		var pos := _get_world_mouse_pos()
-		_ghost.global_position = pos
+		_ghost.global_position = _ghost.snap_pos(pos) if _ghost.has_method("snap_pos") else pos
 
 		# Show red ghost if placement is invalid
 		var valid := _can_place(pos)
@@ -193,6 +197,12 @@ func _can_place(pos: Vector2) -> bool:
 			if atlas_coords.x != 2 and atlas_coords.x != 3:
 				return false
 			if tilemap.get_cell_source_id(tile_pos + Vector2i(0, -1)) != -1:
+				return false
+	elif current_build == BuildType.TRAPDOOR:
+		# over a pit: the cell and the one below it open
+		if tilemap:
+			var tile_pos := tilemap.local_to_map(tilemap.to_local(pos))
+			if tilemap.get_cell_source_id(tile_pos) != -1 or tilemap.get_cell_source_id(tile_pos + Vector2i(0, 1)) != -1:
 				return false
 	elif current_build in [BuildType.SPIKES, BuildType.CATAPULT, BuildType.BUMPER, BuildType.ASSEMBLER, BuildType.LAB, BuildType.TESLA, BuildType.FLAMER]:
 		# on a floor: empty cell with solid ground just below
