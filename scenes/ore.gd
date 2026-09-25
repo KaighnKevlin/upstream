@@ -2,6 +2,17 @@ extends RigidBody2D
 
 ## Lifetime in seconds before the ore despawns.
 @export var lifetime: float = 15.0
+## What it is. Iron is three times as heavy and barely bounces: springs,
+## bumpers and fans move it less, it pumps a pendulum harder, magpies
+## struggle with it, and fired from a turret it hits harder and punches
+## through tower shields.
+@export var kind := "copper"
+
+const KINDS := {
+	"copper": {"mass": 1.0, "bounce": 0.5, "friction": 0.3, "tex": "res://assets/sprites/ore.png"},
+	"iron": {"mass": 3.0, "bounce": 0.12, "friction": 0.5, "tex": "res://assets/sprites/ore_iron.png"},
+}
+static var _materials := {}
 
 var _timer: float = 0.0
 
@@ -18,6 +29,15 @@ func _ready() -> void:
 
 	contact_monitor = true
 	max_contacts_reported = 4
+	var spec: Dictionary = KINDS.get(kind, KINDS.copper)
+	mass = spec.mass
+	if kind != "copper":
+		if not _materials.has(kind):
+			var m := PhysicsMaterial.new()
+			m.bounce = spec.bounce
+			m.friction = spec.friction
+			_materials[kind] = m
+		physics_material_override = _materials[kind]
 
 	# Replace polygon with pixel sprite
 	if has_node("Sprite"):
@@ -25,7 +45,7 @@ func _ready() -> void:
 	var spr := Sprite2D.new()
 	# one of five faceted rock-and-copper chunks (tools/art/gen_items.py); it tumbles
 	var atlas := AtlasTexture.new()
-	atlas.atlas = preload("res://assets/sprites/ore.png")
+	atlas.atlas = load(spec.tex)
 	atlas.region = Rect2(randi() % 5 * 12, 0, 12, 12)
 	spr.texture = atlas
 	spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -58,13 +78,19 @@ func _check_enemy_hit() -> void:
 		var c: Vector2 = e.hit_center()
 		if global_position.distance_to(c) < e.hit_radius() + 7.0:
 			_hurt_cooldown = 0.35
-			if e.has_method("shield_blocks"):
+			if e.has_method("shield_blocks") and mass < 2.0:  # heavy ore punches through
 				var n: Vector2 = e.shield_blocks(global_position, linear_velocity)
 				if n != Vector2.ZERO:  # glances off the tower shield
 					linear_velocity = linear_velocity.bounce(n) * 0.6 + Vector2(0, -60)
 					e.shield_clang(global_position)
 					return
-			e.take_damage(clampi(int(_prev_speed / 110.0), 1, 6))
+			e.take_damage(clampi(int(_prev_speed / 110.0 * pow(mass, 0.6)), 1, 9))
+			if mass >= 2.0:
+				# heavy: shoves the target and ploughs on through
+				if e.has_method("knock"):
+					e.knock(Vector2(signf(linear_velocity.x) * 160.0, -120.0))
+				linear_velocity *= 0.7
+				return
 			var away := (global_position - c).normalized()
 			linear_velocity = linear_velocity.bounce(away) * 0.35 if linear_velocity.dot(away) < 0 else linear_velocity * 0.5
 			return

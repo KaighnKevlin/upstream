@@ -137,7 +137,7 @@ func _physics_process(delta: float) -> void:
 		var gap := o.global_position.distance_to(bp) - BALL_R - 6.5
 		if vn < -30.0 and gap < -vn * 0.035 and now - float(_last.get(id, -9.0)) > 0.25:
 			_last[id] = now
-			var dv := -n * absf(vn) * (1.0 + RESTITUTION) * MASS_RATIO
+			var dv := -n * absf(vn) * (1.0 + RESTITUTION) * MASS_RATIO * o.mass   # iron swings it harder
 			omega += dv.dot(Vector2(cos(theta), -sin(theta))) / length
 			SFX.play_small(self, SFX.sfx_ore_knock("metal"), -12.0, 0.7)
 	# smash what it swings through

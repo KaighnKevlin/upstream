@@ -60,11 +60,13 @@ const SLIDE_KEEP := 0.95      # tangential speed kept
 const MAX_SPEED_K := 1.4      # cap: bounce_force * this (no runaway ping-pong)
 
 
-func bounce_velocity(v: Vector2) -> Vector2:
+## heft: the body's mass. Heavy (iron) ore squashes the spring and gets
+## less of its kick back: kick / sqrt(mass).
+func bounce_velocity(v: Vector2, heft := 1.0) -> Vector2:
 	var n := _launch_dir()
 	var vn := v.dot(n)
 	var tangent := v - n * vn
-	var out := tangent * SLIDE_KEEP + n * (-vn * RESTITUTION + bounce_force * KICK)
+	var out := tangent * SLIDE_KEEP + n * (-vn * RESTITUTION + bounce_force * KICK / sqrt(maxf(heft, 0.1)))
 	return out.limit_length(bounce_force * MAX_SPEED_K)
 
 
@@ -87,7 +89,7 @@ func _on_body_entered(body: Node2D) -> void:
 		_top.play("bounce")
 	else:
 		FX.pop(_pixel_sprite, Vector2(1.25, 0.55), 0.18)
-	var out := bounce_velocity(v)
+	var out := bounce_velocity(v, body.mass if body is RigidBody2D else 1.0)
 	if body is RigidBody2D:
 		body.linear_velocity = out
 	else:

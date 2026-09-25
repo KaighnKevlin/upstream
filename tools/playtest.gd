@@ -2460,3 +2460,60 @@ func pendulum_rec() -> void:
 		if f % 4 == 0 and f < 80:
 			await _grab(Rect2(Vector2(1560, -80), Vector2(300, 190)), "pend_%03d" % (f / 4), -2)
 	log_line("soldier hp %d -> %s, pendulum smashes %d, soldier now at %s" % [hp0, e.hp if is_instance_valid(e) else "dead", pd.hits, e.global_position.round() if is_instance_valid(e) else "-"])
+
+
+func iron_rec() -> void:
+	# Copper vs iron side by side: trampoline, bumper, and a shieldbearer hit
+	# from the front.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var t: Node2D = preload("res://scenes/trampoline.tscn").instantiate()
+	t.global_position = Vector2(1560, 60)
+	t.bounce_angle = 0.0
+	t.bounce_force = 700.0
+	main.add_child(t)
+	t._update_visuals()
+	var peaks := {}
+	for k in ["copper", "iron"]:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.kind = k
+		o.global_position = t.global_position + Vector2(0, -80)
+		main.add_child(o)
+		var top := 999.0
+		var bounced := false
+		for f in 90:
+			await physics_frame
+			if o.linear_velocity.y < -50:
+				bounced = true
+			if bounced:
+				top = minf(top, o.global_position.y)
+		peaks[k] = t.global_position.y - top
+		o.queue_free()
+	log_line("trampoline rebound height: copper %.0f px, iron %.0f px (mass %.0f)" % [peaks.copper, peaks.iron, 3.0])
+	t.queue_free()
+	for k in ["copper", "iron"]:
+		var e: CharacterBody2D = _spawn(5, Vector2(1720, 60))
+		await wait(0.6)
+		var hp0: int = e.hp
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.kind = k
+		o.global_position = e.global_position + Vector2(-90, -20)
+		o.linear_velocity = Vector2(520, -40)
+		main.add_child(o)
+		await wait(0.5)
+		log_line("%s thrown at a shieldbearer's front: hp %d -> %d" % [k, hp0, e.hp if is_instance_valid(e) else -1])
+		if is_instance_valid(e):
+			e.queue_free()
+		await wait(0.3)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(4.0, 4.0)
+	cam.global_position = Vector2(1600, 60)
+	for k in 6:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.kind = "iron" if k % 2 else "copper"
+		o.global_position = Vector2(1570 + k * 12, 70)
+		main.add_child(o)
+	await wait(0.8)
+	await shot("side_by_side")

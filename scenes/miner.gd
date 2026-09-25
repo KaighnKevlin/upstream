@@ -31,6 +31,7 @@ const FORCE_RANGE := Vector2(150, 1400)
 ## Ore left in each vein block, shared by every tapper on the map.
 static var vein_left := {}
 
+var ore_kind := "copper"      # what the vein under it yields (_map_vein)
 var _ore_scene: PackedScene = preload("res://scenes/ore.tscn")
 var _timer := 0.0
 var _anim_t := 0.0
@@ -115,6 +116,7 @@ func _map_vein(tm: TileMapLayer, start: Vector2i) -> void:
 	var kind := tm.get_cell_atlas_coords(start).x
 	if not kind in [WorldGen.TILE_IRON, WorldGen.TILE_COPPER]:
 		return
+	ore_kind = "iron" if kind == WorldGen.TILE_IRON else "copper"
 	var seen := {start: true}
 	var queue: Array[Vector2i] = [start]
 	while not queue.is_empty() and _cells.size() < VEIN_MAX:
@@ -195,6 +197,7 @@ func _aim_dir() -> Vector2:
 func _fire() -> void:
 	var dir := _aim_dir()
 	var ore := _ore_scene.instantiate() as RigidBody2D
+	ore.kind = ore_kind
 	ore.global_position = global_position + PIVOT + dir * MUZZLE
 	get_tree().current_scene.add_child(ore)
 	ore.linear_velocity = dir * eject_force

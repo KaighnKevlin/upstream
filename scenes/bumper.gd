@@ -78,7 +78,7 @@ func _on_touch(body: Node2D) -> void:
 		var vn := v.dot(n)
 		if vn < 0:
 			v -= n * vn * 2.0   # reflect off the knob
-		b.linear_velocity = (v + n * ORE_KICK).limit_length(ORE_MAX)
+		b.linear_velocity = (v + n * ORE_KICK / sqrt(maxf(b.mass, 0.1))).limit_length(ORE_MAX)
 		b.sleeping = false
 	elif body.has_method("knock"):
 		var side := signf(n.x) if absf(n.x) > 0.05 else -signf(body.get("direction") if "direction" in body else 1.0)

@@ -12,7 +12,7 @@ extends Node
 ##     spiked pit further out: enemies climbing out are easy turret targets,
 ##       and a bumper on the near lip bats them back in
 ##     tapper -> catapult -> back over into the hopper, so the trap rearms
-##     tapper -> splitter -> a chute each way -> two funnel turrets
+##     iron tapper -> splitter -> a chute each way -> two funnel turrets
 ##
 ## Aims were solved with a small simulation of the same physics (gravity
 ## 980, 60 Hz, the trampoline's reflect + kick, the laser's 0.6 slowdown)
@@ -60,8 +60,9 @@ static func build(main: Node) -> void:
 	for x in range(46, 124):
 		for y in range(0, WorldGen.SURFACE_ROWS):
 			tm.set_cell(Vector2i(x, y), -1)
-	for cell in [EAST_TAPPER, WEST_TAPPER, LIFT_TAPPER, FEED_TAPPER, SPLIT_TAPPER]:
+	for cell in [EAST_TAPPER, WEST_TAPPER, LIFT_TAPPER, FEED_TAPPER]:
 		_vein(tm, cell, shading, decor)
+	_vein(tm, SPLIT_TAPPER, shading, decor, WorldGen.TILE_IRON)   # the turrets' feed: iron shot
 	for x in range(PIT.position.x, PIT.end.x):
 		for y in range(PIT.position.y, PIT.end.y):
 			_clear(tm, Vector2i(x, y), shading, decor)
@@ -114,10 +115,10 @@ static func clear(main: Node) -> void:
 		bs._placed_buildings = bs._placed_buildings.filter(func(b): return is_instance_valid(b) and not b.is_in_group("showcase"))
 
 
-static func _vein(tm: TileMapLayer, cell: Vector2i, shading, decor) -> void:
+static func _vein(tm: TileMapLayer, cell: Vector2i, shading, decor, tile := WorldGen.TILE_COPPER) -> void:
 	# the ore block and a few more below it; the notch above is dug out
 	for c in [cell, cell + Vector2i(-1, 1), cell + Vector2i(0, 1), cell + Vector2i(1, 1)]:
-		WorldGen.set_tile(tm, c, WorldGen.TILE_COPPER)
+		WorldGen.set_tile(tm, c, tile)
 	for dx in [-1, 0, 1]:
 		_clear(tm, cell + Vector2i(dx, -1), shading, decor)
 

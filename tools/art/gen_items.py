@@ -15,18 +15,28 @@ from titan_lib import SPR, side_by_side
 
 ORE_ROCK_EXTRA = ['2a221c', '46382d', '62503f', '7e6a55', 'a08a6e', 'c2ad8e']
 ORE_ROCK = [_hex(h) for h in ORE_ROCK_EXTRA]
+# iron ore: cold blue-grey slate, dense and blocky, with dull magnetite
+# nodules and rust weeping from them
+IRON_ROCK_EXTRA = ['1f2126', '2e333b', '414852', '58616b', '737d86', '939ca3']
+IRON_ROCK = [_hex(h) for h in IRON_ROCK_EXTRA]
+MAGNETITE_EXTRA = ['24262b', '3a3e46', '5a6068', '8a929a', 'c4ccd2']
+MAGNETITE = [_hex(h) for h in MAGNETITE_EXTRA]
+RUST_EXTRA = ['5a2a14', '8a4220', 'b0602c']
+RUST = [_hex(h) for h in RUST_EXTRA]
 
 
-def ore(seed):
-    """Faceted chunk of warm stone with bright copper nuggets. Facets are
-    triangles fanned from an off-centre apex, each shaded by how much it
-    faces the light (top-left), so the chunk reads as a solid lump."""
+def ore(seed, kind='copper'):
+    """Faceted chunk of warm stone with bright copper nuggets (or, for iron,
+    cold dense slate with magnetite nodules and rust). Facets are triangles
+    fanned from an off-centre apex, each shaded by how much it faces the
+    light (top-left), so the chunk reads as a solid lump."""
+    iron = kind == 'iron'
     r = random.Random(seed)
-    n = r.randint(6, 7)
+    n = r.randint(5, 6) if iron else r.randint(6, 7)   # iron: blockier
     pts = []
     for k in range(n):
         a = k / n * math.tau + r.uniform(-0.25, 0.25)
-        rad = r.uniform(4.3, 5.6)
+        rad = r.uniform(4.9, 5.7) if iron else r.uniform(4.3, 5.6)
         pts.append((math.cos(a) * rad, math.sin(a) * rad * 0.9))
     apex = (r.uniform(-1.2, 0.2), r.uniform(-1.4, -0.2))       # ridge leans to the light
     fig = Figure()
@@ -36,7 +46,15 @@ def ore(seed):
         mx, my = (p0[0] + p1[0]) / 2 - apex[0], (p0[1] + p1[1]) / 2 - apex[1]
         L = math.hypot(mx, my) or 1
         facing = (mx * light[0] + my * light[1]) / L            # -1..1
-        fig.poly([apex, p0, p1], ORE_ROCK, z=0, shade=0.45 + 0.4 * facing, grit=0.06)
+        fig.poly([apex, p0, p1], IRON_ROCK if iron else ORE_ROCK, z=0, shade=0.45 + 0.4 * facing, grit=0.06)
+    if iron:
+        for k in range(r.randint(2, 3)):                          # magnetite nodules, rust below
+            a = r.uniform(0, math.tau); d = r.uniform(0.5, 2.6)
+            c = (apex[0] + math.cos(a) * d, apex[1] + math.sin(a) * d + 0.8)
+            fig.capsule((c[0], c[1] + 0.8), (c[0] + r.uniform(-0.6, 0.6), c[1] + 2.4), 0.55, RUST, z=0.9)
+            fig.sphere(c, r.uniform(1.0, 1.4), MAGNETITE, z=1, grit=0.02)
+        fig.sphere((apex[0] - 0.8, apex[1] - 0.6), 0.45, [(205, 222, 232)] * 2, z=2, emissive=True)  # cold glint
+        return fig.render(12, 12, (6, 6), extra=IRON_ROCK_EXTRA + MAGNETITE_EXTRA + RUST_EXTRA + ['cddee8'])
     for k in range(r.randint(2, 3)):                              # copper nuggets
         a = r.uniform(0, math.tau); d = r.uniform(0.5, 2.8)
         c = (apex[0] + math.cos(a) * d, apex[1] + math.sin(a) * d + 0.8)
@@ -142,6 +160,8 @@ def main():
     ores = [ore(s) for s in (3, 8, 13, 21, 34)]
     rows = [sum((f[y] for f in ores), []) for y in range(12)]
     write_png(SPR + 'ore.png', 12 * len(ores), 12, rows)
+    irons = [ore(s, 'iron') for s in (4, 9, 15, 22, 35)]
+    write_png(SPR + 'ore_iron.png', 12 * len(irons), 12, [sum((f[y] for f in irons), []) for y in range(12)])
     ing = ingot(); write_png(SPR + 'ingot.png', 14, 8, ing)
     tr = trampoline(); write_png(SPR + 'trampoline.png', 44, 22, tr)
     write_png(SPR + 'trampoline_base.png', 28, 8, tramp_base())
@@ -153,7 +173,7 @@ def main():
     print('wrote ore.png, ingot.png, trampoline.png, debris.png')
     if len(sys.argv) > 1:
         pad = lambda f, w, h: [row + [(0, 0, 0, 0)] * (w - len(row)) for row in f] + [[(0, 0, 0, 0)] * w] * (h - len(f))
-        big = side_by_side([pad(o, 12, 22) for o in ores] + [pad(ing, 14, 22), tr] + [pad(d, 8, 22) for d in deb], 10)
+        big = side_by_side([pad(o, 12, 22) for o in ores + irons] + [pad(ing, 14, 22), tr] + [pad(d, 8, 22) for d in deb], 10)
         write_png(sys.argv[1] + '/items_preview.png', len(big[0]), len(big), big)
         base = tramp_base()
         comp = []

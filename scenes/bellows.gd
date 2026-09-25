@@ -114,7 +114,7 @@ func _physics_process(delta: float) -> void:
 		if b == null or b.freeze or b.has_meta("caught_by") or b.has_meta("store_material"):
 			continue
 		var w := wind_at(b.global_position)
-		b.linear_velocity += (w - b.linear_velocity) * minf(1.0, DRAG * delta)
+		b.linear_velocity += (w - b.linear_velocity) * minf(1.0, DRAG / maxf(b.mass, 0.1) * delta)  # iron hardly lifts
 		b.sleeping = false
 		if "_timer" in b:
 			b._timer = 0.0   # kept aloft: still in play

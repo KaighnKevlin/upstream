@@ -92,7 +92,7 @@ func _physics_process(delta: float) -> void:
 				_state = State.SEEK
 			else:
 				var exit_x := WorldGen.WORLD_WIDTH * WorldGen.TILE_SIZE + 80.0
-				_steer(Vector2(exit_x, EXIT_Y), CARRY_SPEED, delta)
+				_steer(Vector2(exit_x, EXIT_Y), CARRY_SPEED / sqrt(maxf(_carried.mass, 1.0)), delta)  # iron weighs it down
 				_carried.global_position = global_position + CLAW.rotated(rotation)
 				_carried.linear_velocity = Vector2.ZERO
 				if "_timer" in _carried:
