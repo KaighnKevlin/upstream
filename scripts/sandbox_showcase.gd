@@ -10,6 +10,7 @@ extends Node
 ##       enemies stop to attack
 ##     tapper -> tilted trampoline -> funnel turret (keeps it loaded)
 ##     spiked pit further out: enemies climbing out are easy turret targets
+##     tapper -> catapult -> back over into the hopper, so the trap rearms
 ##
 ## Aims were solved with a small simulation of the same physics (gravity
 ## 980, 60 Hz, the trampoline's reflect + kick, the laser's 0.6 slowdown)
@@ -25,6 +26,10 @@ const EAST_TRAMP_SET := Vector2(15, 800)    # plate angle, bounce force
 const TURRET_AT := Vector2(1580, 40)
 const HOPPER_AT := Vector2(1300, 22)
 const PIT := Rect2i(117, 6, 4, 3)           # tiles: x, y, w, h
+const FEED_TAPPER := Vector2i(97, 7)
+const FEED_TAPPER_AIM := Vector2(-46, 330)  # lobs left into the catapult's bucket
+const CATAPULT_AT := Vector2(1408, 80)
+const CATAPULT_AIM := Vector2(-14, 515)     # high lob back up-left, down into the hopper
 
 const WEST_TAPPER := Vector2i(60, 7)
 const WEST_TAPPER_AIM := Vector2(44, 760)
@@ -44,7 +49,7 @@ static func build(main: Node) -> void:
 	for x in range(46, 124):
 		for y in range(0, WorldGen.SURFACE_ROWS):
 			tm.set_cell(Vector2i(x, y), -1)
-	for cell in [EAST_TAPPER, WEST_TAPPER, LIFT_TAPPER]:
+	for cell in [EAST_TAPPER, WEST_TAPPER, LIFT_TAPPER, FEED_TAPPER]:
 		_vein(tm, cell, shading, decor)
 	for x in range(PIT.position.x, PIT.end.x):
 		for y in range(PIT.position.y, PIT.end.y):
@@ -65,6 +70,11 @@ static func build(main: Node) -> void:
 	t._update_visuals()
 	_add(main, preload("res://scenes/funnel_turret.tscn"), TURRET_AT)
 	var hop: Node2D = _add(main, preload("res://scenes/hopper.tscn"), HOPPER_AT)
+	_tapper(main, tm, FEED_TAPPER, FEED_TAPPER_AIM)
+	var cat: Node2D = preload("res://scenes/catapult.tscn").instantiate()
+	cat.aim_angle = CATAPULT_AIM.x
+	cat.throw_speed = CATAPULT_AIM.y
+	_add_node(main, cat, CATAPULT_AT)
 	for k in 4:  # pre-fill the hopper
 		var o: Node2D = preload("res://scenes/ore.tscn").instantiate()
 		o.global_position = HOPPER_AT + Vector2(0, -60 - k * 18)

@@ -34,6 +34,7 @@ var _selected := false
 var _dragging := false
 var _handle: Polygon2D
 var _arc: Node2D
+var last_thrown: RigidBody2D   # for inspection/tests
 
 
 func _ready() -> void:
@@ -92,7 +93,7 @@ func _snap_to_floor() -> void:
 			break
 		cell.y += 1
 	var ctr := tm.to_global(tm.map_to_local(cell))
-	global_position = Vector2(ctr.x, ctr.y + 8 - 18)
+	global_position = Vector2(global_position.x, ctr.y + 8 - 18)  # x stays where it was put
 
 
 func _aim_dir() -> Vector2:
@@ -162,6 +163,7 @@ func _throw() -> void:
 		b.linear_velocity = _aim_dir() * throw_speed
 		b.angular_velocity = randf_range(-10, 10)
 		b.remove_meta("caught_by")
+		last_thrown = b
 	SFX.play(self, SFX.sfx_bounce())
 	FX.burst(get_parent(), to_global(_bucket_at(_arm.rotation)), Color(0.8, 0.75, 0.6, 0.7), 4, 30.0, 0.3, 1.5)
 	var back := create_tween()

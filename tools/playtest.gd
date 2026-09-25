@@ -1554,7 +1554,11 @@ func showcase() -> void:
 			turret = n
 		if "lift_speed" in n:
 			lift = n
-	log_line("after 9s: ingots in dome %d -> %d, turret loaded %d, lift holding %d" % [in0, rx.buffer, turret._loaded().size() if turret else -1, lift._held_items.size() if lift else -1])
+	var hop: Node2D = null
+	for n in get_nodes_in_group("showcase"):
+		if n.has_method("dump"):
+			hop = n
+	log_line("after 9s: ingots in dome %d -> %d, turret loaded %d, lift holding %d, hopper holds %d" % [in0, rx.buffer, turret._loaded().size() if turret else -1, lift._held_items.size() if lift else -1, hop.stored_count() if hop else -1])
 	cam.zoom = Vector2(2.2, 2.2)
 	cam.global_position = Vector2(1060, 10)
 	await wait(0.3)
@@ -1716,6 +1720,33 @@ func tramp_aim() -> void:
 	await shot("tramp_aim")
 	var land: Vector2 = trail[-1]
 	log_line("real ore after 1.5s at %s (arc drawn from %s with v %s)" % [land.round(), t._arc.origin.round(), t._arc.velocity.round()])
+
+
+func feed_rec() -> void:
+	# The showcase's tapper -> catapult -> hopper feed, close up.
+	var sc := preload("res://scripts/sandbox_showcase.gd")
+	await wait(0.2)
+	sc.build(main)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.6, 2.6)
+	cam.global_position = Vector2(1430, 20)
+	var cat: Node2D = null
+	for n in get_nodes_in_group("showcase"):
+		if "throw_speed" in n:
+			cat = n
+	var seen := {}
+	for f in 400:
+		await physics_frame
+		var b = cat.last_thrown
+		if b and is_instance_valid(b):
+			var id: int = b.get_instance_id()
+			if not seen.has(id):
+				seen[id] = true
+				log_line("thrown from %s v %s (aim %s)" % [b.global_position.round(), b.linear_velocity.round(), cat._aim_dir()])
+			if f % 6 == 0:
+				log_line("   ore %d at %s v %s" % [id % 1000, b.global_position.round(), b.linear_velocity.round()])
 
 
 func banner() -> void:
