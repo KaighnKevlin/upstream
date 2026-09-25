@@ -1647,6 +1647,47 @@ func pile_rec() -> void:
 	log_line("turret stored %d (frozen with no contacts: %d), hopper %d" % [tur._store.get_overlapping_bodies().size(), frozen_floating, hop.stored_count()])
 
 
+func catapult_rec() -> void:
+	# Ore dropped into a catapult's bucket gets flung along its aim.
+	main._wave_timer = -9999.0
+	var c: Node2D = preload("res://scenes/catapult.tscn").instantiate()
+	c.global_position = Vector2(1520, 80)
+	c.aim_angle = 35.0
+	c.throw_speed = 480.0
+	main.add_child(c)
+	var c2: Node2D = preload("res://scenes/catapult.tscn").instantiate()
+	c2.global_position = Vector2(1700, 80)
+	c2.aim_angle = -60.0   # throws back up-left
+	c2.throw_speed = 420.0
+	main.add_child(c2)
+	await wait(0.3)
+	log_line("catapult pivot %s, bucket at rest %s" % [c.global_position, c.to_global(c._catch.position)])
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.4, 2.4)
+	cam.global_position = Vector2(1620, 0)
+	c._set_selected(true)
+	c2._set_selected(true)
+	await wait(0.2)
+	await shot("catapults_aim")
+	c._set_selected(false)
+	c2._set_selected(false)
+	var thrown := []
+	for k in 3:
+		for cat in [c, c2]:
+			var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+			o.global_position = cat.to_global(cat._catch.position) + Vector2(0, -60)
+			main.add_child(o)
+			thrown.append(o)
+		for f in 20:
+			await _grab(Rect2(Vector2(1400, -120), Vector2(440, 230)), "cat_%03d" % (k * 20 + f), -2)
+			await wait(0.04)
+	for o in thrown:
+		if is_instance_valid(o):
+			log_line("  ore at %s v %s" % [o.global_position.round(), o.linear_velocity.round()])
+
+
 func banner() -> void:
 	main._wave_timer = -9999.0
 	await wait(0.8)
