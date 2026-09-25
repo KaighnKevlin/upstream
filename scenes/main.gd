@@ -386,8 +386,12 @@ func _build_dome() -> void:
 
 func _setup_terrain_visuals() -> void:
 	# Back wall behind the terrain, so tunnels show rock rather than a void
+	# pixel art: sample the terrain nearest-neighbour (the default is linear,
+	# which blurred every tile and smeared the 1px edge outlines)
+	_tilemap.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	var wall := TileMapLayer.new()
 	wall.name = "BackWall"
+	wall.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	wall.tile_set = TileSetBuilder.create_tileset(true)
 	WorldGen.generate_back_wall(wall)
 	add_child(wall)
@@ -396,6 +400,7 @@ func _setup_terrain_visuals() -> void:
 	# Edge shading + grass tufts on top of the terrain
 	var shading := preload("res://scripts/tile_shading.gd").new()
 	shading.name = "TileShading"
+	shading.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(shading)
 	move_child(shading, _tilemap.get_index() + 1)
 	shading.setup(_tilemap, WorldGen.WORLD_WIDTH, WorldGen.WORLD_HEIGHT)
@@ -403,6 +408,7 @@ func _setup_terrain_visuals() -> void:
 	# Crystals, stalactites, roots etc. in the natural caves
 	var decor := preload("res://scripts/cave_decor.gd").new()
 	decor.name = "CaveDecor"
+	decor.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(decor)
 	move_child(decor, shading.get_index() + 1)
 	decor.setup(_tilemap)

@@ -3,20 +3,29 @@ extends SceneTree
 ##
 ##   godot --path . --headless --script tools/art/gen_terrain.gd [-- preview_dir]
 ##
-## Each material is painted as one seamless 128x128 texture and sliced into an
-## 8x8 grid of 16px tiles; the world picks the slice by cell position, so the
+## Each material is painted as one seamless 64x64 texture and sliced into a
+## 4x4 grid of 16px tiles; the world picks the slice by cell position, so the
 ## ground reads as one continuous surface instead of a repeated 16px stamp.
 ##
+## Every slice then comes in 16 FRAMES, one per combination of open sides
+## (bit 1 up, 2 right, 4 down, 8 left: which neighbours are air), the way
+## Terraria frames its blocks: open faces are carved into a lumpy edge (the
+## lumps follow the world position, so a long floor is one natural edge),
+## outer corners are rounded, and each open face gets a dark outline and a
+## crust (lit on top, shadowed underneath). Grass creeps down open sides.
+##
 ## Atlas layout: column = tile type (matches world_gen TILE_* ids).
-##   rows 0-63    the 64 slices (row = (x % 8) + (y % 8) * 8)
-##   ore columns also have rows 64-127 (on dirt) and 128-191 (on deep stone);
-##   rows 0-63 are ore on stone.
+##   row = block * 256 + mask * 16 + slice   (slice = (x % 4) + (y % 4) * 4)
+##   block 0 for everything; ore columns also have block 1 (ore on dirt) and
+##   block 2 (on deep stone); block 0 is ore on stone.
 ##   column 6 is hard ironstone (the starting pickaxe can't break it).
 
 const T := 16
-const P := 128  # seamless period
+const P := 64   # seamless period
 const G := P / T  # slices per side
 const N := G * G  # slices per material
+const MASKS := 16
+const BLOCK := MASKS * N  # rows per host block
 const DIRT := 0
 const STONE := 1
 const IRON := 2
@@ -42,24 +51,30 @@ var rng := RandomNumberGenerator.new()
 func _initialize() -> void:
 	rng.seed = 7
 	var dirt := _dirt()
-	var stone := _stone(STONE_PAL, 80, 11)
-	var deep := _stone(DEEP_PAL, 112, 23)
+	var stone := _stone(STONE_PAL, 20, 11)
+	var deep := _stone(DEEP_PAL, 28, 23)
 	var bases := [stone, dirt, deep]  # ore row blocks: 0 = stone, 1 = dirt, 2 = deep
 
 	var hard := _ironstone()
-	var atlas := Image.create(7 * T, 3 * N * T, false, Image.FORMAT_RGBA8)
-	for v in N:
-		_blit_slice(atlas, hard, HARD, v, v)
-		_blit_slice(atlas, dirt, DIRT, v, v)
-		_blit_slice(atlas, stone, STONE, v, v)
-		_blit_slice(atlas, deep, DEEP, v, v)
-		_blit_slice(atlas, _grass(dirt), GRASS, v, v)
+	var grass := _grass(dirt)
+	var atlas := Image.create(7 * T, 3 * BLOCK * T, false, Image.FORMAT_RGBA8)
+	var pals := [STONE_PAL, DIRT_PAL, DEEP_PAL]
+	for mask in MASKS:
+		for v in N:
+			var row := mask * N + v
+			_blit_frame(atlas, hard, HARD, v, row, mask, HARD_PAL, 61)
+			_blit_frame(atlas, dirt, DIRT, v, row, mask, DIRT_PAL, 3)
+			_blit_frame(atlas, stone, STONE, v, row, mask, STONE_PAL, 11)
+			_blit_frame(atlas, deep, DEEP, v, row, mask, DEEP_PAL, 23)
+			_blit_frame(atlas, grass, GRASS, v, row, mask, DIRT_PAL, 5, true)
 	for b in 3:
 		var iron := _ore(bases[b], IRON_PAL, "", 101 + b)
 		var copper := _ore(bases[b], COPPER_PAL, VERDIGRIS, 201 + b)
-		for v in N:
-			_blit_slice(atlas, iron, IRON, v, b * N + v)
-			_blit_slice(atlas, copper, COPPER, v, b * N + v)
+		for mask in MASKS:
+			for v in N:
+				var row := b * BLOCK + mask * N + v
+				_blit_frame(atlas, iron, IRON, v, row, mask, pals[b], 101 + b)
+				_blit_frame(atlas, copper, COPPER, v, row, mask, pals[b], 201 + b)
 	atlas.save_png("res://assets/sprites/terrain_atlas.png")
 	print("wrote res://assets/sprites/terrain_atlas.png")
 
@@ -82,6 +97,120 @@ func _blit_slice(atlas: Image, tex: Image, col: int, v: int, row: int) -> void:
 	var sx := (v % G) * T
 	var sy := (v / G) * T
 	atlas.blit_rect(tex, Rect2i(sx, sy, T, T), Vector2i(col * T, row * T))
+
+
+const UP := 1
+const RIGHT := 2
+const DOWN := 4
+const LEFT := 8
+
+
+## 1D wrapping noise over the period -> carve depth 0..2 px, per edge.
+func _edge_depths(seed_val: int) -> Array:
+	var r := RandomNumberGenerator.new()
+	r.seed = seed_val
+	var knots := []
+	for i in P / 4:
+		knots.append(r.randf())
+	var out := []
+	for i in P:
+		var a: float = knots[(i / 4) % knots.size()]
+		var b: float = knots[(i / 4 + 1) % knots.size()]
+		var f := float(i % 4) / 4.0
+		var n := lerpf(a, b, f * f * (3.0 - 2.0 * f))
+		out.append(0 if n < 0.22 else (1 if n < 0.62 else (2 if n < 0.88 else 3)))
+	return out
+
+
+var _depth_cache := {}
+
+func _depths(seed_val: int) -> Dictionary:
+	if not _depth_cache.has(seed_val):
+		_depth_cache[seed_val] = {"up": _edge_depths(seed_val * 7 + 1), "down": _edge_depths(seed_val * 7 + 2),
+			"left": _edge_depths(seed_val * 7 + 3), "right": _edge_depths(seed_val * 7 + 4)}
+	return _depth_cache[seed_val]
+
+
+## One framed tile: slice v of `tex`, with the sides in `mask` open to air.
+func _blit_frame(atlas: Image, tex: Image, col: int, v: int, row: int, mask: int, pal: Array,
+		seed_val: int, grassy := false) -> void:
+	var sx := (v % G) * T
+	var sy := (v / G) * T
+	var dep := _depths(seed_val)
+	# 1. carve: which pixels of this tile are air
+	var air := []
+	air.resize(T * T)
+	for y in T:
+		for x in T:
+			var gx := sx + x
+			var gy := sy + y
+			var a := false
+			if mask & UP and y < int(dep.up[gx]):
+				a = true
+			if mask & DOWN and y > T - 1 - int(dep.down[gx]):
+				a = true
+			if mask & LEFT and x < int(dep.left[gy]):
+				a = true
+			if mask & RIGHT and x > T - 1 - int(dep.right[gy]):
+				a = true
+			# rounded outer corners
+			var r := 5.5
+			if mask & UP and mask & LEFT and x < 6 and y < 6 and Vector2(x + 0.5 - r, y + 0.5 - r).length() > r:
+				a = true
+			if mask & UP and mask & RIGHT and x > 9 and y < 6 and Vector2(x + 0.5 - (T - r), y + 0.5 - r).length() > r:
+				a = true
+			if mask & DOWN and mask & LEFT and x < 6 and y > 9 and Vector2(x + 0.5 - r, y + 0.5 - (T - r)).length() > r:
+				a = true
+			if mask & DOWN and mask & RIGHT and x > 9 and y > 9 and Vector2(x + 0.5 - (T - r), y + 0.5 - (T - r)).length() > r:
+				a = true
+			air[y * T + x] = a
+	# 2. distance to air along each open direction (beyond an open side is air)
+	var dark := Color(0.07, 0.045, 0.06)   # near-black outline: reads against the dark back wall
+	var light: Color = _c(pal[pal.size() - 1])
+	for y in T:
+		for x in T:
+			var px := Vector2i(col * T + x, row * T + y)
+			if air[y * T + x]:
+				atlas.set_pixelv(px, Color(0, 0, 0, 0))
+				continue
+			var c := tex.get_pixel(sx + x, sy + y)
+			var du := _run(air, x, y, 0, -1, mask & UP != 0)
+			var dd := _run(air, x, y, 0, 1, mask & DOWN != 0)
+			var dl := _run(air, x, y, -1, 0, mask & LEFT != 0)
+			var dr := _run(air, x, y, 1, 0, mask & RIGHT != 0)
+			var d := mini(mini(du, dd), mini(dl, dr))
+			if d == 1:
+				c = dark                                   # outline
+			elif du == 2:
+				c = c.lerp(light, 0.6)                     # bright top lip
+			elif du == 3:
+				c = c.lerp(light, 0.25)
+			elif dd == 2:
+				c = c.darkened(0.55)                       # shadowed underside
+			elif dd <= 4:
+				c = c.darkened(0.32 if dd == 3 else 0.15)
+			elif mini(dl, dr) == 2:
+				c = c.darkened(0.35)                       # side faces
+			elif mini(dl, dr) == 3:
+				c = c.darkened(0.15)
+			# grass creeping down open sides of a grass block
+			if grassy and d > 1 and (mini(dl, dr) <= 3) and y < 4 + int(dep.down[(sx + x) % P]) * 3:
+				c = _c(GRASS_PAL[3 if mini(dl, dr) == 2 else 2])
+			atlas.set_pixelv(px, c)
+
+
+## Pixels from (x,y) to air going (dx,dy); open = the tile edge that way is air.
+func _run(air: Array, x: int, y: int, dx: int, dy: int, open: bool) -> int:
+	var k := 0
+	while true:
+		x += dx
+		y += dy
+		k += 1
+		if x < 0 or y < 0 or x >= T or y >= T:
+			return k if open else 99
+		if air[y * T + x]:
+			return k
+	return 99
 
 
 func _wrap(v: int) -> int:
@@ -144,7 +273,7 @@ func _dirt() -> Image:
 			img.set_pixel(x, y, _c(DIRT_PAL[idx]))
 	# Pebbles: small dark blobs lit from above
 	rng.seed = 31
-	for i in 88:
+	for i in 22:
 		var cx := rng.randi_range(0, P - 1)
 		var cy := rng.randi_range(0, P - 1)
 		var w := rng.randi_range(1, 3)
@@ -156,7 +285,7 @@ func _dirt() -> Image:
 			img.set_pixel(_wrap(cx + dx), _wrap(cy - 1), _c(DIRT_PAL[5]))  # rim light
 			img.set_pixel(_wrap(cx + dx), _wrap(cy + h), _c(DIRT_PAL[0]))  # contact shadow
 	# Fine specks
-	for i in 144:
+	for i in 36:
 		var x := rng.randi_range(0, P - 1)
 		var y := rng.randi_range(0, P - 1)
 		img.set_pixel(x, y, _c(DIRT_PAL[4] if rng.randf() < 0.5 else DIRT_PAL[1]))
@@ -202,7 +331,7 @@ func _stone(pal: Array, points: int, seed_val: int) -> Image:
 				idx = 3 if shade > 0.45 else (2 if shade > -0.45 else 1)
 			img.set_pixel(x, y, _c(pal[idx]))
 	# A few bright glints
-	for i in 24:
+	for i in 6:
 		img.set_pixel(r.randi_range(0, P - 1), r.randi_range(0, P - 1), _c(pal[4]))
 	return img
 
@@ -247,9 +376,9 @@ func _ironstone() -> Image:
 					elif y == posmod(j + 1, P) and idx > 1:
 						idx = 3      # lit lip under the crack
 				img.set_pixel(x, y, _c(HARD_PAL[idx]))
-	for i in 40:
+	for i in 10:
 		img.set_pixel(r.randi_range(0, P - 1), r.randi_range(0, P - 1), _c(RUST))
-	for i in 14:
+	for i in 4:
 		img.set_pixel(r.randi_range(0, P - 1), r.randi_range(0, P - 1), _c(HARD_PAL[5]))
 	return img
 

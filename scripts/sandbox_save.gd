@@ -65,6 +65,7 @@ static func load_into(main: Node) -> int:
 	tm.clear()
 	for t in data.tiles:
 		tm.set_cell(Vector2i(int(t[0]), int(t[1])), int(t[2]), Vector2i(int(t[3]), int(t[4])))
+	preload("res://scripts/world_gen.gd").reframe_all(tm)   # saves from before edge frames, too
 	var shading := main.get_node_or_null("TileShading")
 	if shading:
 		for c in shading.get_children():

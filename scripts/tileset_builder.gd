@@ -3,9 +3,10 @@ extends Node
 const TILE_SIZE := 16
 
 const ATLAS_PATH := "res://assets/sprites/terrain_atlas.png"
-## Tile types have SLICES position slices; ore types have three blocks of
-## them (on stone, dirt, deep stone). See tools/art/gen_terrain.gd.
-const SLICES := 64
+## Each tile type has 16 position slices x 16 edge frames; ore types have
+## three blocks of them (on stone, dirt, deep stone). See
+## tools/art/gen_terrain.gd and WorldGen.set_tile.
+const SLICES := 16 * 16
 const SLICE_ROWS := {0: SLICES, 1: SLICES, 2: SLICES * 3, 3: SLICES * 3, 4: SLICES, 5: SLICES, 6: SLICES}
 
 

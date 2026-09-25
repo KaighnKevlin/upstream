@@ -2657,3 +2657,34 @@ func lab_rec() -> void:
 	Engine.time_scale = 1.0
 	log_line("after 3 flasks: springs level %d, kick mult %.2f; lab label '%s'" % [Tech.level("springs"), Tech.mult("springs"), lab._label.text])
 	await shot("researched")
+
+
+func terrain_look() -> void:
+	# Close-ups of the framed terrain: the surface, a dug pocket with a floor,
+	# steps, an overhang and a lone pillar, and a cave.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var tm := tilemap()
+	var shading := main.get_node("TileShading")
+	var dig := []
+	for x in range(70, 80):
+		for y in range(9, 13):
+			dig.append(Vector2i(x, y))
+	for c in [Vector2i(74, 11), Vector2i(74, 12)]:
+		dig.erase(c)               # a pillar
+	for x in range(80, 84):
+		dig.append(Vector2i(x, 12))  # a low tunnel off to the side
+	dig.append(Vector2i(69, 12))
+	for c in dig:
+		tm.set_cell(c, -1)
+		shading.mark_dirty(c)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	main.get_node("Player").global_position = Vector2(76 * 16, 12 * 16)
+	for spot in [[Vector2(1235, 176), 3.5, "pocket"], [Vector2(1500, 70), 3.0, "surface"], [Vector2(900, 380), 2.5, "cave"]]:
+		cam.zoom = Vector2(spot[1], spot[1])
+		cam.global_position = spot[0]
+		await wait(0.4)
+		await shot(spot[2])
+		await _grab(Rect2(spot[0] - Vector2(110, 55), Vector2(220, 110)), "px_" + spot[2], -4)

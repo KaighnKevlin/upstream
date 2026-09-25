@@ -100,6 +100,10 @@ static func build(main: Node) -> void:
 		ch.end_offset = ends[1] - ends[0]
 		_add_node(main, ch, ends[0])
 	_add(main, preload("res://scenes/bumper.tscn"), PIT_BUMPER)
+	WorldGen.reframe_all(tm)   # the cleared strip changed the ground's edges
+	if shading:
+		for c in shading.get_children():
+			c.queue_redraw()
 	for x in [PIT.position.x + 1, PIT.position.x + 2]:
 		var sp: Node2D = preload("res://scenes/spikes.tscn").instantiate()
 		_add_node(main, sp, tm.to_global(tm.map_to_local(Vector2i(x, PIT.end.y - 1))))
