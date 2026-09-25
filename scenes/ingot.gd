@@ -11,7 +11,7 @@ const LightTextures = preload("res://scripts/light_textures.gd")
 
 func _ready() -> void:
 	collision_layer = 2
-	collision_mask = 1
+	collision_mask = 1 | 64  # terrain + chutes
 
 	contact_monitor = true
 	max_contacts_reported = 4

@@ -1791,3 +1791,53 @@ func banner() -> void:
 	main.damage_dome(200)
 	await wait(0.4)
 	await shot("game_over")
+
+
+func chute_rec() -> void:
+	# Ore dropped onto a chute sticks, rolls down it and leaves the low end;
+	# ore thrown up from underneath passes through (one-way).
+	main._wave_timer = -9999.0
+	var c: Node2D = preload("res://scenes/chute.tscn").instantiate()
+	c.global_position = Vector2(1480, -30)
+	c.end_offset = Vector2(130, 52)
+	main.add_child(c)
+	var c2: Node2D = preload("res://scenes/chute.tscn").instantiate()
+	c2.global_position = Vector2(1720, 30)
+	c2.end_offset = Vector2(-70, 22)   # a switchback, drawn right to left
+	main.add_child(c2)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.4, 2.4)
+	cam.global_position = Vector2(1600, 10)
+	c2._set_selected(true)
+	await wait(0.3)
+	await shot("chutes")
+	c2._set_selected(false)
+	var drops := []
+	for k in 3:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.global_position = Vector2(1492 + k * 14, -110 - k * 30)
+		main.add_child(o)
+		drops.append(o)
+	var under: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+	under.global_position = Vector2(1560, 70)
+	under.linear_velocity = Vector2(0, -420)
+	main.add_child(under)
+	var under_top := 999.0
+	var left_at := {}
+	for f in 150:
+		await physics_frame
+		if is_instance_valid(under):
+			under_top = minf(under_top, under.global_position.y)
+		for o in drops:
+			if is_instance_valid(o) and not left_at.has(o) and o.global_position.x > c.global_position.x + 130:
+				left_at[o] = [f, o.global_position.round(), o.linear_velocity.round()]
+		if f % 3 == 0 and f < 120:
+			await _grab(Rect2(Vector2(1440, -140), Vector2(340, 240)), "chute_%03d" % (f / 3), -2)
+	for o in drops:
+		log_line("ore left low end: %s" % [left_at.get(o, "never")])
+		if is_instance_valid(o):
+			log_line("   now at %s" % [o.global_position.round()])
+	log_line("ore thrown up from below reached y=%.0f (rail there y~%.0f)" % [under_top, c.global_position.y + 52 * 80 / 130.0])
+	await shot("after")

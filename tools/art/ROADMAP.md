@@ -218,3 +218,5 @@ Lights are additive over a 0.08 CanvasModulate and the framebuffer clips at 1.0,
 ### Loop pass (sandbox era) — ore chunks v2
 - gen_items.py ore(): 5 variants (was 3) of faceted warm-stone chunks: 6-7 point outline fanned into triangle facets from an off-centre apex, each shaded by how it faces the top-left light; 2-3 copper nuggets and a white glint. Own warm rock ramp (ORE_ROCK_EXTRA) so ore separates from the blue-grey stone tiles. ore.gd picks from 5.
 
+
+- Loop pass 5: Chute (9) - sloped one-way steel rail on layer 64 that only ore/ingots collide with; absorbent material kills landing bounce so ore rolls off the low end. Drag the end handle to set slope/length. HUD help line compacted to fit.

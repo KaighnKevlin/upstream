@@ -12,7 +12,7 @@ const FX = preload("res://scripts/fx.gd")
 func _ready() -> void:
 	add_to_group("ore")
 	collision_layer = 2
-	collision_mask = 1
+	collision_mask = 1 | 64  # terrain + chutes
 	angular_damp = 1.5  # loose ore stops rolling on flat ground and can sleep
 
 	contact_monitor = true

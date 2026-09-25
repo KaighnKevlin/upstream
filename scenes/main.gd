@@ -149,7 +149,7 @@ func _style_hud() -> void:
 		l.add_theme_constant_override("shadow_offset_y", 2)
 	($CanvasLayer/DomeHpLabel as Label).horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	($CanvasLayer/BuildLabel as Label).text = \
-		"[1] Tramp [2] Tapper [3] Laser [4] Lift [5] Hopper [6] Turret [7] Spikes [8] Catapult\n[RMB] Remove [Q] Cancel [J] Mine [F] Shoot [E] Carry/throw [S] Drop"
+		"1 Tramp  2 Tapper  3 Laser  4 Lift  5 Hopper  6 Turret  7 Spikes  8 Catapult  9 Chute\nRMB Remove  Q Cancel  J Mine  F Shoot  E Carry/throw  S Drop"
 	($CanvasLayer/Title as Label).text = "UPSTREAM"
 	# HP bars: brass rim, dark well, fill on top
 	for bar in [["PlayerHp", 20.0, 140.0], ["DomeHp", 300.0, 500.0]]:
