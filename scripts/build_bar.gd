@@ -4,9 +4,9 @@ extends Control
 ## click the selected slot again to cancel. The slot for the current build
 ## lights up. Hovering a slot shows its name.
 
-const SLOT := Vector2(53, 46)
+const SLOT := Vector2(48, 46)
 const GAP := 5.0
-const ICON_BOX := Vector2(44, 34)
+const ICON_BOX := Vector2(40, 34)
 
 const DARK := Color(0.1, 0.09, 0.07)
 const WELL := Color(0.16, 0.13, 0.1)
@@ -18,7 +18,7 @@ const KEY_COL := Color(0.9, 0.82, 0.62)
 const PIECES := [
 	[1, "1", "Trampoline"], [2, "2", "Vein tapper"], [3, "3", "Laser smelter"],
 	[4, "4", "Upstream lift"], [5, "5", "Drop hopper"], [6, "6", "Funnel turret"],
-	[7, "7", "Spikes"], [8, "8", "Catapult"], [9, "9", "Chute"], [10, "0", "Splitter"], [11, "B", "Bumper"], [12, "C", "Conveyor belt"],
+	[7, "7", "Spikes"], [8, "8", "Catapult"], [9, "9", "Chute"], [10, "0", "Splitter"], [11, "B", "Bumper"], [12, "C", "Conveyor belt"], [13, "V", "Bellows fan"],
 ]
 
 var font: Font
@@ -149,6 +149,8 @@ func _build_icon(slot: Node2D, t: int) -> void:
 			_part(art, S + "turret_barrel.png", Rect2(), Vector2(-5, 28))
 		7:
 			_part(art, S + "spikes.png", Rect2(), Vector2(-8, -8))
+		13:
+			_part(art, S + "bellows.png", Rect2(0, 0, 36, 24), Vector2(-12, -12))
 		8:
 			_part(art, S + "catapult_base.png", Rect2(), Vector2(-18, -12))
 			_part(art, S + "catapult_arm.png", Rect2(), Vector2(-4, -6))

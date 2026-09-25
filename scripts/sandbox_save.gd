@@ -7,7 +7,7 @@ extends RefCounted
 const PATH := "user://sandbox_save.json"
 ## Settings worth keeping, on whichever pieces have them.
 const PROPS := ["bounce_angle", "bounce_force", "eject_angle", "eject_force", "aim_angle",
-	"throw_speed", "end_offset", "mode", "plate_offset_x", "lift_speed"]
+	"throw_speed", "end_offset", "mode", "plate_offset_x", "lift_speed", "wind_speed"]
 
 
 static func has_save() -> bool:

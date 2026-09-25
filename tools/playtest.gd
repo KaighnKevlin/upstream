@@ -2369,3 +2369,56 @@ func shield_turret() -> void:
 		if s % 4 == 0:
 			log_line("t=%.1f bearer x %d hp %d, turret shots %d ammo %d" % [s * 0.5, e.global_position.x, e.hp, t.shots, t._loaded().size()])
 	log_line("walked past the turret at t=%s" % passed_at)
+
+
+func bellows_rec() -> void:
+	# A sideways fan carries dropped ore across; an updraft fan holds ore up;
+	# a fan pushes a magpie off course.
+	main._wave_timer = -9999.0
+	var side: Node2D = preload("res://scenes/bellows.tscn").instantiate()
+	side.global_position = Vector2(1440, 30)
+	side.aim_angle = 90.0
+	side.wind_speed = 360.0
+	main.add_child(side)
+	var up: Node2D = preload("res://scenes/bellows.tscn").instantiate()
+	up.global_position = Vector2(1700, 70)
+	up.aim_angle = 0.0
+	up.wind_speed = 440.0
+	main.add_child(up)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.0, 2.0)
+	cam.global_position = Vector2(1580, -20)
+	await wait(0.3)
+	up._set_selected(true)
+	var a: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+	a.global_position = Vector2(1480, -60)   # falls through the sideways stream
+	main.add_child(a)
+	var b: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+	b.global_position = Vector2(1702, -20)   # dropped into the updraft
+	main.add_child(b)
+	var b_ys := []
+	for f in 180:
+		await physics_frame
+		if f % 30 == 0:
+			b_ys.append(int(b.global_position.y))
+		if f % 5 == 0 and f < 120:
+			await _grab(Rect2(Vector2(1400, -170), Vector2(360, 280)), "fan_%03d" % (f / 5), -2)
+	log_line("ore through the side stream: dropped at x 1480, now at %s" % [a.global_position.round()])
+	log_line("ore in the updraft (fan at y 70): y every 0.5s %s" % [b_ys])
+	await shot("fans")
+	up._set_selected(false)
+	# a magpie flying into a headwind
+	var m: Node2D = preload("res://scenes/magpie.tscn").instantiate()
+	m.global_position = Vector2(1650, -40)
+	main.add_child(m)
+	var fan: Node2D = preload("res://scenes/bellows.tscn").instantiate()
+	fan.global_position = Vector2(1540, -40)
+	fan.aim_angle = 90.0
+	fan.wind_speed = 500.0
+	main.add_child(fan)
+	a.queue_free()
+	b.queue_free()
+	await wait(1.5)
+	log_line("magpie seeking with a fan blowing at it: at %s v %s" % [m.global_position.round(), m.velocity.round()])

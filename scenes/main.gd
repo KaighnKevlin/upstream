@@ -612,6 +612,7 @@ var _build_names := {
 	10: "Build: SPLITTER (click: mode)",
 	11: "Build: BUMPER",
 	12: "Build: BELT (drag start to end)",
+	13: "Build: BELLOWS (click to aim)",
 }
 
 
