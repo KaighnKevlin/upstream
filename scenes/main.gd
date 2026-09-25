@@ -651,6 +651,7 @@ var _build_names := {
 	18: "Build: TESLA COIL (feed it ingots)",
 	19: "Build: FLAMER (feed it ore)",
 	20: "Build: TRAPDOOR (over a pit)",
+	21: "Build: CRUSHER (ore -> grit; chews walkers)",
 }
 
 

@@ -3115,3 +3115,60 @@ func spring_rec() -> void:
 			springs += 1
 	log_line("assembler (springsteel): made %d, springs loose %d (expect 3)" % [a.made, springs])
 	await _grab(Rect2(Vector2(1540, -40), Vector2(260, 140)), "spring_assembler", -3)
+
+
+func crusher_rec() -> void:
+	# Ore onto a crusher's rollers comes out as grit (3 each). Then the
+	# grinder: a 3-wide pit, a crusher at the bottom, a trapdoor on top; a
+	# soldier and two scuttlers walk in.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(3.0, 3.0)
+	var c1: Node2D = preload("res://scenes/crusher.tscn").instantiate()
+	c1.global_position = Vector2(1500, 60)
+	main.add_child(c1)
+	cam.global_position = c1.global_position + Vector2(20, -40)
+	await wait(0.4)
+	for k in ["copper", "copper", "copper", "iron"]:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.kind = k
+		o.global_position = c1.global_position + Vector2(0, -80)
+		main.add_child(o)
+		await wait(0.3)
+		if k == "copper":
+			await _grab(Rect2(c1.global_position + Vector2(-60, -90), Vector2(160, 110)), "crush_feed", -4)
+	await wait(7.0)
+	var grit := 0
+	for o in get_nodes_in_group("ore"):
+		if o.get("kind") == "grit":
+			grit += 1
+	log_line("crusher (unpowered): crushed %d (expect 4), grit loose %d (expect 12)" % [c1.crushed, grit])
+	await _grab(Rect2(c1.global_position + Vector2(-60, -90), Vector2(160, 110)), "crush_grit", -4)
+	# the grinder
+	var tm: TileMapLayer = main.get_node("TileMapLayer")
+	var WG := preload("res://scripts/world_gen.gd")
+	for x in range(102, 105):
+		for y in range(6, 10):
+			tm.set_cell(Vector2i(x, y), -1)
+	for x in range(101, 106):
+		for y in range(5, 11):
+			WG.reframe_around(tm, Vector2i(x, y))
+			get_root().get_tree().call_group("tile_shading", "mark_dirty", Vector2i(x, y))
+	var cr: Node2D = preload("res://scenes/crusher.tscn").instantiate()
+	cr.global_position = Vector2(103 * 16 + 8, 150)
+	main.add_child(cr)
+	var td: Node2D = preload("res://scenes/trapdoor.tscn").instantiate()
+	td.global_position = Vector2(103 * 16 + 8, 104)
+	main.add_child(td)
+	cam.global_position = Vector2(1656, 100)
+	await wait(0.4)
+	var es := [_spawn(2, Vector2(1740, 60)), _spawn(1, Vector2(1790, 60)), _spawn(1, Vector2(1830, 60))]
+	for f in 900:
+		await physics_frame
+		if f % 30 == 0 and f < 480:
+			await _grab(Rect2(Vector2(1576, 30), Vector2(160, 150)), "grinder_%03d" % (f / 30), -4)
+		if f % 120 == 0:
+			log_line("t=%4.1f chewed %d | %s" % [f / 60.0, cr.chewed, ", ".join(es.map(func(e): return ("x%d y%d hp%d" % [e.global_position.x, e.global_position.y, e.hp]) if is_instance_valid(e) and not e._dying else "dead"))])

@@ -1,6 +1,6 @@
 extends Node
 
-enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, TURRET, SPIKES, CATAPULT, CHUTE, SPLITTER, BUMPER, BELT, BELLOWS, PENDULUM, WHEEL, ASSEMBLER, LAB, TESLA, FLAMER, TRAPDOOR }
+enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, TURRET, SPIKES, CATAPULT, CHUTE, SPLITTER, BUMPER, BELT, BELLOWS, PENDULUM, WHEEL, ASSEMBLER, LAB, TESLA, FLAMER, TRAPDOOR, CRUSHER }
 
 var current_build: BuildType = BuildType.NONE
 var _ghost: Node2D = null
@@ -28,6 +28,7 @@ var _scenes := {
 	BuildType.TESLA: preload("res://scenes/tesla.tscn"),
 	BuildType.FLAMER: preload("res://scenes/flamer.tscn"),
 	BuildType.TRAPDOOR: preload("res://scenes/trapdoor.tscn"),
+	BuildType.CRUSHER: preload("res://scenes/crusher.tscn"),
 }
 
 var _ghost_colors := {
@@ -51,6 +52,7 @@ var _ghost_colors := {
 	BuildType.TESLA: Color(1.0, 0.85, 0.5, 0.5),
 	BuildType.FLAMER: Color(1.0, 0.85, 0.5, 0.5),
 	BuildType.TRAPDOOR: Color(1.0, 0.85, 0.5, 0.6),
+	BuildType.CRUSHER: Color(1.0, 0.85, 0.5, 0.5),
 }
 
 signal build_mode_changed(build_type: BuildType)
@@ -100,6 +102,8 @@ func _input(event: InputEvent) -> void:
 				_set_build(BuildType.FLAMER)
 			KEY_X:
 				_set_build(BuildType.TRAPDOOR)
+			KEY_R:
+				_set_build(BuildType.CRUSHER)
 			KEY_ESCAPE, KEY_Q:
 				_set_build(BuildType.NONE)
 
@@ -204,7 +208,7 @@ func _can_place(pos: Vector2) -> bool:
 			var tile_pos := tilemap.local_to_map(tilemap.to_local(pos))
 			if tilemap.get_cell_source_id(tile_pos) != -1 or tilemap.get_cell_source_id(tile_pos + Vector2i(0, 1)) != -1:
 				return false
-	elif current_build in [BuildType.SPIKES, BuildType.CATAPULT, BuildType.BUMPER, BuildType.ASSEMBLER, BuildType.LAB, BuildType.TESLA, BuildType.FLAMER]:
+	elif current_build in [BuildType.SPIKES, BuildType.CATAPULT, BuildType.BUMPER, BuildType.ASSEMBLER, BuildType.LAB, BuildType.TESLA, BuildType.FLAMER, BuildType.CRUSHER]:
 		# on a floor: empty cell with solid ground just below
 		if tilemap:
 			var tile_pos := tilemap.local_to_map(tilemap.to_local(pos))

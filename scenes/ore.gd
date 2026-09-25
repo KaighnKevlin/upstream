@@ -20,6 +20,9 @@ const KINDS := {
 	# springsteel coil: bounces off nearly everything and keeps its speed
 	# through an enemy (ricochet), so one shot can clatter through a crowd.
 	"spring": {"mass": 1.2, "bounce": 0.92, "friction": 0.15, "tex": "res://assets/sprites/spring_item.png", "size": 12, "frames": 1, "radius": 5.0, "ricochet": true},
+	# grit: crushed ore (a crusher makes three from one). Light chips: triple
+	# the ammo, a third of the punch.
+	"grit": {"mass": 0.4, "bounce": 0.35, "friction": 0.5, "tex": "res://assets/sprites/grit.png", "size": 6, "frames": 3, "radius": 2.6},
 	"flask": {"mass": 0.6, "bounce": 0.15, "friction": 0.6, "tex": "res://assets/sprites/flask.png", "size": 12, "h": 14, "frames": 1, "radius": 5.0, "fragile": 300.0},
 }
 static var _shapes := {}
