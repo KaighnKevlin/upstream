@@ -1,40 +1,58 @@
 extends Control
-## Build toolbar: one slot per placeable piece, drawn from the pieces' own
-## sprites, with its hotkey. Click a slot (or press the key) to build it;
-## click the selected slot again to cancel. The slot for the current build
-## lights up. Hovering a slot shows its name.
+## Build toolbar: pieces grouped into tabs (Transport, Production, Defence),
+## one slot per piece drawn from its own sprites, with its hotkey. Click a
+## tab to switch; click a slot (or press its key, from any tab) to build it;
+## click the selected slot again to cancel. Pressing a piece's key flips to
+## its tab. Hovering a slot names it beside the tabs.
 
-const SLOT := Vector2(35, 46)
-const GAP := 3.0
-const ICON_BOX := Vector2(31, 34)
+const TAB_H := 16.0
+const TAB_W := 112.0
+const SLOT := Vector2(52, 44)
+const GAP := 6.0
+const ICON_BOX := Vector2(46, 36)
 
 const DARK := Color(0.1, 0.09, 0.07)
 const WELL := Color(0.16, 0.13, 0.1)
 const RIM := Color(0.45, 0.37, 0.26)
 const RIM_ON := Color(1.0, 0.78, 0.35)
 const KEY_COL := Color(0.9, 0.82, 0.62)
+const TAB_BG := Color(0.3, 0.24, 0.17)
+const TAB_ON := Color(0.52, 0.41, 0.27)
 
-# [build type, hotkey label, name]
-const PIECES := [
-	[1, "1", "Trampoline"], [2, "2", "Vein tapper"], [3, "3", "Laser smelter"],
-	[4, "4", "Upstream lift"], [5, "5", "Drop hopper"], [6, "6", "Funnel turret"],
-	[7, "7", "Spikes"], [8, "8", "Catapult"], [9, "9", "Chute"], [10, "0", "Splitter"], [11, "B", "Bumper"], [12, "C", "Conveyor belt"], [13, "V", "Bellows fan"], [14, "M", "Wrecking pendulum"], [15, "N", "Gravity wheel"], [16, "T", "Assembler"], [17, "Y", "Research lab"],
+# build type -> [hotkey label, name]
+const PIECES := {
+	1: ["1", "Trampoline"], 2: ["2", "Vein tapper"], 3: ["3", "Laser smelter"],
+	4: ["4", "Upstream lift"], 5: ["5", "Drop hopper"], 6: ["6", "Funnel turret"],
+	7: ["7", "Spikes"], 8: ["8", "Catapult"], 9: ["9", "Chute"], 10: ["0", "Splitter"],
+	11: ["B", "Bumper"], 12: ["C", "Conveyor belt"], 13: ["V", "Bellows fan"],
+	14: ["M", "Wrecking pendulum"], 15: ["N", "Gravity wheel"], 16: ["T", "Assembler"],
+	17: ["Y", "Research lab"],
+}
+const CATS := [
+	["Transport", [1, 9, 12, 10, 8, 4, 13]],
+	["Production", [2, 3, 15, 16, 17]],
+	["Defence", [6, 5, 7, 11, 14]],
 ]
 
 var font: Font
+var _cat := 0
 var _current := 0
 var _hover := -1
 var _name_label: Label
+var _icons := {}             # build type -> icon holder
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	size = Vector2(PIECES.size() * (SLOT.x + GAP) - GAP, SLOT.y)
-	for i in PIECES.size():
+	var most := 0
+	for c in CATS:
+		most = maxi(most, c[1].size())
+	size = Vector2(maxf(most * (SLOT.x + GAP) - GAP, CATS.size() * TAB_W), TAB_H + 2 + SLOT.y)
+	for t in PIECES:
 		var holder := Node2D.new()
-		holder.position = _slot_rect(i).get_center() + Vector2(0, 2)
 		add_child(holder)
-		_build_icon(holder, PIECES[i][0])
+		_build_icon(holder, t)
+		_icons[t] = holder
 	_name_label = Label.new()
 	_name_label.visible = false
 	_name_label.z_index = 5
@@ -45,23 +63,49 @@ func _ready() -> void:
 	_name_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
 	_name_label.add_theme_constant_override("shadow_offset_x", 2)
 	_name_label.add_theme_constant_override("shadow_offset_y", 2)
+	_name_label.position = Vector2(CATS.size() * TAB_W + 12, -4)
 	add_child(_name_label)
+	_layout()
 	var bs := get_node("/root/BuildSystem")
 	bs.build_mode_changed.connect(_on_build_mode)
 	bs.ui_rects.append(get_global_rect)
 
 
-func _on_build_mode(t: int) -> void:
-	_current = t
+func _types() -> Array:
+	return CATS[_cat][1]
+
+
+func _layout() -> void:
+	for t in _icons:
+		_icons[t].visible = false
+	var types := _types()
+	for i in types.size():
+		var h: Node2D = _icons[types[i]]
+		h.visible = true
+		h.position = _slot_rect(i).get_center() + Vector2(0, 2)
 	queue_redraw()
 
 
+func _on_build_mode(t: int) -> void:
+	_current = t
+	if t != 0 and not t in _types():
+		for c in CATS.size():
+			if t in CATS[c][1]:
+				_cat = c
+				_layout()
+	queue_redraw()
+
+
+func _tab_rect(c: int) -> Rect2:
+	return Rect2(Vector2(c * TAB_W, 0), Vector2(TAB_W - 4, TAB_H))
+
+
 func _slot_rect(i: int) -> Rect2:
-	return Rect2(Vector2(i * (SLOT.x + GAP), 0), SLOT)
+	return Rect2(Vector2(i * (SLOT.x + GAP), TAB_H + 2), SLOT)
 
 
 func _slot_at(p: Vector2) -> int:
-	for i in PIECES.size():
+	for i in _types().size():
 		if _slot_rect(i).has_point(p):
 			return i
 	return -1
@@ -74,14 +118,19 @@ func _gui_input(event: InputEvent) -> void:
 			_hover = h
 			_name_label.visible = h >= 0
 			if h >= 0:
-				_name_label.text = PIECES[h][2]
-				_name_label.reset_size()
-				_name_label.position = Vector2(clampf(_slot_rect(h).get_center().x - _name_label.size.x / 2, 0, size.x - _name_label.size.x), -30)
+				_name_label.text = PIECES[_types()[h]][1]
 			queue_redraw()
 	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		for c in CATS.size():
+			if _tab_rect(c).has_point(event.position):
+				_cat = c
+				_hover = -1
+				_layout()
+				accept_event()
+				return
 		var i := _slot_at(event.position)
 		if i >= 0:
-			var t: int = PIECES[i][0]
+			var t: int = _types()[i]
 			get_node("/root/BuildSystem")._set_build(0 if t == _current else t)
 		accept_event()
 
@@ -94,14 +143,25 @@ func _notification(what: int) -> void:
 
 
 func _draw() -> void:
-	for i in PIECES.size():
+	# folder tabs along the top
+	for c in CATS.size():
+		var r := _tab_rect(c)
+		var on := c == _cat
+		draw_rect(r, RIM_ON if on else RIM)
+		draw_rect(r.grow(-1), TAB_ON if on else TAB_BG)
+		if font:
+			var label: String = CATS[c][0]
+			draw_string(font, r.position + Vector2(7, 13), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(0, 0, 0, 0.8))
+			draw_string(font, r.position + Vector2(6, 12), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, KEY_COL if on else KEY_COL.darkened(0.3))
+	var types := _types()
+	for i in types.size():
 		var r := _slot_rect(i)
-		var on: bool = PIECES[i][0] == _current
+		var on: bool = types[i] == _current
 		draw_rect(r, RIM_ON if on else RIM)
 		draw_rect(r.grow(-2), DARK)
 		draw_rect(r.grow(-3), WELL.lightened(0.12) if i == _hover and not on else WELL)
 		if font:
-			var k: String = PIECES[i][1]
+			var k: String = PIECES[types[i]][0]
 			draw_string(font, r.position + Vector2(5, 15), k, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(0, 0, 0, 0.8))
 			draw_string(font, r.position + Vector2(4, 14), k, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, RIM_ON if on else KEY_COL)
 

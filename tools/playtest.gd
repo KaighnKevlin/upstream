@@ -1926,6 +1926,8 @@ func showcase_wave() -> void:
 
 
 func buildbar() -> void:
+	# Tabs: click Production, click its Assembler slot; then press 7 (spikes)
+	# and the bar flips to Defence.
 	main._wave_timer = -9999.0
 	await wait(0.5)
 	await shot("bar")
@@ -1933,22 +1935,21 @@ func buildbar() -> void:
 	for c in main.get_node("CanvasLayer").get_children():
 		if c.has_method("_slot_at"):
 			bar = c
-	# click the Chute slot (index 8) through the real input path
-	var at: Vector2 = bar.get_global_rect().position + bar._slot_rect(8).get_center()
-	get_root().warp_mouse(at)
-	await wait(0.1)
-	for pressed in [true, false]:
+	var bs := get_root().get_node("BuildSystem")
+	# clicks go straight to the bar (window scale varies between runs)
+	for at in [bar._tab_rect(1).get_center(), bar._slot_rect(3).get_center()]:
 		var ev := InputEventMouseButton.new()
 		ev.button_index = MOUSE_BUTTON_LEFT
-		ev.pressed = pressed
+		ev.pressed = true
 		ev.position = at
-		ev.global_position = at
-		Input.parse_input_event(ev)
-		await process_frame
+		bar._gui_input(ev)
+		await wait(0.15)
+	log_line("clicked Production tab + 4th slot: tab %d, build=%d (16 = assembler), placed %d" % [bar._cat, bs.current_build, bs._placed_buildings.size()])
+	await shot("bar_production")
+	await tap(KEY_7)
 	await wait(0.2)
-	var bs := get_root().get_node("BuildSystem")
-	log_line("after clicking slot: build=%d, buildings placed=%d" % [bs.current_build, bs._placed_buildings.size()])
-	await shot("bar_selected")
+	log_line("pressed 7: tab %d (%s), build=%d" % [bar._cat, bar.CATS[bar._cat][0], bs.current_build])
+	await shot("bar_defence")
 	await tap(KEY_Q)
 
 

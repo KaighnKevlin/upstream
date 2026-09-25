@@ -154,7 +154,7 @@ func _style_hud() -> void:
 	($CanvasLayer/Title as Label).text = "UPSTREAM"
 	var toolbar := preload("res://scripts/build_bar.gd").new()
 	toolbar.font = PixelFont.get_font()
-	toolbar.position = Vector2(552, 638)
+	toolbar.position = Vector2(552, 620)   # tabs ride on the panel's top edge
 	hud.add_child(toolbar)
 	# HP bars: brass rim, dark well, fill on top
 	for bar in [["PlayerHp", 20.0, 140.0], ["DomeHp", 300.0, 500.0]]:
