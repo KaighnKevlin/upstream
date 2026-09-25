@@ -625,6 +625,7 @@ var _build_names := {
 	16: "Build: ASSEMBLER (click: recipe)",
 	17: "Build: LAB (flasks -> research)",
 	18: "Build: TESLA COIL (feed it ingots)",
+	19: "Build: FLAMER (feed it ore)",
 }
 
 

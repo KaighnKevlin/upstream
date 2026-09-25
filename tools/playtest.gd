@@ -2759,3 +2759,44 @@ func tesla_rec() -> void:
 	for e in es:
 		hps.append(e.hp if is_instance_valid(e) else "dead")
 	log_line("after 4 s: zaps %d, charge left %d, soldiers hp %s (started 8), magpie %s" % [t.zaps, t.charge, hps, ("hp %d" % m.hp) if is_instance_valid(m) else "down"])
+
+
+func flamer_rec() -> void:
+	# Two ore fuel a flamer; a pack of scuttlers runs into the flame and keeps
+	# burning; ore lobbed through the flame comes out an ingot.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var fl: Node2D = preload("res://scenes/flamer.tscn").instantiate()
+	fl.global_position = Vector2(1600, 60)
+	main.add_child(fl)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.6, 2.6)
+	cam.global_position = Vector2(1660, 20)
+	await wait(0.4)
+	for k in 2:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.global_position = fl.global_position + Vector2(-2, -80)
+		main.add_child(o)
+		await wait(0.5)
+	log_line("fuel after 2 copper ore: %.1f s (expect 6)" % fl.fuel)
+	var pack := []
+	for k in 4:
+		pack.append(_spawn(1, Vector2(1740 + k * 14, 60)))
+	_spawn(0, Vector2(1700, 60))   # a titan in range keeps it firing for the smelting check
+	var lob: RigidBody2D = null
+	for f in 300:
+		await physics_frame
+		if f == 150:
+			lob = preload("res://scenes/ore.tscn").instantiate()
+			lob.global_position = fl.to_global(fl.PIVOT) + Vector2.from_angle(fl._nozzle.rotation) * 50 + Vector2(0, -40)
+			main.add_child(lob)
+			log_line("lobbing ore through the flame; firing now: %s, fuel %.1f" % [fl._firing, fl.fuel])
+		if f % 6 == 0 and f < 120:
+			await _grab(Rect2(Vector2(1560, -60), Vector2(220, 140)), "flame_%03d" % (f / 6), -3)
+	var alive := 0
+	for e in pack:
+		if is_instance_valid(e) and not e._dying:
+			alive += 1
+	log_line("after 5 s: burn ticks %d, scuttlers left %d/4, ore smelted in the flame %d, fuel left %.1f" % [fl.burned, alive, fl.smelted, fl.fuel])

@@ -26,12 +26,12 @@ const PIECES := {
 	7: ["7", "Spikes"], 8: ["8", "Catapult"], 9: ["9", "Chute"], 10: ["0", "Splitter"],
 	11: ["B", "Bumper"], 12: ["C", "Conveyor belt"], 13: ["V", "Bellows fan"],
 	14: ["M", "Wrecking pendulum"], 15: ["N", "Gravity wheel"], 16: ["T", "Assembler"],
-	17: ["Y", "Research lab"], 18: ["U", "Tesla coil"],
+	17: ["Y", "Research lab"], 18: ["U", "Tesla coil"], 19: ["I", "Flame turret"],
 }
 const CATS := [
 	["Transport", [1, 9, 12, 10, 8, 4, 13]],
 	["Production", [2, 3, 15, 16, 17]],
-	["Defence", [6, 18, 5, 7, 11, 14]],
+	["Defence", [6, 18, 19, 5, 7, 11, 14]],
 ]
 
 var font: Font
@@ -209,6 +209,9 @@ func _build_icon(slot: Node2D, t: int) -> void:
 			_part(art, S + "turret_barrel.png", Rect2(), Vector2(-5, 28))
 		7:
 			_part(art, S + "spikes.png", Rect2(), Vector2(-8, -8))
+		19:
+			_part(art, S + "flamer.png", Rect2(0, 0, 44, 48), Vector2(-22, -24))
+			_part(art, S + "flamer_nozzle.png", Rect2(), Vector2(2, -3))
 		18:
 			_part(art, S + "tesla.png", Rect2(0, 0, 40, 70), Vector2(-20, -35))
 		17:
