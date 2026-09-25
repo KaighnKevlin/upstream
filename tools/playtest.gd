@@ -1841,3 +1841,42 @@ func chute_rec() -> void:
 			log_line("   now at %s" % [o.global_position.round()])
 	log_line("ore thrown up from below reached y=%.0f (rail there y~%.0f)" % [under_top, c.global_position.y + 52 * 80 / 130.0])
 	await shot("after")
+
+
+func splitter_rec() -> void:
+	# A stream of ore dropped on a splitter alternates left/right; locked
+	# modes send everything one way.
+	main._wave_timer = -9999.0
+	var sp: Node2D = preload("res://scenes/splitter.tscn").instantiate()
+	sp.global_position = Vector2(1560, 20)
+	main.add_child(sp)
+	var lk: Node2D = preload("res://scenes/splitter.tscn").instantiate()
+	lk.global_position = Vector2(1680, 20)
+	main.add_child(lk)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.6, 2.6)
+	cam.global_position = Vector2(1620, 10)
+	await wait(0.3)
+	lk.set_mode(2)  # always right
+	await wait(0.2)
+	await shot("splitters")
+	var ores := []
+	for k in 6:
+		for s in [sp, lk]:
+			var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+			o.global_position = s.global_position + Vector2(randf_range(-3, 3), -90)
+			main.add_child(o)
+			ores.append([o, s])
+		for f in 24:
+			await physics_frame
+			if f % 4 == 0:
+				await _grab(Rect2(Vector2(1500, -80), Vector2(240, 180)), "split_%03d" % (k * 6 + f / 4), -2)
+	await wait(1.0)
+	log_line("alternating splitter sent left/right: %s" % [sp.passed])
+	log_line("locked-right splitter sent left/right: %s" % [lk.passed])
+	for pair in ores:
+		if is_instance_valid(pair[0]):
+			log_line("  %s ore rest dx %+.0f" % ["alt" if pair[1] == sp else "lck", pair[0].global_position.x - pair[1].global_position.x])
+	await shot("after")

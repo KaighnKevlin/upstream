@@ -220,3 +220,4 @@ Lights are additive over a 0.08 CanvasModulate and the framebuffer clips at 1.0,
 
 
 - Loop pass 5: Chute (9) - sloped one-way steel rail on layer 64 that only ore/ingots collide with; absorbent material kills landing bounce so ore rolls off the low end. Drag the end handle to set slope/length. HUD help line compacted to fit.
+- Loop pass 6: Splitter (0) - clockwork paddle on a cog; each piece leaving tips it the other way (alternate), click cycles alternate/left/right. Ore-only layer 64 like the chute.
