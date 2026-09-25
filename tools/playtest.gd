@@ -2800,3 +2800,53 @@ func flamer_rec() -> void:
 		if is_instance_valid(e) and not e._dying:
 			alive += 1
 	log_line("after 5 s: burn ticks %d, scuttlers left %d/4, ore smelted in the flame %d, fuel left %.1f" % [fl.burned, alive, fl.smelted, fl.fuel])
+
+
+func sapper_rec() -> void:
+	# A sapper tunnels from the right toward the dome and breaches at its rim;
+	# a second one runs under a charged tesla coil and gets zapped through the
+	# rock. A funnel turret on its path must hold fire while it's buried.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.6, 1.6)
+	var ft: Node2D = preload("res://scenes/funnel_turret.tscn").instantiate()
+	ft.global_position = Vector2(1560, 80)
+	main.add_child(ft)
+	var sp: Node2D = preload("res://scenes/sapper.tscn").instantiate()
+	sp.global_position = Vector2(1760, 80)
+	main.add_child(sp)
+	var hp0: int = main.dome_hp
+	Engine.time_scale = 3.0
+	var t := 0.0
+	var shot := 0
+	while is_instance_valid(sp) and t < 60.0:
+		await physics_frame
+		t += 1.0 / 60.0
+		if not is_instance_valid(sp):
+			break
+		cam.global_position = Vector2(sp.global_position.x - 60, 110)
+		if int(t / 3.0) > shot:
+			shot = int(t / 3.0)
+			log_line("t %4.1f  at (%d, %d)  state %d  dug %d  buried %s  turret fired %d" % [t, sp.global_position.x, sp.global_position.y, sp._state, sp.dug, sp.buried, ft.shots])
+			await _grab(Rect2(cam.global_position - Vector2(400, 225), Vector2(800, 450)), "sapper_%02d" % shot, -2)
+	log_line("breached after %.1f s: dome %d -> %d" % [t, hp0, main.dome_hp])
+	await _grab(Rect2(Vector2(1000, -60), Vector2(800, 450)), "sapper_tunnel", -2)
+	# second run: under a tesla coil
+	var te: Node2D = preload("res://scenes/tesla.tscn").instantiate()
+	te.global_position = Vector2(1500, 80)
+	main.add_child(te)
+	await wait(0.2)
+	te.charge = 30
+	var sp2: Node2D = preload("res://scenes/sapper.tscn").instantiate()
+	sp2.global_position = Vector2(2100, 80)
+	main.add_child(sp2)
+	var hp1: int = main.dome_hp
+	t = 0.0
+	while is_instance_valid(sp2) and not sp2._dying and t < 60.0:
+		await physics_frame
+		t += 1.0 / 60.0
+	Engine.time_scale = 1.0
+	log_line("second sapper under the tesla: dying %s at x %d after %.1f s, zaps %d, dome %d -> %d" % [is_instance_valid(sp2) and sp2._dying, sp2.global_position.x if is_instance_valid(sp2) else -1, t, te.zaps, hp1, main.dome_hp])

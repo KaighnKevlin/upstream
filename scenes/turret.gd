@@ -89,7 +89,7 @@ func _physics_process(delta: float) -> void:
 	var nearest_dist := fire_range
 
 	for enemy in enemies:
-		if not is_instance_valid(enemy):
+		if not is_instance_valid(enemy) or enemy.get("buried"):
 			continue
 		var dist: float = global_position.distance_to(enemy.global_position)
 		if dist < nearest_dist:

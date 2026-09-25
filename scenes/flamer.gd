@@ -177,7 +177,7 @@ func _in_cone(p: Vector2, reach: float) -> bool:
 
 func _scorch(reach: float, delta: float) -> void:
 	for e in get_tree().get_nodes_in_group("enemies"):
-		if not is_instance_valid(e) or ("_dying" in e and e._dying):
+		if not is_instance_valid(e) or ("_dying" in e and e._dying) or e.get("buried"):
 			continue
 		var at: Vector2 = e.hit_center() if e.has_method("hit_center") else e.global_position
 		if _in_cone(at, reach):
@@ -232,7 +232,7 @@ func _nearest(reach: float):
 	var best_d := reach
 	var from := to_global(PIVOT)
 	for e in get_tree().get_nodes_in_group("enemies"):
-		if not is_instance_valid(e) or ("_dying" in e and e._dying):
+		if not is_instance_valid(e) or ("_dying" in e and e._dying) or e.get("buried"):
 			continue
 		var at: Vector2 = e.hit_center() if e.has_method("hit_center") else e.global_position
 		var d := from.distance_to(at)
