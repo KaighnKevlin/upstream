@@ -3466,3 +3466,40 @@ func airship_rec() -> void:
 		if f % 2 == 0:
 			await shot("air_fall_%d" % f)
 	log_line("shot down: valid %s" % is_instance_valid(ab2))
+
+
+func harpoon_rec() -> void:
+	# A harpoon ballista fed three scrap: an airship comes over and is
+	# harpooned and winched down; a magpie after it.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var hb: Node2D = preload("res://scenes/harpoon.tscn").instantiate()
+	hb.global_position = Vector2(1560, 60)
+	main.add_child(hb)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.6, 1.6)
+	cam.global_position = Vector2(1620, -40)
+	await wait(0.4)
+	for k in 3:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.kind = "scrap"
+		o.global_position = hb.global_position + Vector2(-17, -70)
+		main.add_child(o)
+		await wait(0.4)
+	log_line("ammo after 3 scrap: %d" % hb.ammo)
+	var ab: Node2D = preload("res://scenes/airship.tscn").instantiate()
+	ab.global_position = Vector2(1950, -150)
+	main.add_child(ab)
+	for s in 24:
+		await wait(0.5)
+		if s % 3 == 0:
+			await shot("harp_%02d" % s)
+		if s % 4 == 0:
+			log_line("t=%4.1f airship %s | fired %d downed %d ammo %d" % [s * 0.5, ("x%d y%d hp%d" % [ab.global_position.x, ab.global_position.y, ab.hp]) if is_instance_valid(ab) and not ab._dying else "down", hb.fired, hb.downed, hb.ammo])
+	var mp: Node2D = preload("res://scenes/magpie.tscn").instantiate()
+	mp.global_position = Vector2(1700, -100)
+	main.add_child(mp)
+	await wait(5.0)
+	log_line("magpie: %s | fired %d downed %d" % ["down" if not is_instance_valid(mp) or mp._dying else "flying", hb.fired, hb.downed])
