@@ -144,6 +144,16 @@ static func sfx_bounce() -> AudioStreamWAV:
 		return _wav(b, 0.42))
 
 
+## Pinball bumper: a sprung thump under a bright bell.
+static func sfx_bumper() -> AudioStreamWAV:
+	return _sound("bumper", func(r: RandomNumberGenerator):
+		var b := _buf(0.4)
+		_tone(b, 150, 60, 0.6, 0.05)
+		_noise(b, 0.25, 0.012, 4000, 0.0, true, r)
+		_metal(b, r.randf_range(620, 700), 0.35, 0.18, 0.004)
+		return _wav(b, 0.45))
+
+
 static func sfx_laser() -> AudioStreamWAV:
 	return _sound("laser", func(r: RandomNumberGenerator):
 		var b := _buf(0.2)

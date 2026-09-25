@@ -166,6 +166,15 @@ func _physics_process(delta: float) -> void:
 	if enemy_type == EnemyType.ORNITHOPTER:
 		_flyer_process(delta)
 		return
+	if _knock_t > 0:
+		# knocked back (a bumper): fly on the knock, skid to a stop, then resume
+		_knock_t -= delta
+		velocity.y += GRAVITY * delta
+		if is_on_floor() and velocity.y > 0:
+			velocity.y = 0
+			velocity.x = move_toward(velocity.x, 0, 900 * delta)
+		move_and_slide()
+		return
 	if not is_on_floor():
 		velocity.y += GRAVITY * delta
 	else:
@@ -239,6 +248,18 @@ func hit_center() -> Vector2:
 
 func hit_radius() -> float:
 	return HIT_RADIUS.get(enemy_type, 12.0)
+
+
+var _knock_t := 0.0
+const KNOCK_WEIGHT := {0: 0.55}   # titans are heavy
+
+
+## Shove (bumpers): overrides walking for a moment.
+func knock(v: Vector2) -> void:
+	if _dying or enemy_type == EnemyType.ORNITHOPTER:
+		return
+	velocity = v * KNOCK_WEIGHT.get(enemy_type, 1.0)
+	_knock_t = 0.45
 
 
 func take_damage(amount: int) -> void:

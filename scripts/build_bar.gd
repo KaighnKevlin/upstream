@@ -4,9 +4,9 @@ extends Control
 ## click the selected slot again to cancel. The slot for the current build
 ## lights up. Hovering a slot shows its name.
 
-const SLOT := Vector2(64, 46)
-const GAP := 6.0
-const ICON_BOX := Vector2(54, 36)
+const SLOT := Vector2(58, 46)
+const GAP := 5.0
+const ICON_BOX := Vector2(48, 36)
 
 const DARK := Color(0.1, 0.09, 0.07)
 const WELL := Color(0.16, 0.13, 0.1)
@@ -18,7 +18,7 @@ const KEY_COL := Color(0.9, 0.82, 0.62)
 const PIECES := [
 	[1, "1", "Trampoline"], [2, "2", "Vein tapper"], [3, "3", "Laser smelter"],
 	[4, "4", "Upstream lift"], [5, "5", "Drop hopper"], [6, "6", "Funnel turret"],
-	[7, "7", "Spikes"], [8, "8", "Catapult"], [9, "9", "Chute"], [10, "0", "Splitter"],
+	[7, "7", "Spikes"], [8, "8", "Catapult"], [9, "9", "Chute"], [10, "0", "Splitter"], [11, "B", "Bumper"],
 ]
 
 var font: Font
@@ -152,8 +152,8 @@ func _build_icon(slot: Node2D, t: int) -> void:
 		8:
 			_part(art, S + "catapult_base.png", Rect2(), Vector2(-18, -12))
 			_part(art, S + "catapult_arm.png", Rect2(), Vector2(-4, -6))
-		9, 10:
-			var n: Node2D = load("res://scenes/chute.tscn" if t == 9 else "res://scenes/splitter.tscn").instantiate()
+		9, 10, 11:
+			var n: Node2D = load(["res://scenes/chute.tscn", "res://scenes/splitter.tscn", "res://scenes/bumper.tscn"][t - 9]).instantiate()
 			n.set_meta("ghost", true)   # no physics, just the drawing
 			n.set_process_input(false)
 			if t == 9:
@@ -167,6 +167,8 @@ func _build_icon(slot: Node2D, t: int) -> void:
 		k = 2.0   # spikes are tiny: show them at 2x
 	elif t == 10:
 		k = 1.3
+	elif t == 11:
+		k = 1.4
 	art.scale = Vector2(k, k)
 	art.position = -box.get_center() * k
 	art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST if k >= 1.0 else CanvasItem.TEXTURE_FILTER_LINEAR
@@ -182,6 +184,8 @@ func _bounds(art: Node2D) -> Rect2:
 			cr = Rect2(c.position, sz)
 		elif c is Line2D:
 			cr = Rect2(c.points[0], Vector2(20, 5))
+		elif c.has_method("_on_touch"):
+			cr = Rect2(c.position + Vector2(-11, -27), Vector2(22, 27))
 		elif "end_offset" in c:
 			cr = Rect2(c.position + Vector2(0, -8), Vector2(56, 34))
 		else:

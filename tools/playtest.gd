@@ -1946,3 +1946,51 @@ func buildbar() -> void:
 	log_line("after clicking slot: build=%d, buildings placed=%d" % [bs.current_build, bs._placed_buildings.size()])
 	await shot("bar_selected")
 	await tap(KEY_Q)
+
+
+func bumper_rec() -> void:
+	# A bumper bats back a walking soldier, rebounds dropped ore and flings
+	# the player.
+	main._wave_timer = -9999.0
+	var bm: Node2D = preload("res://scenes/bumper.tscn").instantiate()
+	bm.global_position = Vector2(1560, 80)
+	main.add_child(bm)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.6, 2.6)
+	cam.global_position = Vector2(1580, 20)
+	await wait(0.3)
+	log_line("bumper stands at %s" % [bm.global_position])
+	await shot("bumper")
+	var e: CharacterBody2D = _spawn(2, Vector2(1640, 60))
+	var hp0: int = e.hp
+	var min_x := 9999.0
+	var max_back := 0.0
+	for f in 150:
+		await physics_frame
+		if not is_instance_valid(e):
+			break
+		min_x = minf(min_x, e.global_position.x)
+		if min_x < 9999:
+			max_back = maxf(max_back, e.global_position.x - min_x)
+		if f % 5 == 0 and f < 90:
+			await _grab(Rect2(Vector2(1500, -40), Vector2(200, 140)), "bump_%03d" % (f / 5), -2)
+	log_line("soldier: closest x %.0f, knocked back up to %.0f px, hp %d -> %s, bumper hits %d" % [min_x, max_back, hp0, e.hp if is_instance_valid(e) else "dead", bm.hits])
+	if is_instance_valid(e):
+		e.queue_free()
+	var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+	o.global_position = bm.global_position + Vector2(4, -80)
+	main.add_child(o)
+	var top := 999.0
+	for f in 60:
+		await physics_frame
+		top = minf(top, o.global_position.y)
+		if f > 20 and o.global_position.y < top + 0.1:
+			pass
+	log_line("ore dropped from 80 px above: v now %s, pos %s (bounced back up to y %.0f after landing)" % [o.linear_velocity.round(), o.global_position.round(), top])
+	var p: CharacterBody2D = main.get_node("Player")
+	p.global_position = Vector2(1520, 70)
+	await wait(0.3)
+	await hold(KEY_D, 0.6)
+	log_line("player after walking into it: %s v %s, bumper hits %d" % [p.global_position.round(), p.velocity.round(), bm.hits])

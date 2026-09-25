@@ -588,6 +588,7 @@ var _build_names := {
 	8: "Building: CATAPULT (click it to aim)",
 	9: "Building: CHUTE (click it, drag the end)",
 	10: "Building: SPLITTER (click it: alt/left/right)",
+	11: "Building: BUMPER (kicks ore, enemies, you)",
 }
 
 
