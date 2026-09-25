@@ -81,6 +81,20 @@ def shot():
     return fig.render(8, 8, (4, 4))
 
 
+def flask():
+    """Science flask: a round-bottomed glass flask of glowing red tincture,
+    brass-capped. Fragile."""
+    fig = Figure()
+    GLASS = [(41, 38, 31), (74, 96, 104), (112, 150, 158), (160, 196, 200), (205, 228, 230)]
+    RED = [(60, 18, 20), (120, 30, 32), (180, 52, 44), (230, 92, 64), (255, 160, 110)]
+    fig.sphere((0, 2), 4.4, GLASS, z=0, grit=0.01)
+    fig.ellipsoid((0, 3.2), (3.7, 2.7), RED, z=0.5, emissive=True)      # the tincture
+    fig.capsule((0, -2), (0, -4.5), 1.6, GLASS, z=0.4)                   # neck
+    fig.ellipsoid((0, -5.2), (2.1, 0.9), BRONZE, z=1)                   # cap
+    fig.sphere((-1.8, 0.5), 0.6, [(235, 245, 245)] * 2, z=1.1, emissive=True)  # glint
+    return fig.render(12, 14, (6, 7), extra=['4a6068', '70969e', 'a0c4c8', 'cde4e6', '3c1214', '781e20', 'b4342c', 'e65c40', 'ffa06e', 'ebf5f5'])
+
+
 def gear():
     """A loose brass-and-steel gear: rolls like a wheel."""
     fig = Figure()
@@ -187,6 +201,7 @@ def main():
     write_png(SPR + 'ingot_iron.png', 14, 8, ingot('iron'))
     write_png(SPR + 'iron_shot.png', 8, 8, shot())
     write_png(SPR + 'gear_item.png', 16, 16, gear())
+    write_png(SPR + 'flask.png', 12, 14, flask())
     tr = trampoline(); write_png(SPR + 'trampoline.png', 44, 22, tr)
     write_png(SPR + 'trampoline_base.png', 28, 8, tramp_base())
     tops = [tramp_top(l, sp) for l, sp in TRAMP_FRAMES]
@@ -197,7 +212,7 @@ def main():
     print('wrote ore.png, ingot.png, trampoline.png, debris.png')
     if len(sys.argv) > 1:
         pad = lambda f, w, h: [row + [(0, 0, 0, 0)] * (w - len(row)) for row in f] + [[(0, 0, 0, 0)] * w] * (h - len(f))
-        big = side_by_side([pad(o, 12, 22) for o in ores + irons] + [pad(ing, 14, 22), pad(ingot('iron'), 14, 22), pad(shot(), 8, 22), pad(gear(), 16, 22), tr] + [pad(d, 8, 22) for d in deb], 10)
+        big = side_by_side([pad(o, 12, 22) for o in ores + irons] + [pad(ing, 14, 22), pad(ingot('iron'), 14, 22), pad(shot(), 8, 22), pad(gear(), 16, 22), pad(flask(), 12, 22), tr] + [pad(d, 8, 22) for d in deb], 10)
         write_png(sys.argv[1] + '/items_preview.png', len(big[0]), len(big), big)
         base = tramp_base()
         comp = []

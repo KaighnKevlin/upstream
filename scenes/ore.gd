@@ -16,6 +16,8 @@ const KINDS := {
 	"iron": {"mass": 3.0, "bounce": 0.12, "friction": 0.5, "tex": "res://assets/sprites/ore_iron.png", "size": 12, "frames": 5, "radius": 6.5},
 	"shot": {"mass": 2.0, "bounce": 0.25, "friction": 0.4, "tex": "res://assets/sprites/iron_shot.png", "size": 8, "frames": 1, "radius": 3.6},
 	"gear": {"mass": 1.5, "bounce": 0.3, "friction": 0.9, "tex": "res://assets/sprites/gear_item.png", "size": 16, "frames": 1, "radius": 7.5, "rolls": true},
+	# science flask: light, glass. Lands too hard and it shatters.
+	"flask": {"mass": 0.6, "bounce": 0.15, "friction": 0.6, "tex": "res://assets/sprites/flask.png", "size": 12, "h": 14, "frames": 1, "radius": 5.0, "fragile": 300.0},
 }
 static var _shapes := {}
 static var _materials := {}
@@ -61,7 +63,7 @@ func _ready() -> void:
 	var atlas := AtlasTexture.new()
 	atlas.atlas = load(spec.tex)
 	var sz: int = spec.size
-	atlas.region = Rect2(randi() % int(spec.frames) * sz, 0, sz, sz)
+	atlas.region = Rect2(randi() % int(spec.frames) * sz, 0, sz, spec.get("h", sz))
 	spr.texture = atlas
 	spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(spr)
@@ -111,6 +113,10 @@ func _check_enemy_hit() -> void:
 			return
 
 func _on_impact(other: Node) -> void:
+	var fragile: float = KINDS.get(kind, {}).get("fragile", 0.0)
+	if fragile > 0.0 and _prev_speed > fragile:
+		_shatter()
+		return
 	_knock_sound(other)
 	if _puff_cooldown > 0 or linear_velocity.length() < 120:
 		return
@@ -149,3 +155,13 @@ func _physics_process(delta: float) -> void:
 	# Despawn if fallen way below the map
 	if global_position.y > 1400:
 		queue_free()
+
+
+## Glass breaking: shards and a splash of tincture, a bright tinkle.
+func _shatter() -> void:
+	if is_queued_for_deletion():
+		return
+	FX.burst(get_parent(), global_position, Color(0.8, 0.92, 0.95, 0.9), 8, 120.0, 0.35, 1.2)
+	FX.burst(get_parent(), global_position, Color(0.9, 0.3, 0.25, 0.85), 6, 60.0, 0.5, 1.8)
+	SFX.play(get_tree().current_scene, SFX.sfx_clink())
+	queue_free()

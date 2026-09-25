@@ -10,6 +10,7 @@ const SPEED := 110.0
 const GRIP := 14.0            # how fast riders are brought up to belt speed (1/s)
 const GRAV := Vector2(0, 980)
 const Power = preload("res://scripts/power.gd")
+const Tech = preload("res://scripts/tech.gd")
 
 var _grip: Area2D
 var _phase := 0.0
@@ -56,7 +57,7 @@ func _physics_process(delta: float) -> void:
 	if _rate_t <= 0:
 		_rate_t = 0.25
 		rate = Power.rate_at(get_tree(), global_position)
-	var speed := SPEED * rate
+	var speed := SPEED * rate * Tech.mult("belts")
 	var dir := run_dir()
 	for body in _grip.get_overlapping_bodies():
 		var b := body as RigidBody2D
@@ -75,7 +76,7 @@ func _physics_process(delta: float) -> void:
 
 func _process(delta: float) -> void:
 	if _grip:
-		_phase = fmod(_phase + SPEED * rate * delta, CLEAT_GAP)
+		_phase = fmod(_phase + SPEED * rate * Tech.mult("belts") * delta, CLEAT_GAP)
 		queue_redraw()
 
 

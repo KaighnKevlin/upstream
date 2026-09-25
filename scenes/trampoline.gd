@@ -8,6 +8,7 @@ extends Node2D
 
 const ObjectSprites = preload("res://scripts/object_sprites.gd")
 const SFX = preload("res://scripts/sfx.gd")
+const Tech = preload("res://scripts/tech.gd")
 const FX = preload("res://scripts/fx.gd")
 
 @onready var _area: Area2D = $Area2D
@@ -66,7 +67,7 @@ func bounce_velocity(v: Vector2, heft := 1.0) -> Vector2:
 	var n := _launch_dir()
 	var vn := v.dot(n)
 	var tangent := v - n * vn
-	var out := tangent * SLIDE_KEEP + n * (-vn * RESTITUTION + bounce_force * KICK / sqrt(maxf(heft, 0.1)))
+	var out := tangent * SLIDE_KEEP + n * (-vn * RESTITUTION + bounce_force * KICK * Tech.mult("springs") / sqrt(maxf(heft, 0.1)))
 	return out.limit_length(bounce_force * MAX_SPEED_K)
 
 

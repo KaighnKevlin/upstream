@@ -7,7 +7,7 @@ extends RefCounted
 const PATH := "user://sandbox_save.json"
 ## Settings worth keeping, on whichever pieces have them.
 const PROPS := ["bounce_angle", "bounce_force", "eject_angle", "eject_force", "aim_angle",
-	"throw_speed", "end_offset", "mode", "plate_offset_x", "lift_speed", "wind_speed", "mirrored", "recipe"]
+	"throw_speed", "end_offset", "mode", "plate_offset_x", "lift_speed", "wind_speed", "mirrored", "recipe", "research"]
 
 
 static func has_save() -> bool:
@@ -32,6 +32,7 @@ static func save(main: Node) -> int:
 		pieces.append({"scene": b.scene_file_path, "pos": [b.global_position.x, b.global_position.y], "props": props})
 	var player: Node2D = main.get_node("Player")
 	var data := {"version": 1, "tiles": tiles, "pieces": pieces,
+		"tech": preload("res://scripts/tech.gd").levels, "lab_progress": preload("res://scenes/lab.gd").progress,
 		"player": [player.global_position.x, player.global_position.y]}
 	var f := FileAccess.open(PATH, FileAccess.WRITE)
 	if f == null:
@@ -97,6 +98,14 @@ static func load_into(main: Node) -> int:
 			b._update_visuals()
 		bs._placed_buildings.append(b)
 		n += 1
+	var tech := preload("res://scripts/tech.gd")
+	tech.levels.clear()
+	for k in data.get("tech", {}):
+		tech.levels[k] = int(data.tech[k])
+	var lab := preload("res://scenes/lab.gd")
+	lab.progress.clear()
+	for k in data.get("lab_progress", {}):
+		lab.progress[k] = int(data.lab_progress[k])
 	var player: Node2D = main.get_node("Player")
 	player.global_position = Vector2(data.player[0], data.player[1])
 	if "velocity" in player:

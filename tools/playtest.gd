@@ -2601,3 +2601,58 @@ func assembler_rec() -> void:
 			gears.append(o.global_position.round())
 	log_line("gears now at %s" % [gears])
 	await shot("made")
+
+
+func lab_rec() -> void:
+	# gear + copper ingot -> a flask (does it survive the spout?); a flask
+	# dropped from high shatters; three fed gently to a lab research a level.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var Tech = preload("res://scripts/tech.gd")
+	Tech.levels.clear()
+	var a: Node2D = preload("res://scenes/assembler.tscn").instantiate()
+	a.global_position = Vector2(1560, 60)
+	a.recipe = 2
+	main.add_child(a)
+	var lab: Node2D = preload("res://scenes/lab.tscn").instantiate()
+	lab.global_position = Vector2(1720, 60)
+	main.add_child(lab)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.8, 2.8)
+	cam.global_position = Vector2(1640, 20)
+	await wait(0.4)
+	var g: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+	g.kind = "gear"
+	g.global_position = a.global_position + Vector2(0, -80)
+	main.add_child(g)
+	var cu: RigidBody2D = preload("res://scenes/ingot.tscn").instantiate()
+	cu.global_position = a.global_position + Vector2(0, -80)
+	main.add_child(cu)
+	Engine.time_scale = 4.0
+	await wait(8.0)
+	Engine.time_scale = 1.0
+	var flasks := []
+	for o in get_nodes_in_group("ore"):
+		if o.kind == "flask":
+			flasks.append(o)
+	log_line("assembler made %d; flasks lying intact: %d" % [a.made, flasks.size()])
+	var high: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+	high.kind = "flask"
+	high.global_position = Vector2(1640, -160)
+	main.add_child(high)
+	await wait(1.2)
+	log_line("flask dropped from 250 px: %s" % ["shattered" if not is_instance_valid(high) else "survived"])
+	for k in 3:
+		var f: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		f.kind = "flask"
+		f.global_position = lab.global_position + Vector2(-11, -70)
+		main.add_child(f)
+		await wait(0.5)
+	await shot("lab")
+	Engine.time_scale = 4.0
+	await wait(24.0)
+	Engine.time_scale = 1.0
+	log_line("after 3 flasks: springs level %d, kick mult %.2f; lab label '%s'" % [Tech.level("springs"), Tech.mult("springs"), lab._label.text])
+	await shot("researched")

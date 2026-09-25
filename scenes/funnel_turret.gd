@@ -8,6 +8,7 @@ extends Node2D
 const FX = preload("res://scripts/fx.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const OreStore = preload("res://scripts/ore_store.gd")
+const Tech = preload("res://scripts/tech.gd")
 
 const MAG_HALF := 9.0
 const MAG_TOP := -60.0
@@ -175,7 +176,7 @@ func _feed(delta: float) -> void:
 
 func _nearest_enemy() -> Node2D:
 	var best: Node2D = null
-	var best_d := RANGE
+	var best_d := RANGE * Tech.mult("barrels")
 	for e in get_tree().get_nodes_in_group("enemies"):
 		if not is_instance_valid(e) or ("_dying" in e and e._dying):
 			continue
@@ -214,7 +215,7 @@ func _solve(target: Node2D):
 
 func _fire(ore: RigidBody2D, vel: Vector2) -> void:
 	shots += 1
-	_cool = FIRE_EVERY
+	_cool = FIRE_EVERY / (1.0 + (Tech.mult("barrels") - 1.0) * 4.0 / 3.0)   # +20% rate per level
 	var dir := vel.normalized()
 	OreStore.off(ore, _store)   # out of the magazine: plain flight physics right away
 	ore.global_position = global_position + dir * (MUZZLE + 2)

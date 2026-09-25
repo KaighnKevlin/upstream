@@ -11,12 +11,14 @@ extends Node2D
 const Power = preload("res://scripts/power.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const FX = preload("res://scripts/fx.gd")
+const Tech = preload("res://scripts/tech.gd")
 
 ## in: ingredient -> count. Ingredients are "<kind>_ingot" for ingots,
 ## "<kind>" for loose items (ore, shot, gears).
 const RECIPES := [
 	{"name": "Iron shot", "in": {"iron_ingot": 1}, "out": "shot", "count": 4, "time": 1.2},
 	{"name": "Gear", "in": {"iron_ingot": 1, "copper_ingot": 1}, "out": "gear", "count": 1, "time": 1.8},
+	{"name": "Science flask", "in": {"gear": 1, "copper_ingot": 1}, "out": "flask", "count": 1, "time": 2.0},
 ]
 const HOLD := 3            # keeps up to this many batches of each ingredient
 const SPOUT := Vector2(23, -16)
@@ -135,7 +137,7 @@ func _physics_process(delta: float) -> void:
 		_rate_t = 0.25
 		_rate = Power.rate_at(get_tree(), global_position)
 	if _work > 0:
-		_work -= delta * _rate
+		_work -= delta * _rate * Tech.mult("assembly")
 		_spr.speed_scale = 0.5 + _rate
 		if _work <= 0:
 			_finish()
@@ -173,7 +175,8 @@ func _finish() -> void:
 
 func _show_recipe() -> void:
 	var rec: Dictionary = RECIPES[recipe]
-	var tex := load({"shot": "res://assets/sprites/iron_shot.png", "gear": "res://assets/sprites/gear_item.png"}[rec["out"]]) as Texture2D
+	var tex := load({"shot": "res://assets/sprites/iron_shot.png", "gear": "res://assets/sprites/gear_item.png",
+		"flask": "res://assets/sprites/flask.png"}[rec["out"]]) as Texture2D
 	_icon.texture = tex
 	var k := minf(8.0 / tex.get_width(), 5.0 / tex.get_height()) * 1.0
 	_icon.scale = Vector2(k, k) if tex.get_width() > 8 else Vector2.ONE * 0.75

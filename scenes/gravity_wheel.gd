@@ -11,6 +11,7 @@ extends Node2D
 
 const Power = preload("res://scripts/power.gd")
 const SFX = preload("res://scripts/sfx.gd")
+const Tech = preload("res://scripts/tech.gd")
 
 const R := 27.0                # bucket centre radius
 const N := 8
@@ -97,7 +98,7 @@ func _bucket_phi(k: int) -> float:
 
 
 func power() -> float:
-	return clampf(omega / RATED, 0.0, 1.0)
+	return clampf(omega / RATED * Tech.mult("buckets"), 0.0, 1.0)
 
 
 func _on_intake(body: Node2D) -> void:
