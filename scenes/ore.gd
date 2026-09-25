@@ -13,6 +13,7 @@ func _ready() -> void:
 	add_to_group("ore")
 	collision_layer = 2
 	collision_mask = 1
+	angular_damp = 1.5  # loose ore stops rolling on flat ground and can sleep
 
 	contact_monitor = true
 	max_contacts_reported = 4

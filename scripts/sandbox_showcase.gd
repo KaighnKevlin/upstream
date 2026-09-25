@@ -31,7 +31,7 @@ const WEST_TAPPER_AIM := Vector2(44, 760)
 const LASER_AT := Vector2(1060, 20)
 
 const LIFT_TAPPER := Vector2i(50, 7)
-const LIFT_TAPPER_AIM := Vector2(28, 300)
+const LIFT_TAPPER_AIM := Vector2(20, 300)
 const LIFT_AT := Vector2(868, 36)           # upstream shaft standing on the ground
 
 

@@ -3,12 +3,12 @@
     python3 tools/art/gen_traps.py [preview_dir]
 
 Hopper coordinates (match scenes/hopper.gd): origin = centre of the bin.
-Funnel mouth at y=-34 (x +/-26) narrowing to the bin at y=-18 (x +/-11);
-bin walls x=+/-11 from y=-18 to y=26; trapdoor along y=26.
+Funnel mouth at y=-34 (x +/-30) narrowing to the bin at y=-18 (x +/-17);
+bin walls x=+/-17 from y=-18 to y=26 (two ore wide); trapdoor along y=26.
   hopper_back.png  64x72, origin (32, 38): dark interior, drawn behind the ore
   hopper_front.png 64x72, origin (32, 38): brass funnel lip, cage bars and
                    bands (ore shows between them), drawn over the ore
-  trapdoor.png     12x4: one leaf, hinge at its left end (0, 2)
+  trapdoor.png     18x4: one leaf, hinge at its left end (0, 2)
   plate.png        2 frames of 28x8 (up, pressed); origin bottom-centre
   spikes.png       16x15, sits on the floor (bottom edge)
 """
@@ -23,8 +23,8 @@ FUNNEL = [(-26, -34), (-11, -18), (11, -18), (26, -34)]
 
 def hopper_back():
     fig = Figure()
-    fig.poly([(-25, -33), (-10, -17), (-10, 25), (10, 25), (10, -17), (25, -33)], DARK, z=0, shade=0.15)
-    for x, y in ((-6, -8), (6, -8), (-6, 12), (6, 12)):
+    fig.poly([(-29, -33), (-16, -17), (-16, 25), (16, 25), (16, -17), (29, -33)], DARK, z=0, shade=0.15)
+    for x, y in ((-10, -8), (10, -8), (-10, 12), (10, 12)):
         fig.sphere((x, y), 0.8, DARK, z=0.5)                                   # back-plate rivets
     return fig.render(HW, HH, HO, outline=False)
 
@@ -32,27 +32,27 @@ def hopper_back():
 def hopper_front():
     fig = Figure()
     # funnel lips (thick brass edges), mouth rim
-    fig.capsule((-26, -34), (-11, -18), 1.8, BRONZE, z=1)
-    fig.capsule((26, -34), (11, -18), 1.8, BRONZE, z=1)
-    fig.capsule((-27, -35), (-22, -35), 1.6, BRONZE, z=1.1)
-    fig.capsule((27, -35), (22, -35), 1.6, BRONZE, z=1.1)
-    # cage: side posts, bands across the front, top collar
-    for x in (-11, 11):
+    fig.capsule((-30, -34), (-17, -18), 1.8, BRONZE, z=1)
+    fig.capsule((30, -34), (17, -18), 1.8, BRONZE, z=1)
+    fig.capsule((-31, -35), (-26, -35), 1.6, BRONZE, z=1.1)
+    fig.capsule((31, -35), (26, -35), 1.6, BRONZE, z=1.1)
+    # cage: side posts, a centre bar, bands across the front, top collar
+    for x in (-17, 17):
         fig.capsule((x, -18), (x, 26), 1.7, BRONZE, z=1)
     for y in (-4, 12):
-        fig.box((-11, y - 1, 11, y + 1), BRONZE, z=1.2, bevel=0.6)
-    fig.box((-13, -20, 13, -16.5), STEEL, z=1.3, bevel=0.8)
-    fig.box((-13, 25, -9, 28), STEEL, z=1.3, bevel=0.6)                          # hinge blocks
-    fig.box((9, 25, 13, 28), STEEL, z=1.3, bevel=0.6)
-    fig.sphere((13.5, 2), 1.4, GLOW, z=1.4, emissive=True)                      # armed lamp
+        fig.box((-17, y - 1, 17, y + 1), BRONZE, z=1.2, bevel=0.6)
+    fig.box((-19, -20, 19, -16.5), STEEL, z=1.3, bevel=0.8)
+    fig.box((-19, 25, -15, 28), STEEL, z=1.3, bevel=0.6)                          # hinge blocks
+    fig.box((15, 25, 19, 28), STEEL, z=1.3, bevel=0.6)
+    fig.sphere((19.5, 2), 1.4, GLOW, z=1.4, emissive=True)                      # armed lamp
     return fig.render(HW, HH, HO)
 
 
 def trapdoor():
     fig = Figure()
-    fig.box((0, -1.3, 11, 1.3), BRONZE, z=0, bevel=0.6)
+    fig.box((0, -1.3, 17, 1.3), BRONZE, z=0, bevel=0.6)
     fig.sphere((0.8, 0), 0.7, STEEL, z=1)
-    return fig.render(12, 4, (0, 2))
+    return fig.render(18, 4, (0, 2))
 
 
 def plate(pressed):

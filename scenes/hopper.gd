@@ -9,12 +9,13 @@ extends Node2D
 
 const FX = preload("res://scripts/fx.gd")
 const SFX = preload("res://scripts/sfx.gd")
+const OreStore = preload("res://scripts/ore_store.gd")
 
-const FUNNEL_L := [Vector2(-26, -34), Vector2(-11, -18)]
-const FUNNEL_R := [Vector2(26, -34), Vector2(11, -18)]
+const FUNNEL_L := [Vector2(-30, -34), Vector2(-17, -18)]
+const FUNNEL_R := [Vector2(30, -34), Vector2(17, -18)]
 const BIN_TOP := -18.0
 const BIN_BOTTOM := 26.0
-const BIN_HALF := 11.0
+const BIN_HALF := 17.0   # two ore wide
 const OPEN_TIME := 1.1
 const LEG_MAX := 140.0
 const PLATE_RANGE := 200.0
@@ -74,11 +75,13 @@ func _ready() -> void:
 	_store.collision_mask = 2
 	var shape := CollisionShape2D.new()
 	var rect := RectangleShape2D.new()
-	rect.size = Vector2(BIN_HALF * 2, BIN_BOTTOM - BIN_TOP + 16)
+	rect.size = Vector2(64, BIN_BOTTOM + 40)          # bin + funnel, mouth to trapdoor
 	shape.shape = rect
-	shape.position = Vector2(0, (BIN_TOP + BIN_BOTTOM) / 2.0 - 8)
+	shape.position = Vector2(0, (BIN_BOTTOM - 40) / 2.0)
 	_store.add_child(shape)
 	add_child(_store)
+	_store.body_entered.connect(_stack_on)
+	_store.body_exited.connect(_stack_off)
 	_build_plate()
 
 
@@ -233,7 +236,7 @@ func _input(event: InputEvent) -> void:
 	var local := to_local(mouse)
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
-			var over_hopper := absf(local.x) < 26 and local.y > -36 and local.y < BIN_BOTTOM + 4
+			var over_hopper := absf(local.x) < 30 and local.y > -36 and local.y < BIN_BOTTOM + 4
 			if _selected and mouse.distance_to(_handle.global_position) < 10:
 				_dragging = true
 				get_viewport().set_input_as_handled()
@@ -254,9 +257,7 @@ func _physics_process(delta: float) -> void:
 	_plate_cooldown -= delta
 	if _store == null:
 		return
-	for body in _store.get_overlapping_bodies():
-		if "_timer" in body:
-			body._timer = 0.0  # stored ore keeps
+	OreStore.settle(_store, delta)
 
 
 func stored_count() -> int:
@@ -281,7 +282,7 @@ func dump() -> void:
 	await get_tree().physics_frame
 	for body in _store.get_overlapping_bodies():
 		if body is RigidBody2D:
-			body.sleeping = false
+			OreStore.release(body)
 			body.linear_velocity += Vector2(randf_range(-10, 10), 60)
 	await get_tree().create_timer(OPEN_TIME).timeout
 	if not is_inside_tree():
@@ -292,3 +293,12 @@ func dump() -> void:
 	c.tween_property(_leaf_l, "rotation", 0.0, 0.2)
 	c.tween_property(_leaf_r, "rotation", 0.0, 0.2)
 	_open = false
+
+
+## Stacking, settling and freezing of stored ore: scripts/ore_store.gd.
+func _stack_on(body: Node2D) -> void:
+	OreStore.on(body)
+
+
+func _stack_off(body: Node2D) -> void:
+	OreStore.off(body)

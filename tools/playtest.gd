@@ -1564,6 +1564,42 @@ func showcase() -> void:
 	await shot("showcase_east")
 
 
+func stack_check() -> void:
+	# Ore dropped into a hopper and a turret should stack, not overlap.
+	main._wave_timer = -9999.0
+	var hop: Node2D = preload("res://scenes/hopper.tscn").instantiate()
+	hop.global_position = Vector2(1500, 22)
+	main.add_child(hop)
+	var tur: Node2D = preload("res://scenes/funnel_turret.tscn").instantiate()
+	tur.global_position = Vector2(1620, 40)
+	main.add_child(tur)
+	for k in 9:
+		for x in [1500, 1620]:
+			var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+			o.global_position = Vector2(x + (k % 3 - 1) * 6, -120 - k * 22)
+			main.add_child(o)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(3.4, 3.4)
+	cam.global_position = Vector2(1560, 0)
+	await wait(4.0)
+	var ys := []
+	for b in hop._store.get_overlapping_bodies():
+		ys.append(int(b.global_position.y))
+	ys.sort()
+	log_line("hopper holds %d, ore y: %s | turret loaded %d" % [ys.size(), ys, tur._loaded().size()])
+	var frozen := 0
+	var stored := 0
+	for st in [hop._store, tur._store]:
+		for b in st.get_overlapping_bodies():
+			stored += 1
+			if b.freeze:
+				frozen += 1
+	log_line("stored %d, frozen (costing nothing) %d; loose ore %d" % [stored, frozen, get_nodes_in_group("ore").size() - stored])
+	await shot("stacked")
+
+
 func banner() -> void:
 	main._wave_timer = -9999.0
 	await wait(0.8)

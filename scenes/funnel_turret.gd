@@ -7,6 +7,7 @@ extends Node2D
 
 const FX = preload("res://scripts/fx.gd")
 const SFX = preload("res://scripts/sfx.gd")
+const OreStore = preload("res://scripts/ore_store.gd")
 
 const MAG_HALF := 9.0
 const MAG_TOP := -60.0
@@ -55,11 +56,13 @@ func _ready() -> void:
 	_store.collision_mask = 2
 	var s := CollisionShape2D.new()
 	var r := RectangleShape2D.new()
-	r.size = Vector2(MAG_HALF * 2 + 20, MAG_BOTTOM - MAG_TOP + 14)
+	r.size = Vector2(52, MAG_BOTTOM + 78)             # magazine + funnel, mouth to gate
 	s.shape = r
-	s.position = Vector2(0, (MAG_TOP + MAG_BOTTOM) / 2.0 - 7)
+	s.position = Vector2(0, (MAG_BOTTOM - 78) / 2.0)
 	_store.add_child(s)
 	add_child(_store)
+	_store.body_entered.connect(_stack_on)
+	_store.body_exited.connect(_stack_off)
 	_flash = AnimatedSprite2D.new()
 	var sf := SpriteFrames.new()
 	sf.set_animation_speed("default", 24.0)
@@ -119,9 +122,7 @@ func _physics_process(delta: float) -> void:
 	if _store == null:
 		return
 	_cool -= delta
-	for b in _store.get_overlapping_bodies():
-		if "_timer" in b:
-			b._timer = 0.0  # stored ore keeps
+	OreStore.settle(_store, delta)
 	var target := _nearest_enemy()
 	if target:
 		var sol = _solve(target)
@@ -174,8 +175,8 @@ func _solve(target: Node2D):
 func _fire(ore: RigidBody2D, vel: Vector2) -> void:
 	_cool = FIRE_EVERY
 	var dir := vel.normalized()
+	OreStore.release(ore)
 	ore.global_position = global_position + dir * (MUZZLE + 2)
-	ore.sleeping = false
 	ore.linear_velocity = vel
 	ore.angular_velocity = randf_range(-12, 12)
 	_flash.visible = true
@@ -186,3 +187,12 @@ func _fire(ore: RigidBody2D, vel: Vector2) -> void:
 	var kick := create_tween()
 	kick.tween_property(_barrel, "offset", Vector2(-9, -6), 0.04)
 	kick.tween_property(_barrel, "offset", Vector2(-5, -6), 0.18)
+
+
+## Stacking, settling and freezing of stored ore: scripts/ore_store.gd.
+func _stack_on(body: Node2D) -> void:
+	OreStore.on(body)
+
+
+func _stack_off(body: Node2D) -> void:
+	OreStore.off(body)
