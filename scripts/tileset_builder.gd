@@ -2,58 +2,43 @@ extends Node
 
 const TILE_SIZE := 16
 
-const ATLAS_PATH := "res://assets/sprites/terrain_atlas.png"
-## Each tile type has 16 position slices x 16 edge frames; ore types have
-## three blocks of them (on stone, dirt, deep stone). See
-## tools/art/gen_terrain.gd and WorldGen.set_tile.
-const SLICES := 16 * 16
-const SLICE_ROWS := {0: SLICES, 1: SLICES, 2: SLICES * 3, 3: SLICES * 3, 4: SLICES, 5: SLICES, 6: SLICES}
+## Six atlases, one TileSet source each: source = host block * 2 + (edge
+## frame >> 3); block 0 everything (ore on stone), 1 ore on dirt, 2 ore on
+## deep stone (see tools/art/gen_terrain.gd). Each holds 64 position slices
+## x 8 edge frames = 512 rows (GL won't load one 16384 px tall).
+const ATLASES := ["res://assets/sprites/terrain_atlas_0.png", "res://assets/sprites/terrain_atlas_1.png",
+	"res://assets/sprites/terrain_atlas_2.png", "res://assets/sprites/terrain_atlas_3.png",
+	"res://assets/sprites/terrain_atlas_4.png", "res://assets/sprites/terrain_atlas_5.png"]
+const ROWS := 64 * 8
+const ALL := [0, 1, 2, 3, 4, 5, 6]
+const ORE := [2, 3]
+const COLUMNS := [ALL, ALL, ORE, ORE, ORE, ORE]   # tile types present per source
 
 
-## wall = true builds the darkened, collision-free set used for the back wall
-## that shows through dug-out space.
+## wall = true builds the collision-free set used for the back wall that
+## shows through dug-out space (the layer itself is tinted darker).
 static func create_tileset(wall := false) -> TileSet:
 	var tileset := TileSet.new()
 	tileset.tile_size = Vector2i(TILE_SIZE, TILE_SIZE)
 	if not wall:
 		tileset.add_physics_layer(0)
 		tileset.set_physics_layer_collision_layer(0, 1)
-
-	var tex := load(ATLAS_PATH) as Texture2D
-	var atlas_img := tex.get_image()
-	atlas_img.convert(Image.FORMAT_RGBA8)
-	if wall:
-		_darken_for_wall(atlas_img)
-
-	var atlas := TileSetAtlasSource.new()
-	atlas.texture = ImageTexture.create_from_image(atlas_img)
-	atlas.texture_region_size = Vector2i(TILE_SIZE, TILE_SIZE)
-	for tile_id in SLICE_ROWS:
-		for row in SLICE_ROWS[tile_id]:
-			atlas.create_tile(Vector2i(tile_id, row))
-	tileset.add_source(atlas, 0)
-	if wall:
-		return tileset
-
-	var polygon := PackedVector2Array([
-		Vector2(-8, -8), Vector2(8, -8),
-		Vector2(8, 8), Vector2(-8, 8),
-	])
-	for tile_id in SLICE_ROWS:
-		for row in SLICE_ROWS[tile_id]:
-			var tile_data := atlas.get_tile_data(Vector2i(tile_id, row), 0)
-			tile_data.add_collision_polygon(0)
-			tile_data.set_collision_polygon_points(0, 0, polygon)
+	var polygon := PackedVector2Array([Vector2(-8, -8), Vector2(8, -8), Vector2(8, 8), Vector2(-8, 8)])
+	for src in ATLASES.size():
+		if wall and src > 0:
+			break   # the wall is plain rock, unframed: source 0 rows 0-63
+		var atlas := TileSetAtlasSource.new()
+		atlas.texture = load(ATLASES[src])
+		atlas.texture_region_size = Vector2i(TILE_SIZE, TILE_SIZE)
+		for col in COLUMNS[src]:
+			for row in (64 if wall else ROWS):   # walls only use the unframed slices
+				atlas.create_tile(Vector2i(col, row))
+		tileset.add_source(atlas, src)
+		if wall:
+			continue
+		for col in COLUMNS[src]:
+			for row in ROWS:
+				var tile_data := atlas.get_tile_data(Vector2i(col, row), 0)
+				tile_data.add_collision_polygon(0)
+				tile_data.set_collision_polygon_points(0, 0, polygon)
 	return tileset
-
-
-static func _darken_for_wall(img: Image) -> void:
-	# Darker, desaturated and slightly cool, so walls read as "behind"
-	for y in img.get_height():
-		for x in img.get_width():
-			var c := img.get_pixel(x, y)
-			var grey := c.r * 0.3 + c.g * 0.59 + c.b * 0.11
-			var d := c.lerp(Color(grey, grey, grey, c.a), 0.45) * 0.42
-			d.b += 0.03
-			d.a = c.a
-			img.set_pixel(x, y, d)

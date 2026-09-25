@@ -392,6 +392,7 @@ func _setup_terrain_visuals() -> void:
 	var wall := TileMapLayer.new()
 	wall.name = "BackWall"
 	wall.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	wall.modulate = Color(0.36, 0.35, 0.42)   # darker and cooler: reads as "behind"
 	wall.tile_set = TileSetBuilder.create_tileset(true)
 	WorldGen.generate_back_wall(wall)
 	add_child(wall)

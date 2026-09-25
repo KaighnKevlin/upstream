@@ -3,8 +3,8 @@ extends SceneTree
 ##
 ##   godot --path . --headless --script tools/art/gen_terrain.gd [-- preview_dir]
 ##
-## Each material is painted as one seamless 64x64 texture and sliced into a
-## 4x4 grid of 16px tiles; the world picks the slice by cell position, so the
+## Each material is painted as one seamless 128x128 texture and sliced into an
+## 8x8 grid of 16px tiles; the world picks the slice by cell position, so the
 ## ground reads as one continuous surface instead of a repeated 16px stamp.
 ##
 ## Every slice then comes in 16 FRAMES, one per combination of open sides
@@ -14,18 +14,20 @@ extends SceneTree
 ## outer corners are rounded, and each open face gets a dark outline and a
 ## crust (lit on top, shadowed underneath). Grass creeps down open sides.
 ##
-## Atlas layout: column = tile type (matches world_gen TILE_* ids).
-##   row = block * 256 + mask * 16 + slice   (slice = (x % 4) + (y % 4) * 4)
-##   block 0 for everything; ore columns also have block 1 (ore on dirt) and
-##   block 2 (on deep stone); block 0 is ore on stone.
+## Atlases terrain_atlas_<src>.png, one TileSet source each (GL won't load
+## a texture 16384 px tall, so each host block is split in two by mask):
+##   src = block * 2 + (mask >> 3); block 0 = everything (ore on stone),
+##   block 1 = ore on dirt, block 2 = ore on deep stone (ore columns only)
+##   column = tile type (matches world_gen TILE_* ids)
+##   row = (mask & 7) * 64 + slice   (slice = (x % 8) + (y % 8) * 8)
 ##   column 6 is hard ironstone (the starting pickaxe can't break it).
 
 const T := 16
-const P := 64   # seamless period
+const P := 128  # seamless period
 const G := P / T  # slices per side
 const N := G * G  # slices per material
 const MASKS := 16
-const BLOCK := MASKS * N  # rows per host block
+const HALF := 8 * N       # rows per atlas image (8192 px)
 const DIRT := 0
 const STONE := 1
 const IRON := 2
@@ -51,17 +53,20 @@ var rng := RandomNumberGenerator.new()
 func _initialize() -> void:
 	rng.seed = 7
 	var dirt := _dirt()
-	var stone := _stone(STONE_PAL, 20, 11)
-	var deep := _stone(DEEP_PAL, 28, 23)
+	var stone := _stone(STONE_PAL, 80, 11)
+	var deep := _stone(DEEP_PAL, 112, 23)
 	var bases := [stone, dirt, deep]  # ore row blocks: 0 = stone, 1 = dirt, 2 = deep
 
 	var hard := _ironstone()
 	var grass := _grass(dirt)
-	var atlas := Image.create(7 * T, 3 * BLOCK * T, false, Image.FORMAT_RGBA8)
+	var atlases := []
+	for k in 6:
+		atlases.append(Image.create(7 * T, HALF * T, false, Image.FORMAT_RGBA8))
 	var pals := [STONE_PAL, DIRT_PAL, DEEP_PAL]
 	for mask in MASKS:
+		var atlas: Image = atlases[mask >> 3]
 		for v in N:
-			var row := mask * N + v
+			var row := (mask & 7) * N + v
 			_blit_frame(atlas, hard, HARD, v, row, mask, HARD_PAL, 61)
 			_blit_frame(atlas, dirt, DIRT, v, row, mask, DIRT_PAL, 3)
 			_blit_frame(atlas, stone, STONE, v, row, mask, STONE_PAL, 11)
@@ -72,11 +77,13 @@ func _initialize() -> void:
 		var copper := _ore(bases[b], COPPER_PAL, VERDIGRIS, 201 + b)
 		for mask in MASKS:
 			for v in N:
-				var row := b * BLOCK + mask * N + v
-				_blit_frame(atlas, iron, IRON, v, row, mask, pals[b], 101 + b)
-				_blit_frame(atlas, copper, COPPER, v, row, mask, pals[b], 201 + b)
-	atlas.save_png("res://assets/sprites/terrain_atlas.png")
-	print("wrote res://assets/sprites/terrain_atlas.png")
+				var row := (mask & 7) * N + v
+				var img: Image = atlases[b * 2 + (mask >> 3)]
+				_blit_frame(img, iron, IRON, v, row, mask, pals[b], 101 + b)
+				_blit_frame(img, copper, COPPER, v, row, mask, pals[b], 201 + b)
+	for k in 6:
+		atlases[k].save_png("res://assets/sprites/terrain_atlas_%d.png" % k)
+	print("wrote res://assets/sprites/terrain_atlas_0..5.png")
 
 	var args := OS.get_cmdline_user_args()
 	if args.size() > 0:
@@ -273,7 +280,7 @@ func _dirt() -> Image:
 			img.set_pixel(x, y, _c(DIRT_PAL[idx]))
 	# Pebbles: small dark blobs lit from above
 	rng.seed = 31
-	for i in 22:
+	for i in 88:
 		var cx := rng.randi_range(0, P - 1)
 		var cy := rng.randi_range(0, P - 1)
 		var w := rng.randi_range(1, 3)
@@ -285,7 +292,7 @@ func _dirt() -> Image:
 			img.set_pixel(_wrap(cx + dx), _wrap(cy - 1), _c(DIRT_PAL[5]))  # rim light
 			img.set_pixel(_wrap(cx + dx), _wrap(cy + h), _c(DIRT_PAL[0]))  # contact shadow
 	# Fine specks
-	for i in 36:
+	for i in 144:
 		var x := rng.randi_range(0, P - 1)
 		var y := rng.randi_range(0, P - 1)
 		img.set_pixel(x, y, _c(DIRT_PAL[4] if rng.randf() < 0.5 else DIRT_PAL[1]))
@@ -331,7 +338,7 @@ func _stone(pal: Array, points: int, seed_val: int) -> Image:
 				idx = 3 if shade > 0.45 else (2 if shade > -0.45 else 1)
 			img.set_pixel(x, y, _c(pal[idx]))
 	# A few bright glints
-	for i in 6:
+	for i in 24:
 		img.set_pixel(r.randi_range(0, P - 1), r.randi_range(0, P - 1), _c(pal[4]))
 	return img
 
@@ -376,9 +383,9 @@ func _ironstone() -> Image:
 					elif y == posmod(j + 1, P) and idx > 1:
 						idx = 3      # lit lip under the crack
 				img.set_pixel(x, y, _c(HARD_PAL[idx]))
-	for i in 10:
+	for i in 40:
 		img.set_pixel(r.randi_range(0, P - 1), r.randi_range(0, P - 1), _c(RUST))
-	for i in 4:
+	for i in 14:
 		img.set_pixel(r.randi_range(0, P - 1), r.randi_range(0, P - 1), _c(HARD_PAL[5]))
 	return img
 

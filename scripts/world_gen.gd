@@ -23,9 +23,8 @@ const LEDGE_HOLE_WIDTH := Vector2i(2, 4)  # gaps between shelves: 2 to 10 tiles
 const WORLD_WIDTH := 150  # tiles
 const WORLD_HEIGHT := 80  # tiles
 const TILE_SIZE := 16     # pixels
-const SLICE_GRID := 4     # terrain textures repeat every 4 tiles (tools/art/gen_terrain.gd)
+const SLICE_GRID := 8     # terrain textures repeat every 8 tiles (tools/art/gen_terrain.gd)
 const FRAMES := 16        # edge frames per slice: which sides are open to air
-const BLOCK_ROWS := SLICE_GRID * SLICE_GRID * FRAMES
 
 # Zone boundaries (in tile rows from top)
 const SURFACE_ROWS := 6       # open air above ground
@@ -102,18 +101,25 @@ static func generate(tilemap: TileMapLayer, rng_seed: int = 0) -> void:
 ## tools/art/gen_terrain.gd), and for ore the block painted on its host rock
 ## for that depth. Neighbours are re-framed around it.
 static func set_tile(tilemap: TileMapLayer, cell: Vector2i, tile: int, _rng: RandomNumberGenerator = null) -> void:
-	tilemap.set_cell(cell, 0, Vector2i(tile, _row(tilemap, cell, tile)))
+	var mask := _open_mask(tilemap, cell)
+	tilemap.set_cell(cell, _source(cell, tile, mask), Vector2i(tile, _row(cell, mask)))
 	reframe_around(tilemap, cell)
 
 
-static func _row(tilemap: TileMapLayer, cell: Vector2i, tile: int) -> int:
-	var row := posmod(cell.x, SLICE_GRID) + posmod(cell.y, SLICE_GRID) * SLICE_GRID
-	row += _open_mask(tilemap, cell) * SLICE_GRID * SLICE_GRID
+## TileSet source: host block * 2 + which half of the edge frames. Ore uses
+## the block painted on its host rock for the depth (tileset_builder.gd).
+static func _source(cell: Vector2i, tile: int, mask: int) -> int:
+	var block := 0
 	if tile == TILE_IRON or tile == TILE_COPPER:
 		match _get_base_tile(cell.y):
-			TILE_DIRT: row += BLOCK_ROWS
-			TILE_DEEP_STONE: row += BLOCK_ROWS * 2
-	return row
+			TILE_DIRT: block = 1
+			TILE_DEEP_STONE: block = 2
+	return block * 2 + (mask >> 3)
+
+
+static func _row(cell: Vector2i, mask: int) -> int:
+	return posmod(cell.x, SLICE_GRID) + posmod(cell.y, SLICE_GRID) * SLICE_GRID \
+		+ (mask & 7) * SLICE_GRID * SLICE_GRID
 
 
 ## Bits: 1 up, 2 right, 4 down, 8 left are air. The world's edges count as
@@ -135,9 +141,11 @@ static func reframe(tilemap: TileMapLayer, cell: Vector2i) -> void:
 	if tilemap.get_cell_source_id(cell) == -1:
 		return
 	var tile := tilemap.get_cell_atlas_coords(cell).x
-	var row := _row(tilemap, cell, tile)
-	if tilemap.get_cell_atlas_coords(cell).y != row:
-		tilemap.set_cell(cell, 0, Vector2i(tile, row))
+	var mask := _open_mask(tilemap, cell)
+	var row := _row(cell, mask)
+	var src := _source(cell, tile, mask)
+	if tilemap.get_cell_atlas_coords(cell).y != row or tilemap.get_cell_source_id(cell) != src:
+		tilemap.set_cell(cell, src, Vector2i(tile, row))
 
 
 ## After a cell changes (mined, placed): it and its four neighbours.
@@ -161,10 +169,8 @@ static func generate_back_wall(wall: TileMapLayer, rng_seed: int = 0) -> void:
 		for x in WORLD_WIDTH:
 			var c := Vector2i(x, y)
 			var t := _get_base_tile(y)
-			# the wall is one unbroken surface: no carved edges except its top
+			# the wall is one unbroken surface: plain slices, no edge frames
 			var row := posmod(x, SLICE_GRID) + posmod(y, SLICE_GRID) * SLICE_GRID
-			if y == SURFACE_ROWS:
-				row += 1 * SLICE_GRID * SLICE_GRID
 			wall.set_cell(c, 0, Vector2i(t, row))
 
 
