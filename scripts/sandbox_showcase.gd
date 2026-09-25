@@ -2,6 +2,10 @@ extends Node
 ## The sandbox's starting layout: every element already built and running,
 ## so a new session starts with working chains to watch and tweak.
 ##
+##   Far west (a small factory)
+##     iron tapper -> through a laser mid-flight -> the ingot drops into an
+##       assembler, which makes iron shot -> a belt carries it into the lift
+##     copper tapper -> gravity wheel, which powers the assembler and belt
 ##   West of the dome (production)
 ##     tapper -> laser beam -> ingot lands in the dome's intake
 ##     tapper -> lobs ore into an upstream shaft, which floats it up and stacks it
@@ -42,6 +46,17 @@ const LIFT_TAPPER := Vector2i(50, 7)
 const LIFT_TAPPER_AIM := Vector2(20, 300)
 const LIFT_AT := Vector2(868, 36)           # upstream shaft standing on the ground
 
+# the factory: aims solved like the others (laser slows what it smelts to 60%)
+const FACTORY_IRON := Vector2i(24, 7)
+const FACTORY_IRON_AIM := Vector2(36, 610)
+const FACTORY_LASER := Vector2(526, -30)
+const FACTORY_COPPER := Vector2i(20, 7)
+const FACTORY_COPPER_AIM := Vector2(60, 655)   # a flat lob, under the laser, into the wheel
+const FACTORY_WHEEL := Vector2(520, 40)
+const FACTORY_ASSEMBLER := Vector2(600, 80)
+const FACTORY_BELT := [Vector2(640, 86), Vector2(855, 86)]   # to the lift
+const GROUND_FROM := 18                      # tiles: the flattened strip starts here
+
 # one tapper, two turrets: splitter on a post, a chute down to each funnel
 const SPLIT_TAPPER := Vector2i(104, 7)
 const SPLIT_TAPPER_AIM := Vector2(3, 670)   # near-vertical lob, lands on the paddle coming down
@@ -57,15 +72,27 @@ static func build(main: Node) -> void:
 	var shading := main.get_node_or_null("TileShading")
 
 	# ground: flat surface over the whole showcase strip, veins, the pit
-	for x in range(46, 124):
+	for x in range(GROUND_FROM, 124):
 		for y in range(0, WorldGen.SURFACE_ROWS):
 			tm.set_cell(Vector2i(x, y), -1)
 	for cell in [EAST_TAPPER, WEST_TAPPER, LIFT_TAPPER, FEED_TAPPER]:
 		_vein(tm, cell, shading, decor)
 	_vein(tm, SPLIT_TAPPER, shading, decor, WorldGen.TILE_IRON)   # the turrets' feed: iron shot
+	_vein(tm, FACTORY_IRON, shading, decor, WorldGen.TILE_IRON)
+	_vein(tm, FACTORY_COPPER, shading, decor)
 	for x in range(PIT.position.x, PIT.end.x):
 		for y in range(PIT.position.y, PIT.end.y):
 			_clear(tm, Vector2i(x, y), shading, decor)
+
+	# the factory (far west)
+	_tapper(main, tm, FACTORY_COPPER, FACTORY_COPPER_AIM)
+	_add(main, preload("res://scenes/gravity_wheel.tscn"), FACTORY_WHEEL)
+	_tapper(main, tm, FACTORY_IRON, FACTORY_IRON_AIM)
+	_add(main, preload("res://scenes/laser_smelter.tscn"), FACTORY_LASER)
+	_add(main, preload("res://scenes/assembler.tscn"), FACTORY_ASSEMBLER)
+	var belt: Node2D = preload("res://scenes/belt.tscn").instantiate()
+	belt.end_offset = FACTORY_BELT[1] - FACTORY_BELT[0]
+	_add_node(main, belt, FACTORY_BELT[0])
 
 	# production (west)
 	_tapper(main, tm, WEST_TAPPER, WEST_TAPPER_AIM)

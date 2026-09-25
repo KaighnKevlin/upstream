@@ -2688,3 +2688,39 @@ func terrain_look() -> void:
 		await wait(0.4)
 		await shot(spot[2])
 		await _grab(Rect2(spot[0] - Vector2(110, 55), Vector2(220, 110)), "px_" + spot[2], -4)
+
+
+func factory_rec() -> void:
+	# The showcase's factory: iron -> laser -> assembler -> shot -> belt -> lift,
+	# with a gravity wheel (fed copper) powering the assembler and belt.
+	var sc := preload("res://scripts/sandbox_showcase.gd")
+	await wait(0.2)
+	sc.build(main)
+	main._wave_timer = -9999.0
+	var asm: Node2D = null
+	var wheel: Node2D = null
+	var belt: Node2D = null
+	var lift: Node2D = null
+	for n in get_nodes_in_group("showcase"):
+		if n.has_method("_finish"):
+			asm = n
+		if n.has_method("power"):
+			wheel = n
+		if "rate" in n and n.has_method("run_dir"):
+			belt = n
+		if "lift_speed" in n:
+			lift = n
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.6, 1.6)
+	cam.global_position = Vector2(590, 0)
+	for s in 12:
+		await wait(1.0)
+		var shot_on_belt := 0
+		for o in get_nodes_in_group("ore"):
+			if o.kind == "shot":
+				shot_on_belt += 1
+		log_line("t=%2d wheel power %.2f dumped %d | assembler held %s made %d rate %.2f | belt rate %.2f | shot loose %d | lift holds %d" % [s + 1, wheel.power(), wheel.dumped, asm._held, asm.made, asm._rate, belt.rate, shot_on_belt, lift._held_items.size()])
+		if s == 7:
+			await shot("factory")
