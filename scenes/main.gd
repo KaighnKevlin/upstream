@@ -39,7 +39,7 @@ var _arrow_count: Label
 var _arrow_t := 0.0
 var _game_over_panel: NinePatchRect
 
-const ENEMY_NAMES := ["titan", "scuttler", "soldier", "caster", "ornithopter"]
+const ENEMY_NAMES := ["titan", "scuttler", "soldier", "caster", "ornithopter", "magpie"]
 
 @onready var _receiver: Area2D = $Receiver
 @onready var _turret: Node2D = $Turret
@@ -491,6 +491,9 @@ func _spawn_wave() -> void:
 	var fliers := maxi(0, (wave_number - 1) / 2)
 	if fliers > 0:
 		kinds[4] = fliers
+	var magpies := wave_number / 2   # ore thieves join from wave 2
+	if magpies > 0:
+		kinds[5] = magpies
 	var parts := []
 	for t in kinds:
 		parts.append("%d %s%s" % [kinds[t], ENEMY_NAMES[t], "s" if kinds[t] > 1 else ""])
@@ -516,6 +519,11 @@ func _spawn_wave() -> void:
 		enemy.global_position = Vector2(spawn_x - i * 20, surface_y)
 		enemy.direction = -1.0
 		add_child(enemy)
+
+	for k in magpies:
+		var mp: Node2D = preload("res://scenes/magpie.tscn").instantiate()
+		mp.global_position = Vector2(spawn_x + 20 + k * 60, -120 - k * 20)
+		add_child(mp)
 
 	for k in fliers:
 		var flier := _enemy_scene.instantiate()
@@ -678,6 +686,11 @@ func _god_key(event: InputEventKey) -> void:
 				_pour_t = -0.25  # holding: a short pause, then a steady pour (_process)
 		KEY_G:
 			if event.echo:
+				return
+			if ENEMY_NAMES[_god_type] == "magpie":
+				var mp: Node2D = preload("res://scenes/magpie.tscn").instantiate()
+				mp.global_position = at
+				add_child(mp)
 				return
 			var e := _enemy_scene.instantiate()
 			e.add_to_group("enemies")

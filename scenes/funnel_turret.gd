@@ -12,9 +12,10 @@ const OreStore = preload("res://scripts/ore_store.gd")
 const MAG_HALF := 9.0
 const MAG_TOP := -60.0
 const MAG_BOTTOM := -10.0     # the breech gate
-const SPEED := 600.0   # max flat reach = SPEED^2 / g, about 367px
+const SPEED := 680.0   # max height SPEED^2 / 2g ~236px: can reach fliers; RANGE caps the flat reach
 const RANGE := 360.0
 const FIRE_EVERY := 0.8
+const MAX_ELEVATION := deg_to_rad(55.0)   # 35 degrees off vertical: the magazine is in the way
 const MUZZLE := 21.0
 const LEG_MAX := 160.0
 
@@ -26,6 +27,7 @@ var _flash: AnimatedSprite2D
 var _agitate := 0.0
 var _shake := 14.0          # feeder strength; escalates while nothing drops
 var _last_in_tube := 0
+var shots := 0                 # for tests
 const MAG_HOLDS := 3        # ore in the magazine tube below the funnel
 
 
@@ -189,7 +191,7 @@ func _nearest_enemy() -> Node2D:
 func _solve(target: Node2D):
 	var g := float(ProjectSettings.get_setting("physics/2d/default_gravity", 980.0))
 	var muzzle := global_position
-	var aim_at := target.global_position + Vector2(0, -12)
+	var aim_at: Vector2 = (target.hit_center() if target.has_method("hit_center") else target.global_position + Vector2(0, -12))
 	for pass_i in 2:
 		var d := aim_at - muzzle
 		var x := absf(d.x)
@@ -202,16 +204,17 @@ func _solve(target: Node2D):
 		var vel := Vector2(signf(d.x) * cos(theta), -sin(theta)) * SPEED
 		if pass_i == 0 and "velocity" in target:
 			var t := x / maxf(1.0, SPEED * cos(theta))
-			aim_at += Vector2(target.velocity.x, 0) * t
+			aim_at += target.velocity * t   # fliers climb and dive: lead both ways
 			continue
 		return vel
 	return null
 
 
 func _fire(ore: RigidBody2D, vel: Vector2) -> void:
+	shots += 1
 	_cool = FIRE_EVERY
 	var dir := vel.normalized()
-	OreStore.release(ore)
+	OreStore.off(ore, _store)   # out of the magazine: plain flight physics right away
 	ore.global_position = global_position + dir * (MUZZLE + 2)
 	ore.linear_velocity = vel
 	ore.angular_velocity = randf_range(-12, 12)

@@ -53,6 +53,8 @@ func _check_enemy_hit() -> void:
 	for e in get_tree().get_nodes_in_group("enemies"):
 		if not e.has_method("hit_center") or ("_dying" in e and e._dying):
 			continue
+		if e.get("_target") == self:
+			continue  # a magpie closing its claw on this piece
 		var c: Vector2 = e.hit_center()
 		if global_position.distance_to(c) < e.hit_radius() + 7.0:
 			_hurt_cooldown = 0.35

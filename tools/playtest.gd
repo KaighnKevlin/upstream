@@ -1916,7 +1916,11 @@ func showcase_wave() -> void:
 		var desc := []
 		for e in es:
 			desc.append("%s@%d" % [e.get("enemy_type"), int(e.global_position.x)])
-		log_line("t=%2d enemies %d %s dome %s" % [s + 1, es.size(), desc, main.get("dome_hp")])
+		var ammo := []
+		for n in get_nodes_in_group("showcase"):
+			if n.has_method("_loaded"):
+				ammo.append("%d/%d" % [n._loaded().size(), n.shots])
+		log_line("t=%2d enemies %d %s dome %s turrets ammo/shots %s" % [s + 1, es.size(), desc, main.get("dome_hp"), ammo])
 		if s % 3 == 0:
 			await shot("wave_%02d" % s)
 
@@ -2236,3 +2240,77 @@ func save_load() -> void:
 	cam.global_position = Vector2(1300, 0)
 	await wait(0.3)
 	await shot("loaded")
+
+
+func magpie_rec() -> void:
+	# A magpie over the working showcase: does it find loose ore, grab it and
+	# make off with it? Then with the turrets on: does a hit make it drop?
+	var sc := preload("res://scripts/sandbox_showcase.gd")
+	await wait(0.2)
+	sc.build(main)
+	main._wave_timer = -9999.0
+	var turrets := []
+	for n in get_nodes_in_group("showcase"):
+		if n.has_method("_loaded"):
+			n.set_physics_process(false)
+			turrets.append(n)
+	await wait(3.0)
+	var m: Node2D = preload("res://scenes/magpie.tscn").instantiate()
+	m.global_position = Vector2(1900, -100)
+	main.add_child(m)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.0, 2.0)
+	var grabbed_at := -1
+	for f in 600:
+		await physics_frame
+		if not is_instance_valid(m):
+			log_line("magpie left the map at frame %d" % f)
+			break
+		cam.global_position = m.global_position
+		if grabbed_at < 0 and m._carried:
+			grabbed_at = f
+			log_line("grabbed ore at frame %d at %s" % [f, m.global_position.round()])
+		if f % 60 == 0:
+			log_line("  f%d state %d at %s v %s" % [f, m._state, m.global_position.round(), m.velocity.round()])
+		if f % 5 == 0 and f < 300:
+			await _grab(Rect2(m.global_position - Vector2(120, 80), Vector2(240, 160)), "mag_%03d" % (f / 5), -2)
+	# second one, turrets live
+	for t in turrets:
+		t.set_physics_process(true)
+	var m2: Node2D = preload("res://scenes/magpie.tscn").instantiate()
+	m2.global_position = Vector2(1750, -100)
+	main.add_child(m2)
+	var drops := 0
+	var was_carrying := false
+	var last := ""
+	var near := {}
+	for f in 900:
+		await physics_frame
+		if not is_instance_valid(m2):
+			log_line("second magpie gone at frame %d: %s" % [f, last])
+			break
+		last = "hp %d, state %d, stolen %d, x %d" % [m2.hp, m2._state, m2.stolen, m2.global_position.x]
+		for o in get_nodes_in_group("ore"):
+			if o.linear_velocity.length() > 250 and o.global_position.x > 1500:
+				var d: float = o.global_position.distance_to(m2.global_position)
+				var id: int = o.get_instance_id()
+				near[id] = minf(near.get(id, 9999.0), d)
+		if f % 30 == 0:
+			var info := []
+			for t in turrets:
+				var tgt = t._nearest_enemy()
+				info.append("shots %d ammo %d tgt %s sol %s" % [t.shots, t._loaded().size(), tgt != null, t._solve(tgt) if tgt else null])
+			log_line("  f%d magpie %s | %s" % [f, m2.global_position.round(), info])
+		cam.global_position = m2.global_position
+		var c: bool = m2._carried != null
+		if was_carrying and not c and m2._state != 1:
+			drops += 1
+		was_carrying = c
+	var misses := []
+	for k in near:
+		if near[k] < 120:
+			misses.append(int(near[k]))
+	log_line("closest approach of fast ore to the magpie: %s" % [misses])
+	log_line("with turrets: magpie %s, hp %s, dropped its load %d times, stole %s" % ["alive" if is_instance_valid(m2) else "gone", m2.hp if is_instance_valid(m2) else "-", drops, m2.stolen if is_instance_valid(m2) else "?"])
