@@ -1688,6 +1688,36 @@ func catapult_rec() -> void:
 			log_line("  ore at %s v %s" % [o.global_position.round(), o.linear_velocity.round()])
 
 
+func tramp_aim() -> void:
+	# Trampoline selected: handle + bounce arc; then real ore dropped from
+	# 90px (arrives ~420px/s, the preview's assumption) to compare.
+	main._wave_timer = -9999.0
+	var t: Node2D = preload("res://scenes/trampoline.tscn").instantiate()
+	t.global_position = Vector2(1520, 40)
+	t.bounce_angle = 25.0
+	t.bounce_force = 700.0
+	main.add_child(t)
+	t._update_visuals()
+	t.select()
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.2, 2.2)
+	cam.global_position = Vector2(1640, 0)
+	await wait(0.3)
+	var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+	o.global_position = t.global_position + Vector2(0, -90)
+	main.add_child(o)
+	var trail := []
+	for f in 90:
+		await physics_frame
+		if is_instance_valid(o):
+			trail.append(o.global_position)
+	await shot("tramp_aim")
+	var land: Vector2 = trail[-1]
+	log_line("real ore after 1.5s at %s (arc drawn from %s with v %s)" % [land.round(), t._arc.origin.round(), t._arc.velocity.round()])
+
+
 func banner() -> void:
 	main._wave_timer = -9999.0
 	await wait(0.8)

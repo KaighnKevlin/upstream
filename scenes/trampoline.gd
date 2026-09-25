@@ -19,6 +19,7 @@ const FX = preload("res://scripts/fx.gd")
 
 var _pixel_sprite: Sprite2D
 var _rig: Node2D            # base + animated spring/plate, tilted to the launch angle
+var _arc: Node2D
 var _top: AnimatedSprite2D
 
 enum DragMode { NONE, BODY, ANGLE, FORCE }
@@ -29,8 +30,10 @@ var _drag_offset := Vector2.ZERO
 const COLOR_NORMAL := Color(0.2, 0.85, 0.3, 1)
 const COLOR_SELECTED := Color(0.4, 1.0, 0.5, 1)
 const ANGLE_HANDLE_DIST := 45.0
-const FORCE_MIN_DIST := 65.0
+const FORCE_MIN_DIST := 30.0   # the single handle: distance = force
 const FORCE_MAX_DIST := 120.0
+const PREVIEW_DROP := 420.0     # the arc previews ore dropping onto the plate at this speed
+const Trajectory = preload("res://scripts/trajectory_preview.gd")
 const HANDLE_GRAB_RADIUS := 14.0
 
 
@@ -139,7 +142,7 @@ func _launch_dir() -> Vector2:
 
 
 func _angle_handle_global() -> Vector2:
-	return global_position + _launch_dir() * ANGLE_HANDLE_DIST
+	return _force_handle_global()  # one handle does both now
 
 
 func _force_handle_global() -> Vector2:
@@ -188,12 +191,8 @@ func _input(event: InputEvent) -> void:
 		if event.pressed:
 			# If selected, check handle clicks first
 			if _selected:
-				if _mouse_near(_angle_handle_global()):
-					_drag_mode = DragMode.ANGLE
-					get_viewport().set_input_as_handled()
-					return
 				if _mouse_near(_force_handle_global()):
-					_drag_mode = DragMode.FORCE
+					_drag_mode = DragMode.ANGLE  # direction = angle, distance = force
 					get_viewport().set_input_as_handled()
 					return
 				# Clicking the body while selected = start dragging body
@@ -224,6 +223,7 @@ func _input(event: InputEvent) -> void:
 				if dir.length() > 5:
 					var raw_angle := rad_to_deg(dir.angle() + PI / 2)
 					bounce_angle = clampf(raw_angle, -80, 80)
+					bounce_force = clampf(remap(dir.length(), FORCE_MIN_DIST, FORCE_MAX_DIST, 100.0, 2000.0), 100, 2000)
 			DragMode.FORCE:
 				var dist := mouse.distance_to(global_position)
 				bounce_force = clampf(
@@ -234,15 +234,37 @@ func _input(event: InputEvent) -> void:
 
 
 func _show_handles() -> void:
-	_angle_handle.visible = true
+	if _force_handle.polygon.size() != 12:  # round handle, like the tapper's and catapult's
+		var pts := PackedVector2Array()
+		for k in 12:
+			pts.append(Vector2.from_angle(k * TAU / 12) * 5)
+		_force_handle.polygon = pts
 	_force_handle.visible = true
-	_force_line.visible = true
+	_angle_handle.visible = false
+	_force_line.visible = false
+	if _arc == null:
+		_arc = Trajectory.new()
+		_arc.tilemap = get_tree().current_scene.get_node_or_null("TileMapLayer")
+		add_child(_arc)
+	_arc.visible = true
+	_update_arc()
 
 
 func _hide_handles() -> void:
 	_angle_handle.visible = false
 	_force_handle.visible = false
 	_force_line.visible = false
+	if _arc:
+		_arc.visible = false
+
+
+## Preview: where ore dropped straight onto the plate would bounce to.
+func _update_arc() -> void:
+	if _arc == null:
+		return
+	_arc.origin = global_position + _launch_dir() * 10.0
+	_arc.velocity = bounce_velocity(Vector2(0, PREVIEW_DROP))
+	_arc.gravity = float(ProjectSettings.get_setting("physics/2d/default_gravity", 980.0))
 
 
 func _update_visuals() -> void:
@@ -268,9 +290,11 @@ func _update_visuals() -> void:
 	# Angle handle position
 	_angle_handle.position = dir * ANGLE_HANDLE_DIST
 
-	# Force handle position
+	# The handle: direction = angle, distance = force
 	var force_dist := remap(bounce_force, 100, 2000, FORCE_MIN_DIST, FORCE_MAX_DIST)
 	_force_handle.position = dir * force_dist
+	_force_handle.color = Color(1.0, 0.7, 0.2)
+	_update_arc()
 
 	# Line connecting them
 	var line_start := dir * (ANGLE_HANDLE_DIST + 10)
