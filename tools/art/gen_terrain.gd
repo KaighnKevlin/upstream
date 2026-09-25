@@ -44,7 +44,7 @@ const GRASS_PAL := ["1d3b1c", "2c5a26", "3d7a30", "56993a", "7dbb4a"]
 const IRON_PAL := ["2a2230", "8c5a4e", "c0968a", "e6cfc4", "ffffff"]
 const COPPER_PAL := ["5a2410", "9a4a1e", "d27434", "f5a55a", "ffe0a8"]
 const VERDIGRIS := "4fb3a0"
-const HARD_PAL := ["0d0a0a", "1c1412", "2b1e19", "3d2a21", "54392a", "7a5a3e"]
+const HARD_PAL := ["0d0a0a", "1c1416", "2e2224", "4a302a", "6e3e2c", "93553a"]
 const RUST := "a0522d"
 
 var rng := RandomNumberGenerator.new()
@@ -343,50 +343,59 @@ func _stone(pal: Array, points: int, seed_val: int) -> Image:
 	return img
 
 
-## Ironstone: dark columnar rock with vertical joints and staggered
-## cross-cracks, each column lit on its left face, rust flecks. Reads as
-## "too hard for this pickaxe" next to the rounded boulders of stone.
+## Ironstone: banded iron formation. Thin wavy stripes of dark metallic
+## hematite and rust-red jasper, folded and pinched by noise, broken by a few
+## angular fractures, with round iron nodules glinting in it. Reads as a
+## hard, heavy, natural rock (not masonry) next to the boulders of stone.
 func _ironstone() -> Image:
 	var img := Image.create(P, P, false, Image.FORMAT_RGBA8)
 	var r := RandomNumberGenerator.new()
 	r.seed = 61
-	var grain := _noise_grid(8, 67)
-	# column edges: widths summing to P so it wraps
-	var edges: Array[int] = [0]
-	while edges[-1] < P - 14:
-		edges.append(edges[-1] + r.randi_range(10, 14))
-	edges.append(P)
-	for ci in edges.size() - 1:
-		var x0 := edges[ci]
-		var x1 := edges[ci + 1]
-		# cross joints for this column
-		var joints: Array[int] = []
-		var jy := r.randi_range(0, 12)
-		while jy < P:
-			joints.append(jy)
-			jy += r.randi_range(14, 26)
-		for y in P:
-			for x in range(x0, x1):
-				var fx := float(x - x0) / float(x1 - x0)
-				var idx := 2
-				if x == x0:
-					idx = 0          # joint
-				elif x == x0 + 1:
-					idx = 4          # lit left face
-				elif fx > 0.8:
-					idx = 1          # shadowed right side
-				elif grain.call(x, y) > 0.62:
-					idx = 3
-				for j in joints:
-					if y == j:
-						idx = 0
-					elif y == posmod(j + 1, P) and idx > 1:
-						idx = 3      # lit lip under the crack
-				img.set_pixel(x, y, _c(HARD_PAL[idx]))
-	for i in 40:
+	var fbm := _fbm(67)
+	var fine := _noise_grid(4, 71)
+	# bands, dark to light: hematite greys and jasper reds
+	var bands: Array[String] = ["1c1618", "3a2a28", "6e3a2a", "2a2226", "4a4448", "8a4a30", "241c1e", "5a3026"]
+	for y in P:
+		for x in P:
+			var t := TAU * float(x) / P
+			var yy: float = float(y) + 4.0 * sin(2.0 * t + 0.7) + 2.5 * sin(5.0 * t + 1.9) + (fbm.call(x, y) - 0.5) * 14.0
+			var band := posmod(int(floor(yy / 3.2)), bands.size())
+			var col := _c(bands[band])
+			# a little grain so the stripes aren't flat
+			var g: float = fine.call(x, y)
+			if g > 0.72:
+				col = col.lightened(0.12)
+			elif g < 0.25:
+				col = col.darkened(0.18)
+			img.set_pixel(x, y, col)
+	# angular fractures: short jagged dark cracks with a lit lip below
+	for i in 7:
+		var p := Vector2(r.randi_range(0, P - 1), r.randi_range(0, P - 1))
+		var dir := Vector2.from_angle(r.randf_range(-0.6, 0.6) + (PI if r.randf() < 0.5 else 0.0))
+		for k in r.randi_range(10, 22):
+			if r.randf() < 0.3:
+				dir = dir.rotated(r.randf_range(-0.9, 0.9))
+			p += dir
+			var px := _wrap(int(p.x))
+			var py := _wrap(int(p.y))
+			img.set_pixel(px, py, _c(HARD_PAL[0]))
+			img.set_pixel(px, _wrap(py + 1), _c(HARD_PAL[4]))
+	# iron nodules: glossy dark beads with a highlight and a contact shadow
+	for i in 18:
+		var cx := r.randi_range(0, P - 1)
+		var cy := r.randi_range(0, P - 1)
+		var rad := r.randf_range(1.2, 2.6)
+		for dy in range(-3, 4):
+			for dx in range(-3, 4):
+				var d := Vector2(dx, dy).length()
+				if d <= rad:
+					var shade := "3a3d44" if (dx + dy) > 0 else "5c6068"
+					img.set_pixel(_wrap(cx + dx), _wrap(cy + dy), _c(shade))
+				elif d <= rad + 0.9 and dy > 0:
+					img.set_pixel(_wrap(cx + dx), _wrap(cy + dy), _c(HARD_PAL[0]))
+		img.set_pixel(_wrap(cx - 1), _wrap(cy - 1), _c("b8c0c8"))
+	for i in 30:
 		img.set_pixel(r.randi_range(0, P - 1), r.randi_range(0, P - 1), _c(RUST))
-	for i in 14:
-		img.set_pixel(r.randi_range(0, P - 1), r.randi_range(0, P - 1), _c(HARD_PAL[5]))
 	return img
 
 
