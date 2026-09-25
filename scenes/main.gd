@@ -132,7 +132,7 @@ func _style_hud() -> void:
 		"BuildModeLabel": [Vector2(24, 66), 20, Color(0.55, 0.88, 0.9)],
 		"PlayerHpLabel": [Vector2(20, 642), 20, HUD_TEXT],
 		"DomeHpLabel": [Vector2(300, 642), 20, HUD_TEXT],
-		"BuildLabel": [Vector2(546, 644), 20, HUD_TEXT_DIM],
+		"BuildLabel": [Vector2(546, 636), 20, HUD_TEXT_DIM],
 		"Title": [Vector2(1060, 14), 20, HUD_TEXT_DIM],
 		"GameOverLabel": [Vector2(390, 250), 30, Color(0.95, 0.45, 0.3)],
 	}
@@ -149,7 +149,7 @@ func _style_hud() -> void:
 		l.add_theme_constant_override("shadow_offset_y", 2)
 	($CanvasLayer/DomeHpLabel as Label).horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	($CanvasLayer/BuildLabel as Label).text = \
-		"1 Tramp  2 Tapper  3 Laser  4 Lift  5 Hopper  6 Turret  7 Spikes  8 Catapult  9 Chute  0 Splitter\nRMB Remove  Q Cancel  J Mine  F Shoot  E Carry/throw  S Drop"
+		"1 Tramp  2 Tapper  3 Laser  4 Lift  5 Hopper  6 Turret  7 Spikes\n8 Catapult  9 Chute  0 Splitter    RMB Remove  Q Cancel\nJ Mine  F Shoot  E Carry/throw  S Drop through"
 	($CanvasLayer/Title as Label).text = "UPSTREAM"
 	# HP bars: brass rim, dark well, fill on top
 	for bar in [["PlayerHp", 20.0, 140.0], ["DomeHp", 300.0, 500.0]]:

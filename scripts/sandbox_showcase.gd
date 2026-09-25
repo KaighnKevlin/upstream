@@ -11,6 +11,7 @@ extends Node
 ##     tapper -> tilted trampoline -> funnel turret (keeps it loaded)
 ##     spiked pit further out: enemies climbing out are easy turret targets
 ##     tapper -> catapult -> back over into the hopper, so the trap rearms
+##     tapper -> splitter -> a chute each way -> two funnel turrets
 ##
 ## Aims were solved with a small simulation of the same physics (gravity
 ## 980, 60 Hz, the trampoline's reflect + kick, the laser's 0.6 slowdown)
@@ -39,6 +40,14 @@ const LIFT_TAPPER := Vector2i(50, 7)
 const LIFT_TAPPER_AIM := Vector2(20, 300)
 const LIFT_AT := Vector2(868, 36)           # upstream shaft standing on the ground
 
+# one tapper, two turrets: splitter on a post, a chute down to each funnel
+const SPLIT_TAPPER := Vector2i(104, 7)
+const SPLIT_TAPPER_AIM := Vector2(3, 670)   # near-vertical lob, lands on the paddle coming down
+const SPLITTER_AT := Vector2(1704, -100)
+const TURRET2_AT := Vector2(1820, 40)
+const CHUTE_L := [Vector2(1696, -84), Vector2(1596, -44)]
+const CHUTE_R := [Vector2(1712, -84), Vector2(1806, -44)]
+
 
 static func build(main: Node) -> void:
 	var tm: TileMapLayer = main.get_node("TileMapLayer")
@@ -49,7 +58,7 @@ static func build(main: Node) -> void:
 	for x in range(46, 124):
 		for y in range(0, WorldGen.SURFACE_ROWS):
 			tm.set_cell(Vector2i(x, y), -1)
-	for cell in [EAST_TAPPER, WEST_TAPPER, LIFT_TAPPER, FEED_TAPPER]:
+	for cell in [EAST_TAPPER, WEST_TAPPER, LIFT_TAPPER, FEED_TAPPER, SPLIT_TAPPER]:
 		_vein(tm, cell, shading, decor)
 	for x in range(PIT.position.x, PIT.end.x):
 		for y in range(PIT.position.y, PIT.end.y):
@@ -80,6 +89,13 @@ static func build(main: Node) -> void:
 		o.global_position = HOPPER_AT + Vector2(0, -60 - k * 18)
 		o.add_to_group("showcase")
 		main.add_child(o)
+	_tapper(main, tm, SPLIT_TAPPER, SPLIT_TAPPER_AIM)
+	_add(main, preload("res://scenes/splitter.tscn"), SPLITTER_AT)
+	_add(main, preload("res://scenes/funnel_turret.tscn"), TURRET2_AT)
+	for ends in [CHUTE_L, CHUTE_R]:
+		var ch: Node2D = preload("res://scenes/chute.tscn").instantiate()
+		ch.end_offset = ends[1] - ends[0]
+		_add_node(main, ch, ends[0])
 	for x in [PIT.position.x + 1, PIT.position.x + 2]:
 		var sp: Node2D = preload("res://scenes/spikes.tscn").instantiate()
 		_add_node(main, sp, tm.to_global(tm.map_to_local(Vector2i(x, PIT.end.y - 1))))

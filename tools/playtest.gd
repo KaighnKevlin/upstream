@@ -1548,10 +1548,14 @@ func showcase() -> void:
 	await wait(9.0)
 	await shot("showcase_wide")
 	var turret: Node2D = null
+	var turrets := []
 	var lift: Node2D = null
 	for n in get_nodes_in_group("showcase"):
 		if n.has_method("_loaded"):
 			turret = n
+			turrets.append(n)
+		if "passed" in n:
+			log_line("splitter sent left/right %s" % [n.passed])
 		if "lift_speed" in n:
 			lift = n
 	var hop: Node2D = null
@@ -1566,6 +1570,11 @@ func showcase() -> void:
 	cam.global_position = Vector2(1480, 10)
 	await wait(0.3)
 	await shot("showcase_east")
+	for t in turrets:
+		log_line("turret at %s loaded %d" % [t.global_position, t._loaded().size()])
+	cam.global_position = Vector2(1710, -20)
+	await wait(0.3)
+	await shot("showcase_split")
 
 
 func stack_check() -> void:
@@ -1880,3 +1889,9 @@ func splitter_rec() -> void:
 		if is_instance_valid(pair[0]):
 			log_line("  %s ore rest dx %+.0f" % ["alt" if pair[1] == sp else "lck", pair[0].global_position.x - pair[1].global_position.x])
 	await shot("after")
+
+
+func probe() -> void:
+	var tm := tilemap()
+	for c in [Vector2i(84, 7), Vector2i(97, 7), Vector2i(103, 7), Vector2i(117, 6)]:
+		log_line("cell %s -> %s" % [c, tm.to_global(tm.map_to_local(c))])
