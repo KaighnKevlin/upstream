@@ -2901,3 +2901,55 @@ func ditch_rec() -> void:
 		await wait(1.0)
 		log_line("after an iron hit: ladder falling %s" % [is_instance_valid(l) and l.falling])
 		await _grab(Rect2(Vector2(1560, 20), Vector2(200, 150)), "ditch_knocked", -4)
+
+
+func bridge_rec() -> void:
+	# A bridge engine reaches a 6-wide ditch and lays a bridge; soldiers and a
+	# scuttler behind it cross without dropping in. Then iron ore breaks the
+	# bridge under a titan, which falls into the ditch.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var tm: TileMapLayer = main.get_node("TileMapLayer")
+	var WG := preload("res://scripts/world_gen.gd")
+	for x in range(100, 106):
+		for y in range(6, 10):
+			tm.set_cell(Vector2i(x, y), -1)
+	for x in range(99, 107):
+		for y in range(5, 11):
+			WG.reframe_around(tm, Vector2i(x, y))
+			get_root().get_tree().call_group("tile_shading", "mark_dirty", Vector2i(x, y))
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(3.2, 3.2)
+	cam.global_position = Vector2(1650, 90)
+	var br: Node2D = preload("res://scenes/bridger.tscn").instantiate()
+	br.global_position = Vector2(1740, 80)
+	main.add_child(br)
+	var follow := [_spawn(2, Vector2(1800, 60)), _spawn(1, Vector2(1840, 60)), _spawn(2, Vector2(1880, 60))]
+	var lowest := 0.0
+	for f in 720:
+		await physics_frame
+		for e in follow:
+			if is_instance_valid(e) and e.global_position.x < 1700 and e.global_position.x > 1600:
+				lowest = maxf(lowest, e.global_position.y)
+		if f % 30 == 0:
+			await _grab(Rect2(Vector2(1560, 20), Vector2(200, 150)), "bridge_%03d" % (f / 30), -4)
+		if f % 120 == 0:
+			log_line("t=%4.1f cart x%d y%d bridges %d | followers %s" % [f / 60.0, br.global_position.x, br.global_position.y, br.bridges,
+				", ".join(follow.map(func(e): return ("x%d y%d" % [e.global_position.x, e.global_position.y]) if is_instance_valid(e) else "gone"))])
+	log_line("lowest follower y over the ditch: %d (surface ~96, ditch floor ~160)" % lowest)
+	var bridge: Node = get_nodes_in_group("field_bridges")[0] if get_nodes_in_group("field_bridges").size() > 0 else null
+	var ti := _spawn(0, Vector2(1760, 60))
+	for f in 600:
+		await physics_frame
+		if f % 30 == 0 and f > 0 and bridge and not bridge.broken and ti.global_position.x < 1700:
+			var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+			o.kind = "iron"
+			o.global_position = Vector2(1650 + randf_range(-20, 20), -40)
+			main.add_child(o)
+			o.linear_velocity = Vector2(0, 260)
+		if f % 30 == 0:
+			await _grab(Rect2(Vector2(1560, 20), Vector2(200, 150)), "bridge_b%03d" % (f / 30), -4)
+			log_line("  b%d titan x%d y%d bridge dmg %.1f broken %s" % [f / 30, ti.global_position.x if is_instance_valid(ti) else -1, ti.global_position.y if is_instance_valid(ti) else -1, bridge._damage if is_instance_valid(bridge) else -1.0, bridge.broken if is_instance_valid(bridge) else true])
+	log_line("after the iron rain: bridge broken %s, titan y %d (in the ditch if > 120)" % [bridge == null or not is_instance_valid(bridge) or bridge.broken, ti.global_position.y if is_instance_valid(ti) else -1])

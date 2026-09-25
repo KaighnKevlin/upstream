@@ -39,7 +39,7 @@ var _arrow_count: Label
 var _arrow_t := 0.0
 var _game_over_panel: NinePatchRect
 
-const ENEMY_NAMES := ["titan", "scuttler", "soldier", "caster", "ornithopter", "shieldbearer", "magpie", "sapper"]
+const ENEMY_NAMES := ["titan", "scuttler", "soldier", "caster", "ornithopter", "shieldbearer", "magpie", "sapper", "bridger"]
 
 @onready var _receiver: Area2D = $Receiver
 @onready var _turret: Node2D = $Turret
@@ -507,6 +507,9 @@ func _spawn_wave() -> void:
 	var sappers := wave_number / 3   # burrowers from wave 3
 	if sappers > 0:
 		kinds[7] = sappers
+	var bridgers := (wave_number + 2) / 4   # bridge engines from wave 2
+	if bridgers > 0:
+		kinds[8] = bridgers
 	var parts := []
 	for t in kinds:
 		parts.append("%d %s%s" % [kinds[t], ENEMY_NAMES[t], "s" if kinds[t] > 1 else ""])
@@ -545,6 +548,11 @@ func _spawn_wave() -> void:
 		var mp: Node2D = preload("res://scenes/magpie.tscn").instantiate()
 		mp.global_position = Vector2(spawn_x + 20 + k * 60, -120 - k * 20)
 		add_child(mp)
+
+	for k in bridgers:
+		var br: Node2D = preload("res://scenes/bridger.tscn").instantiate()
+		br.global_position = Vector2(spawn_x - 60 - k * 70, 40)
+		add_child(br)
 
 	for k in sappers:
 		var sp: Node2D = preload("res://scenes/sapper.tscn").instantiate()
@@ -720,7 +728,7 @@ func _god_key(event: InputEventKey) -> void:
 		KEY_G:
 			if event.echo:
 				return
-			if ENEMY_NAMES[_god_type] in ["magpie", "sapper"]:
+			if ENEMY_NAMES[_god_type] in ["magpie", "sapper", "bridger"]:
 				var mp: Node2D = load("res://scenes/%s.tscn" % ENEMY_NAMES[_god_type]).instantiate()
 				mp.global_position = at
 				add_child(mp)
