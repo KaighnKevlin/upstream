@@ -625,6 +625,7 @@ func _trigger_game_over(reason := "DOME DESTROYED") -> void:
 # G spawns the chosen enemy at the cursor (H picks which), O drops ore at
 # the cursor (hold it to pour), K clears every enemy off the map.
 
+const SandboxSave = preload("res://scripts/sandbox_save.gd")
 var _god_type := 0
 var _god_label: Label
 
@@ -639,14 +640,14 @@ func _make_god_label() -> void:
 	_god_label.add_theme_constant_override("shadow_offset_y", 2)
 	_god_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_god_label.position = Vector2(770, 40)
-	_god_label.size = Vector2(490, 40)
+	_god_label.size = Vector2(490, 60)
 	$CanvasLayer.add_child(_god_label)
 	_update_god_label()
 
 
 func _update_god_label() -> void:
 	if _god_label:
-		_god_label.text = "P wave   G spawn %s   H change\nO drop ore (hold to pour)   K clear enemies" % ENEMY_NAMES[_god_type].to_upper()
+		_god_label.text = "P wave   G spawn %s   H change\nO pour ore   K clear enemies\nF5 save layout   F9 load" % ENEMY_NAMES[_god_type].to_upper()
 
 
 var _pour_t := 0.0
@@ -688,6 +689,17 @@ func _god_key(event: InputEventKey) -> void:
 			if not event.echo:
 				_god_type = (_god_type + 1) % ENEMY_NAMES.size()
 				_update_god_label()
+		KEY_F5:
+			if not event.echo:
+				var n: int = SandboxSave.save(self)
+				_show_banner("SAVED" if n >= 0 else "SAVE FAILED", "%d pieces and the terrain  -  F9 loads it" % n if n >= 0 else "")
+		KEY_F9:
+			if not event.echo:
+				if not SandboxSave.has_save():
+					_show_banner("NO SAVE YET", "F5 saves this layout")
+				else:
+					var n: int = await SandboxSave.load_into(self)
+					_show_banner("LOADED", "%d pieces" % n)
 		KEY_K:
 			if not event.echo:
 				for e in get_tree().get_nodes_in_group("enemies"):

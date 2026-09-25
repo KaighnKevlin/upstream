@@ -2181,3 +2181,58 @@ func ray_probe() -> void:
 		var q := PhysicsRayQueryParameters2D.create(Vector2(x, -118), Vector2(x, 102), 1)
 		var hit: Dictionary = space.intersect_ray(q)
 		log_line("ray at x=%d: %s" % [x, [hit.get("position"), hit.get("collider")] if not hit.is_empty() else "none"])
+
+
+func save_load() -> void:
+	# F5 on the showcase, trash the world, F9: same pieces, same settings,
+	# and the chains run again.
+	var sc := preload("res://scripts/sandbox_showcase.gd")
+	var bs := get_root().get_node("BuildSystem")
+	await wait(0.2)
+	sc.build(main)
+	var ch: Node2D = preload("res://scenes/chute.tscn").instantiate()
+	ch.global_position = Vector2(1000, -40)
+	ch.end_offset = Vector2(-90, 30)
+	main.add_child(ch)
+	bs._placed_buildings.append(ch)
+	await wait(1.0)
+	var tiles0 := tilemap().get_used_cells().size()
+	var n0: int = bs._placed_buildings.size()
+	await tap(KEY_F5)
+	await wait(0.3)
+	log_line("saved: %d pieces, %d tiles" % [n0, tiles0])
+	# wreck it: new random world, nothing built
+	sc.clear(main)
+	for b in bs._placed_buildings:
+		if is_instance_valid(b):
+			b.queue_free()
+	bs._placed_buildings.clear()
+	tilemap().clear()
+	preload("res://scripts/world_gen.gd").generate(tilemap(), 99)
+	await wait(0.5)
+	log_line("wrecked: %d pieces, %d tiles" % [bs._placed_buildings.size(), tilemap().get_used_cells().size()])
+	await tap(KEY_F9)
+	await wait(0.5)
+	var chute_end = null
+	for b in bs._placed_buildings:
+		if b.scene_file_path.ends_with("chute.tscn") and b.global_position.x < 1100:
+			chute_end = b.end_offset
+	log_line("loaded: %d pieces, %d tiles, test chute end %s" % [bs._placed_buildings.size(), tilemap().get_used_cells().size(), chute_end])
+	var rx: Node = main.get_node("Receiver")
+	var in0: int = rx.buffer
+	await wait(9.0)
+	var turrets := []
+	var sp = null
+	for b in bs._placed_buildings:
+		if b.has_method("_loaded"):
+			turrets.append(b._loaded().size())
+		if "passed" in b:
+			sp = b.passed
+	log_line("after 9s: ingots %d -> %d, turrets loaded %s, splitter %s" % [in0, rx.buffer, turrets, sp])
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.1, 1.1)
+	cam.global_position = Vector2(1300, 0)
+	await wait(0.3)
+	await shot("loaded")
