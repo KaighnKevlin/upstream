@@ -3308,3 +3308,49 @@ func scrap_rec() -> void:
 		if o.get("kind") == "scrap":
 			n += 1
 	log_line("scrap on the ground: %d (expect 4 + 2 + 2 + 1 + 3 = 12)" % n)
+
+
+func foundry_rec() -> void:
+	# The Foundry Engine walks into a 5-wide, 3-deep ditch and grinds its way
+	# out, stops in range of the dome, flings slag at it, lets scuttlers out
+	# of its hatch; then it's shot down and bursts into scrap.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var tm: TileMapLayer = main.get_node("TileMapLayer")
+	var WG := preload("res://scripts/world_gen.gd")
+	for x in range(100, 105):
+		for y in range(6, 9):
+			tm.set_cell(Vector2i(x, y), -1)
+	for x in range(99, 106):
+		for y in range(5, 10):
+			WG.reframe_around(tm, Vector2i(x, y))
+			get_root().get_tree().call_group("tile_shading", "mark_dirty", Vector2i(x, y))
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.6, 1.6)
+	var fe: Node2D = preload("res://scenes/foundry.tscn").instantiate()
+	fe.global_position = Vector2(1780, 40)
+	main.add_child(fe)
+	var hp0: int = main.dome_hp
+	Engine.time_scale = 2.0
+	for s in 40:
+		await wait(1.0)
+		cam.global_position = Vector2(fe.global_position.x - 120, -10)
+		if s % 2 == 0:
+			log_line("t=%2d foundry x%d y%d anim %s | ground %d, flung %d, hatched %d | dome %d" % [s * 2, fe.global_position.x, fe.global_position.y, fe._spr.animation, fe.ground, fe.flung, fe.hatched, main.dome_hp])
+		if s % 4 == 1:
+			await shot("foundry_%02d" % s)
+	Engine.time_scale = 1.0
+	log_line("dome %d -> %d" % [hp0, main.dome_hp])
+	for k in 9:
+		fe.take_damage(10)
+		await wait(0.2)
+	await wait(1.0)
+	await shot("foundry_dead")
+	await wait(0.8)
+	var n := 0
+	for o in get_nodes_in_group("ore"):
+		if o.get("kind") == "scrap":
+			n += 1
+	log_line("destroyed: valid %s, scrap %d" % [is_instance_valid(fe), n])

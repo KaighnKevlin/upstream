@@ -39,7 +39,7 @@ var _arrow_count: Label
 var _arrow_t := 0.0
 var _game_over_panel: NinePatchRect
 
-const ENEMY_NAMES := ["titan", "scuttler", "soldier", "caster", "ornithopter", "shieldbearer", "magpie", "sapper", "bridger", "mason"]
+const ENEMY_NAMES := ["titan", "scuttler", "soldier", "caster", "ornithopter", "shieldbearer", "magpie", "sapper", "bridger", "mason", "foundry"]
 
 @onready var _receiver: Area2D = $Receiver
 @onready var _turret: Node2D = $Turret
@@ -513,6 +513,9 @@ func _spawn_wave() -> void:
 	var masons := (wave_number + 1) / 4   # bricklayers from wave 3
 	if masons > 0:
 		kinds[9] = masons
+	var boss := wave_number % 5 == 0   # the Foundry Engine every fifth wave
+	if boss:
+		kinds[10] = 1
 	var parts := []
 	for t in kinds:
 		parts.append("%d %s%s" % [kinds[t], ENEMY_NAMES[t], "s" if kinds[t] > 1 else ""])
@@ -551,6 +554,11 @@ func _spawn_wave() -> void:
 		var mp: Node2D = preload("res://scenes/magpie.tscn").instantiate()
 		mp.global_position = Vector2(spawn_x + 20 + k * 60, -120 - k * 20)
 		add_child(mp)
+
+	if boss:
+		var fe: Node2D = preload("res://scenes/foundry.tscn").instantiate()
+		fe.global_position = Vector2(spawn_x - 20, 20)
+		add_child(fe)
 
 	for k in masons:
 		var ms: Node2D = preload("res://scenes/mason.tscn").instantiate()
@@ -739,7 +747,7 @@ func _god_key(event: InputEventKey) -> void:
 		KEY_G:
 			if event.echo:
 				return
-			if ENEMY_NAMES[_god_type] in ["magpie", "sapper", "bridger", "mason"]:
+			if ENEMY_NAMES[_god_type] in ["magpie", "sapper", "bridger", "mason", "foundry"]:
 				var mp: Node2D = load("res://scenes/%s.tscn" % ENEMY_NAMES[_god_type]).instantiate()
 				mp.global_position = at
 				add_child(mp)
