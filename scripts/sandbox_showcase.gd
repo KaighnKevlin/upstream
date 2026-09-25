@@ -17,6 +17,9 @@ extends Node
 ##       and a bumper on the near lip bats them back in
 ##     tapper -> catapult -> back over into the hopper, so the trap rearms
 ##     iron tapper -> splitter -> a chute each way -> two funnel turrets
+##   Far east (the first things a wave meets)
+##     the grinder: a trapdoor over a pit with a crusher at the bottom
+##     a tesla coil and a flame turret, charged and fuelled, covering it
 ##
 ## Aims were solved with a small simulation of the same physics (gravity
 ## 980, 60 Hz, the trampoline's reflect + kick, the laser's 0.6 slowdown)
@@ -56,6 +59,12 @@ const FACTORY_WHEEL := Vector2(520, 40)
 const FACTORY_ASSEMBLER := Vector2(600, 80)
 const FACTORY_BELT := [Vector2(640, 86), Vector2(855, 86)]   # to the lift
 const GROUND_FROM := 18                      # tiles: the flattened strip starts here
+const GROUND_TO := 142
+
+# far east: the grinder, a tesla coil and a flame turret
+const GRINDER_PIT := Rect2i(128, 6, 3, 4)      # tiles; a trapdoor over it, a crusher at the bottom
+const TESLA_AT := Vector2(1960, 80)
+const FLAMER_AT := Vector2(2010, 80)
 
 # one tapper, two turrets: splitter on a post, a chute down to each funnel
 const SPLIT_TAPPER := Vector2i(104, 7)
@@ -72,7 +81,7 @@ static func build(main: Node) -> void:
 	var shading := main.get_node_or_null("TileShading")
 
 	# ground: flat surface over the whole showcase strip, veins, the pit
-	for x in range(GROUND_FROM, 124):
+	for x in range(GROUND_FROM, GROUND_TO):
 		for y in range(0, WorldGen.SURFACE_ROWS):
 			tm.set_cell(Vector2i(x, y), -1)
 	for cell in [EAST_TAPPER, WEST_TAPPER, LIFT_TAPPER, FEED_TAPPER]:
@@ -83,6 +92,15 @@ static func build(main: Node) -> void:
 	for x in range(PIT.position.x, PIT.end.x):
 		for y in range(PIT.position.y, PIT.end.y):
 			_clear(tm, Vector2i(x, y), shading, decor)
+	for x in range(GRINDER_PIT.position.x, GRINDER_PIT.end.x):
+		for y in range(GRINDER_PIT.position.y, GRINDER_PIT.end.y):
+			_clear(tm, Vector2i(x, y), shading, decor)
+		# a solid floor and walls, whatever the world put there
+		WorldGen.set_tile(tm, Vector2i(x, GRINDER_PIT.end.y), WorldGen.TILE_STONE)
+	for y in range(GRINDER_PIT.position.y, GRINDER_PIT.end.y + 1):
+		for x in [GRINDER_PIT.position.x - 1, GRINDER_PIT.end.x]:
+			if tm.get_cell_source_id(Vector2i(x, y)) == -1:
+				WorldGen.set_tile(tm, Vector2i(x, y), WorldGen.TILE_DIRT)
 
 	# the factory (far west)
 	_tapper(main, tm, FACTORY_COPPER, FACTORY_COPPER_AIM)
@@ -127,6 +145,15 @@ static func build(main: Node) -> void:
 		ch.end_offset = ends[1] - ends[0]
 		_add_node(main, ch, ends[0])
 	_add(main, preload("res://scenes/bumper.tscn"), PIT_BUMPER)
+
+	# the grinder, and a tesla coil and a flame turret covering it
+	var mid := tm.to_global(tm.map_to_local(Vector2i(GRINDER_PIT.position.x + GRINDER_PIT.size.x / 2, GRINDER_PIT.position.y)))
+	_add(main, preload("res://scenes/crusher.tscn"), Vector2(mid.x, mid.y + (GRINDER_PIT.size.y - 1) * 16))
+	_add(main, preload("res://scenes/trapdoor.tscn"), mid)
+	var te: Node2D = _add(main, preload("res://scenes/tesla.tscn"), TESLA_AT)
+	te.charge = te.MAX_CHARGE
+	var fl: Node2D = _add(main, preload("res://scenes/flamer.tscn"), FLAMER_AT)
+	fl.fuel = fl.MAX_FUEL
 	WorldGen.reframe_all(tm)   # the cleared strip changed the ground's edges
 	if shading:
 		for c in shading.get_children():

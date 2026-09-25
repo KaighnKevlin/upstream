@@ -3172,3 +3172,59 @@ func crusher_rec() -> void:
 			await _grab(Rect2(Vector2(1576, 30), Vector2(160, 150)), "grinder_%03d" % (f / 30), -4)
 		if f % 120 == 0:
 			log_line("t=%4.1f chewed %d | %s" % [f / 60.0, cr.chewed, ", ".join(es.map(func(e): return ("x%d y%d hp%d" % [e.global_position.x, e.global_position.y, e.hp]) if is_instance_valid(e) and not e._dying else "dead"))])
+
+
+func showcase_east() -> void:
+	# The showcase's far east on wave 3: the grinder (trapdoor pit + crusher),
+	# the tesla coil and the flame turret meet the wave first.
+	var sc := preload("res://scripts/sandbox_showcase.gd")
+	await wait(0.2)
+	sc.build(main)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.0, 2.0)
+	cam.global_position = Vector2(2070, 40)
+	await wait(1.0)
+	var cr: Node2D = null
+	var td: Node2D = null
+	var te: Node2D = null
+	var fl: Node2D = null
+	for n in get_nodes_in_group("showcase"):
+		match n.get_script().resource_path.get_file():
+			"crusher.gd": cr = n
+			"trapdoor.gd": td = n
+			"tesla.gd": te = n
+			"flamer.gd": fl = n
+	await shot("east_ready")
+	main.wave_number = 2
+	await tap(KEY_P)
+	for s in 24:
+		await wait(1.0)
+		log_line("t=%2d enemies %d | trapdoor sprung %d, crusher chewed %d, tesla zaps %d (charge %d), flamer burn ticks %d (fuel %.0f) | dome %d" % [s + 1,
+			get_nodes_in_group("enemies").size(), td.sprung, cr.chewed, te.zaps, te.charge, fl.burned, fl.fuel, main.dome_hp])
+		if s % 2 == 0:
+			await shot("east_%02d" % s)
+		if s == 23:
+			for e in get_nodes_in_group("enemies"):
+				log_line("  left: %s at %s dying %s" % [e.get_script().resource_path.get_file() + ":" + str(e.get("enemy_type")), e.global_position.round(), e.get("_dying")])
+
+
+func sapper_east() -> void:
+	var sc := preload("res://scripts/sandbox_showcase.gd")
+	await wait(0.2)
+	sc.build(main)
+	main._wave_timer = -9999.0
+	await wait(0.5)
+	var sp: Node2D = preload("res://scenes/sapper.tscn").instantiate()
+	sp.global_position = Vector2(2360, 80)
+	main.add_child(sp)
+	var tm: TileMapLayer = main.get_node("TileMapLayer")
+	for s in 20:
+		await wait(1.0)
+		if not is_instance_valid(sp):
+			log_line("gone")
+			break
+		var ahead: Vector2 = sp.global_position + sp._heading * 13.0
+		var c := tm.local_to_map(tm.to_local(ahead))
+		log_line("t=%d at %s state %d dug %d dig %.2f ahead cell %s tile %d" % [s + 1, sp.global_position.round(), sp._state, sp.dug, sp._dig, c, tm.get_cell_atlas_coords(c).x])
