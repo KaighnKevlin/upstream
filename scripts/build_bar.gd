@@ -26,12 +26,12 @@ const PIECES := {
 	7: ["7", "Spikes"], 8: ["8", "Catapult"], 9: ["9", "Chute"], 10: ["0", "Splitter"],
 	11: ["B", "Bumper"], 12: ["C", "Conveyor belt"], 13: ["V", "Bellows fan"],
 	14: ["M", "Wrecking pendulum"], 15: ["N", "Gravity wheel"], 16: ["T", "Assembler"],
-	17: ["Y", "Research lab"], 18: ["U", "Tesla coil"], 19: ["I", "Flame turret"], 20: ["X", "Trapdoor"], 21: ["R", "Crusher"],
+	17: ["Y", "Research lab"], 18: ["U", "Tesla coil"], 19: ["I", "Flame turret"], 20: ["X", "Trapdoor"], 21: ["R", "Crusher"], 22: ["Z", "Electromagnet"],
 }
 const CATS := [
 	["Transport", [1, 9, 12, 10, 8, 4, 13]],
 	["Production", [2, 3, 15, 16, 21, 17]],
-	["Defence", [6, 18, 19, 5, 7, 20, 11, 14]],
+	["Defence", [6, 18, 19, 5, 7, 20, 22, 11, 14]],
 ]
 
 var font: Font
@@ -209,6 +209,8 @@ func _build_icon(slot: Node2D, t: int) -> void:
 			_part(art, S + "turret_barrel.png", Rect2(), Vector2(-5, 28))
 		7:
 			_part(art, S + "spikes.png", Rect2(), Vector2(-8, -8))
+		22:
+			_part(art, S + "magnet.png", Rect2(36, 0, 36, 40), Vector2(-18, -20))
 		21:
 			_part(art, S + "crusher.png", Rect2(0, 0, 52, 40), Vector2(-26, -20))
 		20:

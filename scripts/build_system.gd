@@ -1,6 +1,6 @@
 extends Node
 
-enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, TURRET, SPIKES, CATAPULT, CHUTE, SPLITTER, BUMPER, BELT, BELLOWS, PENDULUM, WHEEL, ASSEMBLER, LAB, TESLA, FLAMER, TRAPDOOR, CRUSHER }
+enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, TURRET, SPIKES, CATAPULT, CHUTE, SPLITTER, BUMPER, BELT, BELLOWS, PENDULUM, WHEEL, ASSEMBLER, LAB, TESLA, FLAMER, TRAPDOOR, CRUSHER, MAGNET }
 
 var current_build: BuildType = BuildType.NONE
 var _ghost: Node2D = null
@@ -29,6 +29,7 @@ var _scenes := {
 	BuildType.FLAMER: preload("res://scenes/flamer.tscn"),
 	BuildType.TRAPDOOR: preload("res://scenes/trapdoor.tscn"),
 	BuildType.CRUSHER: preload("res://scenes/crusher.tscn"),
+	BuildType.MAGNET: preload("res://scenes/magnet.tscn"),
 }
 
 var _ghost_colors := {
@@ -53,6 +54,7 @@ var _ghost_colors := {
 	BuildType.FLAMER: Color(1.0, 0.85, 0.5, 0.5),
 	BuildType.TRAPDOOR: Color(1.0, 0.85, 0.5, 0.6),
 	BuildType.CRUSHER: Color(1.0, 0.85, 0.5, 0.5),
+	BuildType.MAGNET: Color(1.0, 0.85, 0.5, 0.5),
 }
 
 signal build_mode_changed(build_type: BuildType)
@@ -104,6 +106,8 @@ func _input(event: InputEvent) -> void:
 				_set_build(BuildType.TRAPDOOR)
 			KEY_R:
 				_set_build(BuildType.CRUSHER)
+			KEY_Z:
+				_set_build(BuildType.MAGNET)
 			KEY_ESCAPE, KEY_Q:
 				_set_build(BuildType.NONE)
 

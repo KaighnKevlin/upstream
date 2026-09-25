@@ -3228,3 +3228,40 @@ func sapper_east() -> void:
 		var ahead: Vector2 = sp.global_position + sp._heading * 13.0
 		var c := tm.local_to_map(tm.to_local(ahead))
 		log_line("t=%d at %s state %d dug %d dig %.2f ahead cell %s tile %d" % [s + 1, sp.global_position.round(), sp._state, sp.dug, sp._dig, c, tm.get_cell_atlas_coords(c).x])
+
+
+func magnet_rec() -> void:
+	# An electromagnet hung over the path: soldiers and a scuttler are hauled
+	# up and dropped (fall damage) every pulse; iron ore flies up to its face,
+	# copper ore ignores it.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var mg: Node2D = preload("res://scenes/magnet.tscn").instantiate()
+	mg.global_position = Vector2(1650, -40)
+	main.add_child(mg)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.6, 2.6)
+	cam.global_position = Vector2(1650, 30)
+	for k in ["iron", "iron", "copper", "spring"]:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.kind = k
+		o.global_position = Vector2(1600 + randf_range(0, 100), 70)
+		main.add_child(o)
+	var es := [_spawn(2, Vector2(1700, 60)), _spawn(2, Vector2(1730, 60)), _spawn(1, Vector2(1760, 60)), _spawn(0, Vector2(1800, 60))]
+	var names := ["soldier", "soldier", "scuttler", "titan"]
+	for f in 720:
+		await physics_frame
+		if f % 15 == 0 and f < 360:
+			await _grab(Rect2(Vector2(1560, -50), Vector2(200, 150)), "mag_%03d" % (f / 15), -4)
+		if f % 60 == 0:
+			var near := 0
+			for o in get_nodes_in_group("ore"):
+				if o.get("kind") in ["iron", "spring"] and o.global_position.distance_to(mg.to_global(mg.FACE)) < 16:
+					near += 1
+			var parts := []
+			for i in es.size():
+				var e = es[i]
+				parts.append("%s %s" % [names[i], ("y%d hp%d" % [e.global_position.y, e.hp]) if is_instance_valid(e) and not e._dying else "dead"])
+			log_line("t=%4.1f magnet %s lifted %d, iron at face %d | %s" % [f / 60.0, "ON " if mg.on else "off", mg.lifted, near, "; ".join(parts)])

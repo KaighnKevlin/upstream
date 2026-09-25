@@ -180,6 +180,18 @@ func _physics_process(delta: float) -> void:
 	if enemy_type == EnemyType.ORNITHOPTER:
 		_flyer_process(delta)
 		return
+	# a hard landing (dropped by a magnet, batted by a bumper) breaks things
+	if is_on_floor():
+		if _fall_v > FALL_SAFE and not _dying:
+			var hurt := int((_fall_v - FALL_SAFE) / 40.0) + 1
+			FX.burst(get_parent(), global_position + Vector2(0, _feet_y()), Color(0.55, 0.45, 0.35), 8, 70.0, 0.4, 1.8)
+			SFX.play_small(self, SFX.sfx_ore_knock("metal"), -4.0, 0.6)
+			take_damage(hurt)
+			if _dying:
+				return
+		_fall_v = 0.0
+	else:
+		_fall_v = maxf(_fall_v, velocity.y)
 	if _knock_t > 0:
 		# knocked back (a bumper): fly on the knock, skid to a stop, then resume
 		_knock_t -= delta
@@ -444,6 +456,8 @@ func hit_radius() -> float:
 
 
 var _knock_t := 0.0
+var _fall_v := 0.0                 # fastest downward speed since leaving the ground
+const FALL_SAFE := 330.0           # landing faster than this hurts (a drop of 3-4 tiles)
 const KNOCK_WEIGHT := {0: 0.55}   # titans are heavy
 
 

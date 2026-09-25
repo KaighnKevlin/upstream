@@ -652,6 +652,7 @@ var _build_names := {
 	19: "Build: FLAMER (feed it ore)",
 	20: "Build: TRAPDOOR (over a pit)",
 	21: "Build: CRUSHER (ore -> grit; chews walkers)",
+	22: "Build: ELECTROMAGNET (lifts iron and walkers, drops them)",
 }
 
 
