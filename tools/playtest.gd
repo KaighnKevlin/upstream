@@ -2724,3 +2724,38 @@ func factory_rec() -> void:
 		log_line("t=%2d wheel power %.2f dumped %d | assembler held %s made %d rate %.2f | belt rate %.2f | shot loose %d | lift holds %d" % [s + 1, wheel.power(), wheel.dumped, asm._held, asm.made, asm._rate, belt.rate, shot_on_belt, lift._held_items.size()])
 		if s == 7:
 			await shot("factory")
+
+
+func tesla_rec() -> void:
+	# Two ingots charge a tesla coil; it zaps a cluster of soldiers (chaining)
+	# and a magpie overhead.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var t: Node2D = preload("res://scenes/tesla.tscn").instantiate()
+	t.global_position = Vector2(1600, 60)
+	main.add_child(t)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.2, 2.2)
+	cam.global_position = Vector2(1680, -10)
+	await wait(0.4)
+	for k in ["iron", "copper"]:
+		var ing: RigidBody2D = preload("res://scenes/ingot.tscn").instantiate()
+		ing.kind = k
+		ing.global_position = t.global_position + Vector2(-14, -70)
+		main.add_child(ing)
+		await wait(0.5)
+	log_line("charge after an iron + a copper ingot: %d (expect 10)" % t.charge)
+	var es := [_spawn(2, Vector2(1760, 60)), _spawn(2, Vector2(1790, 60)), _spawn(2, Vector2(1820, 60))]
+	var m: Node2D = preload("res://scenes/magpie.tscn").instantiate()
+	m.global_position = Vector2(1640, -90)
+	main.add_child(m)
+	for f in 240:
+		await physics_frame
+		if f % 6 == 0 and f < 120:
+			await _grab(Rect2(Vector2(1540, -140), Vector2(320, 220)), "tesla_%03d" % (f / 6), -2)
+	var hps := []
+	for e in es:
+		hps.append(e.hp if is_instance_valid(e) else "dead")
+	log_line("after 4 s: zaps %d, charge left %d, soldiers hp %s (started 8), magpie %s" % [t.zaps, t.charge, hps, ("hp %d" % m.hp) if is_instance_valid(m) else "down"])

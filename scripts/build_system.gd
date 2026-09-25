@@ -1,6 +1,6 @@
 extends Node
 
-enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, TURRET, SPIKES, CATAPULT, CHUTE, SPLITTER, BUMPER, BELT, BELLOWS, PENDULUM, WHEEL, ASSEMBLER, LAB }
+enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, TURRET, SPIKES, CATAPULT, CHUTE, SPLITTER, BUMPER, BELT, BELLOWS, PENDULUM, WHEEL, ASSEMBLER, LAB, TESLA }
 
 var current_build: BuildType = BuildType.NONE
 var _ghost: Node2D = null
@@ -25,6 +25,7 @@ var _scenes := {
 	BuildType.WHEEL: preload("res://scenes/gravity_wheel.tscn"),
 	BuildType.ASSEMBLER: preload("res://scenes/assembler.tscn"),
 	BuildType.LAB: preload("res://scenes/lab.tscn"),
+	BuildType.TESLA: preload("res://scenes/tesla.tscn"),
 }
 
 var _ghost_colors := {
@@ -45,6 +46,7 @@ var _ghost_colors := {
 	BuildType.WHEEL: Color(1.0, 0.85, 0.5, 0.5),
 	BuildType.ASSEMBLER: Color(1.0, 0.85, 0.5, 0.5),
 	BuildType.LAB: Color(1.0, 0.85, 0.5, 0.5),
+	BuildType.TESLA: Color(1.0, 0.85, 0.5, 0.5),
 }
 
 signal build_mode_changed(build_type: BuildType)
@@ -88,6 +90,8 @@ func _input(event: InputEvent) -> void:
 				_set_build(BuildType.ASSEMBLER)
 			KEY_Y:
 				_set_build(BuildType.LAB)
+			KEY_U:
+				_set_build(BuildType.TESLA)
 			KEY_ESCAPE, KEY_Q:
 				_set_build(BuildType.NONE)
 
@@ -186,7 +190,7 @@ func _can_place(pos: Vector2) -> bool:
 				return false
 			if tilemap.get_cell_source_id(tile_pos + Vector2i(0, -1)) != -1:
 				return false
-	elif current_build in [BuildType.SPIKES, BuildType.CATAPULT, BuildType.BUMPER, BuildType.ASSEMBLER, BuildType.LAB]:
+	elif current_build in [BuildType.SPIKES, BuildType.CATAPULT, BuildType.BUMPER, BuildType.ASSEMBLER, BuildType.LAB, BuildType.TESLA]:
 		# on a floor: empty cell with solid ground just below
 		if tilemap:
 			var tile_pos := tilemap.local_to_map(tilemap.to_local(pos))
