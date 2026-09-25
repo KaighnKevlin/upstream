@@ -8,10 +8,16 @@ extends RigidBody2D
 ## through tower shields.
 @export var kind := "copper"
 
+## size: sprite frame (square); frames: variants side by side; radius: body.
+## shot and gear are made in an assembler, not mined (they're "ore" too:
+## anything loose and bouncing that machines can carry and turrets can fire).
 const KINDS := {
-	"copper": {"mass": 1.0, "bounce": 0.5, "friction": 0.3, "tex": "res://assets/sprites/ore.png"},
-	"iron": {"mass": 3.0, "bounce": 0.12, "friction": 0.5, "tex": "res://assets/sprites/ore_iron.png"},
+	"copper": {"mass": 1.0, "bounce": 0.5, "friction": 0.3, "tex": "res://assets/sprites/ore.png", "size": 12, "frames": 5, "radius": 6.5},
+	"iron": {"mass": 3.0, "bounce": 0.12, "friction": 0.5, "tex": "res://assets/sprites/ore_iron.png", "size": 12, "frames": 5, "radius": 6.5},
+	"shot": {"mass": 2.0, "bounce": 0.25, "friction": 0.4, "tex": "res://assets/sprites/iron_shot.png", "size": 8, "frames": 1, "radius": 3.6},
+	"gear": {"mass": 1.5, "bounce": 0.3, "friction": 0.9, "tex": "res://assets/sprites/gear_item.png", "size": 16, "frames": 1, "radius": 7.5, "rolls": true},
 }
+static var _shapes := {}
 static var _materials := {}
 
 var _timer: float = 0.0
@@ -38,6 +44,14 @@ func _ready() -> void:
 			m.friction = spec.friction
 			_materials[kind] = m
 		physics_material_override = _materials[kind]
+	if spec.radius != 6.5:
+		if not _shapes.has(kind):
+			var c := CircleShape2D.new()
+			c.radius = spec.radius
+			_shapes[kind] = c
+		$CollisionShape2D.shape = _shapes[kind]
+	if spec.get("rolls", false):
+		angular_damp = 0.15  # a gear rolls away like a wheel
 
 	# Replace polygon with pixel sprite
 	if has_node("Sprite"):
@@ -46,7 +60,8 @@ func _ready() -> void:
 	# one of five faceted rock-and-copper chunks (tools/art/gen_items.py); it tumbles
 	var atlas := AtlasTexture.new()
 	atlas.atlas = load(spec.tex)
-	atlas.region = Rect2(randi() % 5 * 12, 0, 12, 12)
+	var sz: int = spec.size
+	atlas.region = Rect2(randi() % int(spec.frames) * sz, 0, sz, sz)
 	spr.texture = atlas
 	spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(spr)

@@ -63,11 +63,32 @@ def ore(seed, kind='copper'):
     return fig.render(12, 12, (6, 6), extra=COPPER_EXTRA + ORE_ROCK_EXTRA + ['fff0d2'])
 
 
-def ingot():
+def ingot(kind='copper'):
+    mat = STEEL if kind == 'iron' else BRONZE    # iron: a gunmetal bar
     fig = Figure()
-    fig.box((-6, -2.6, 6, 2.6), BRONZE, z=0, bevel=1.6, grit=0.03)
-    fig.box((-4.6, -2.6, 4.6, -0.6), BRONZE, z=1, bevel=1.0, grit=0.02)    # raised top face
+    fig.box((-6, -2.6, 6, 2.6), mat, z=0, bevel=1.6, grit=0.03)
+    fig.box((-4.6, -2.6, 4.6, -0.6), mat, z=1, bevel=1.0, grit=0.02)    # raised top face
+    if kind == 'iron':
+        fig.capsule((-3.5, 1.2), (3.5, 1.2), 0.35, DARK, z=1.1)          # cast seam
     return fig.render(14, 8, (7, 4))
+
+
+def shot():
+    """Iron shot: a small cast ball, dark and heavy, one bright glint."""
+    fig = Figure()
+    fig.sphere((0, 0), 3.2, STEEL, z=0, grit=0.02)
+    fig.sphere((-1.1, -1.2), 0.5, [(215, 228, 232)] * 2, z=1, emissive=True)
+    return fig.render(8, 8, (4, 4))
+
+
+def gear():
+    """A loose brass-and-steel gear: rolls like a wheel."""
+    fig = Figure()
+    fig.gear((0, 0), 6.2, 10, 0, BRONZE, z=0)
+    fig.disc((0, 0), 3.0, DARK, z=0.5)
+    fig.gear((0, 0), 2.6, 6, 15, STEEL, z=1)
+    fig.disc((0, 0), 0.9, DARK, z=1.1)
+    return fig.render(16, 16, (8, 8))
 
 
 def trampoline():
@@ -163,6 +184,9 @@ def main():
     irons = [ore(s, 'iron') for s in (4, 9, 15, 22, 35)]
     write_png(SPR + 'ore_iron.png', 12 * len(irons), 12, [sum((f[y] for f in irons), []) for y in range(12)])
     ing = ingot(); write_png(SPR + 'ingot.png', 14, 8, ing)
+    write_png(SPR + 'ingot_iron.png', 14, 8, ingot('iron'))
+    write_png(SPR + 'iron_shot.png', 8, 8, shot())
+    write_png(SPR + 'gear_item.png', 16, 16, gear())
     tr = trampoline(); write_png(SPR + 'trampoline.png', 44, 22, tr)
     write_png(SPR + 'trampoline_base.png', 28, 8, tramp_base())
     tops = [tramp_top(l, sp) for l, sp in TRAMP_FRAMES]
@@ -173,7 +197,7 @@ def main():
     print('wrote ore.png, ingot.png, trampoline.png, debris.png')
     if len(sys.argv) > 1:
         pad = lambda f, w, h: [row + [(0, 0, 0, 0)] * (w - len(row)) for row in f] + [[(0, 0, 0, 0)] * w] * (h - len(f))
-        big = side_by_side([pad(o, 12, 22) for o in ores + irons] + [pad(ing, 14, 22), tr] + [pad(d, 8, 22) for d in deb], 10)
+        big = side_by_side([pad(o, 12, 22) for o in ores + irons] + [pad(ing, 14, 22), pad(ingot('iron'), 14, 22), pad(shot(), 8, 22), pad(gear(), 16, 22), tr] + [pad(d, 8, 22) for d in deb], 10)
         write_png(sys.argv[1] + '/items_preview.png', len(big[0]), len(big), big)
         base = tramp_base()
         comp = []

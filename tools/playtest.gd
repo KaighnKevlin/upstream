@@ -2552,3 +2552,52 @@ func wheel_rec() -> void:
 		log_line("%s stream (2.5/s for 6.4 s): omega %.2f power %.2f, dumped %d, belt rate %.2f" % [kind, w.omega, w.power(), w.dumped, b.rate])
 	await wait(4.0)
 	log_line("stream stopped 4 s ago: omega %.2f power %.2f belt rate %.2f" % [w.omega, w.power(), b.rate])
+
+
+func assembler_rec() -> void:
+	# Iron ingots into an assembler make iron shot; iron + copper make a gear;
+	# copper ore is spat back out. A turret fires the shot.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var a: Node2D = preload("res://scenes/assembler.tscn").instantiate()
+	a.global_position = Vector2(1620, 60)
+	main.add_child(a)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(3.0, 3.0)
+	cam.global_position = a.global_position + Vector2(20, -40)
+	await wait(0.4)
+	var mouth: Vector2 = a.global_position + Vector2(0, -80)
+	for k in ["iron", "iron"]:
+		var ing: RigidBody2D = preload("res://scenes/ingot.tscn").instantiate()
+		ing.kind = k
+		ing.global_position = mouth
+		main.add_child(ing)
+		await wait(0.4)
+	var rej: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+	rej.global_position = mouth
+	main.add_child(rej)
+	await wait(0.6)
+	log_line("copper ore dropped in: spat out, now at %s v %s" % [rej.global_position.round(), rej.linear_velocity.round()])
+	for f in 32:
+		await wait(0.25)
+		if f == 3:
+			await shot("working")
+	log_line("shot recipe, unpowered: made %d (2 iron ingots -> expect 8)" % a.made)
+	a.recipe = 1
+	a._show_recipe()
+	for k in ["iron", "copper"]:
+		var ing: RigidBody2D = preload("res://scenes/ingot.tscn").instantiate()
+		ing.kind = k
+		ing.global_position = mouth
+		main.add_child(ing)
+		await wait(0.4)
+	await wait(6.0)
+	log_line("gear recipe: made %d total (expect 9)" % a.made)
+	var gears := []
+	for o in get_nodes_in_group("ore"):
+		if o.kind == "gear":
+			gears.append(o.global_position.round())
+	log_line("gears now at %s" % [gears])
+	await shot("made")

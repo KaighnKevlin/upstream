@@ -2,6 +2,8 @@ extends RigidBody2D
 
 ## Lifetime in seconds before the ingot despawns.
 @export var lifetime: float = 20.0
+## copper (a brass bar) or iron (a gunmetal bar, twice as heavy).
+@export var kind := "copper"
 
 var _timer: float = 0.0
 
@@ -12,6 +14,8 @@ const LightTextures = preload("res://scripts/light_textures.gd")
 func _ready() -> void:
 	collision_layer = 2
 	collision_mask = 1 | 64  # terrain + chutes
+	add_to_group("ingots")
+	mass = 2.0 if kind == "iron" else 1.0
 
 	contact_monitor = true
 	max_contacts_reported = 4
@@ -19,7 +23,7 @@ func _ready() -> void:
 	if has_node("Sprite"):
 		$Sprite.queue_free()
 	var spr := Sprite2D.new()
-	spr.texture = preload("res://assets/sprites/ingot.png")  # brass bar (tools/art/gen_items.py)
+	spr.texture = load("res://assets/sprites/ingot_iron.png" if kind == "iron" else "res://assets/sprites/ingot.png")  # tools/art/gen_items.py
 	spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(spr)
 

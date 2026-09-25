@@ -120,6 +120,7 @@ func _on_body_entered(body: Node2D) -> void:
 	# Spawn an ingot with reduced velocity
 	# Deferred: adding a physics body inside a body_entered callback errors
 	var ingot := _ingot_scene.instantiate() as RigidBody2D
+	ingot.kind = "copper" if body.get("kind") in [null, "copper"] else "iron"   # iron ore, shot, gears melt to iron
 	ingot.position = pos
 	ingot.linear_velocity = vel * velocity_retention
 	get_tree().current_scene.add_child.call_deferred(ingot)

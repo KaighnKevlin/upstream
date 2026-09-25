@@ -54,7 +54,7 @@ static func off(body: Node2D, store: Area2D) -> void:
 		b.remove_meta("store_material")
 		b.remove_meta("store_z")
 	b.collision_mask &= ~2
-	b.angular_damp = 1.5
+	b.angular_damp = 0.15 if b.get("kind") == "gear" else 1.5
 	b.linear_damp = 0.0
 	wake_all(store)
 
