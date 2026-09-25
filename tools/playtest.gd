@@ -3354,3 +3354,33 @@ func foundry_rec() -> void:
 		if o.get("kind") == "scrap":
 			n += 1
 	log_line("destroyed: valid %s, scrap %d" % [is_instance_valid(fe), n])
+
+
+func meteor_rec() -> void:
+	# F6 on the showcase with a few walkers out east: a meteor shower.
+	var sc := preload("res://scripts/sandbox_showcase.gd")
+	await wait(0.2)
+	sc.build(main)
+	main._wave_timer = -9999.0
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(0.9, 0.9)
+	cam.global_position = Vector2(1500, -60)
+	await wait(1.0)
+	var es := []
+	for k in 6:
+		es.append(_spawn(2 if k % 2 else 1, Vector2(1700 + k * 60, 60)))
+	var ore0 := get_nodes_in_group("ore").size()
+	var tm: TileMapLayer = main.get_node("TileMapLayer")
+	var cells0 := tm.get_used_cells().size()
+	await tap(KEY_F6)
+	for s in 12:
+		await wait(1.0)
+		if s % 2 == 1:
+			await shot("meteor_%02d" % s)
+	var hurt := 0
+	for e in es:
+		if not is_instance_valid(e) or e._dying or e.hp < (8 if e.enemy_type == 2 else 2):
+			hurt += 1
+	log_line("meteors %d | ore %d -> %d | tiles cratered %d | walkers hurt or dead %d/6 | dome %d" % [main.meteors, ore0, get_nodes_in_group("ore").size(), cells0 - tm.get_used_cells().size(), hurt, main.dome_hp])

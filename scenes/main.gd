@@ -474,6 +474,7 @@ func _add_wall(pos: Vector2, size: Vector2) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	_tick_meteors(delta)
 	if _game_over or not _waves_started or sandbox:
 		return
 
@@ -486,7 +487,49 @@ func _physics_process(delta: float) -> void:
 		_spawn_wave()
 
 
+# --- Meteor showers --------------------------------------------------------
+# Now and then, some way into the gap after a wave, burning chunks of ore
+# rain down across the map for a few seconds (scenes/meteor.gd): craters,
+# loose copper and iron everywhere, and bad luck for anything underneath.
+const SHOWER_CHANCE := 0.35
+const SHOWER_TIME := 9.0
+var _shower_in := -1.0
+var _shower_left := 0.0
+var _meteor_t := 0.0
+var meteors := 0   # tests
+
+
+func start_meteor_shower() -> void:
+	_shower_left = SHOWER_TIME
+	_meteor_t = 0.6
+	_show_banner("METEOR SHOWER", "ore from the sky: mind your head")
+
+
+func _tick_meteors(delta: float) -> void:
+	if _shower_in > 0:
+		_shower_in -= delta
+		if _shower_in <= 0:
+			start_meteor_shower()
+	if _shower_left <= 0:
+		return
+	_shower_left -= delta
+	_meteor_t -= delta
+	if _meteor_t > 0:
+		return
+	_meteor_t = randf_range(0.25, 0.7)
+	var m: Node2D = preload("res://scenes/meteor.gd").new()
+	var w := WorldGen.WORLD_WIDTH * WorldGen.TILE_SIZE
+	m.global_position = Vector2(randf_range(120.0, w - 120.0), -420.0)
+	m.velocity = Vector2(randf_range(-150, 150), randf_range(380, 460))
+	m.iron = randf() < 0.3
+	m.size = randf_range(0.8, 1.6)
+	add_child(m)
+	meteors += 1
+
+
 func _spawn_wave() -> void:
+	if wave_number >= 1 and randf() < SHOWER_CHANCE:
+		_shower_in = 12.0
 	wave_number += 1
 	var count := enemies_per_wave_base + wave_number
 	_wave_label.text = "WAVE %d!" % wave_number
@@ -715,7 +758,7 @@ func _make_god_label() -> void:
 
 func _update_god_label() -> void:
 	if _god_label:
-		_god_label.text = "P wave   G spawn %s   H change\nO pour ore   K clear enemies\nF5 save layout   F9 load" % ENEMY_NAMES[_god_type].to_upper()
+		_god_label.text = "P wave   G spawn %s   H change\nO pour ore   K clear enemies\nF5 save   F6 meteors   F9 load" % ENEMY_NAMES[_god_type].to_upper()
 
 
 var _pour_t := 0.0
@@ -766,6 +809,9 @@ func _god_key(event: InputEventKey) -> void:
 			if not event.echo:
 				var n: int = SandboxSave.save(self)
 				_show_banner("SAVED" if n >= 0 else "SAVE FAILED", "%d pieces and the terrain  -  F9 loads it" % n if n >= 0 else "")
+		KEY_F6:
+			if not event.echo:
+				start_meteor_shower()
 		KEY_F9:
 			if not event.echo:
 				if not SandboxSave.has_save():
