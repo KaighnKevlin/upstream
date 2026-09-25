@@ -72,6 +72,13 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_E and not _dead:
+		if _carried and is_instance_valid(_carried):
+			_throw_carried()
+		else:
+			_pick_up()
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventKey and event.pressed:
 		var cam := $Camera2D as Camera2D
 		if event.keycode == KEY_EQUAL or event.keycode == KEY_PLUS:
@@ -86,6 +93,15 @@ const LAMP_DEEP := 0.7
 const LAMP_SURFACE := 0.2
 const SURFACE_Y := 96.0
 var _lamp: PointLight2D
+# Carrying: E picks up a loose ore/ingot within reach and holds it overhead;
+# E again throws it toward the mouse (distance = strength), with a dotted arc
+# previewing the throw while it's held.
+const CARRY_REACH := 28.0
+const HOLD_OFFSET := Vector2(0, -28)
+const THROW_MIN := 120.0
+const THROW_MAX := 720.0
+var _carried: RigidBody2D
+var _throw_arc: Node2D
 var _hurt_timer := 0.0
 var _land_timer := 0.0
 var _was_on_floor := true
@@ -158,6 +174,7 @@ func _physics_process(delta: float) -> void:
 	var vy_before := velocity.y
 	move_and_slide()
 	_track_landing(vy_before, delta)
+	_update_carry()
 
 	# Enemy contact check (after move_and_slide so knockback isn't immediately consumed)
 	if _damage_cooldown <= 0:
@@ -373,6 +390,7 @@ func take_damage(amount: int) -> void:
 
 
 func _die() -> void:
+	_drop_carried()
 	_dead = true
 	_is_mining = false
 	_pickaxe.visible = false
@@ -402,6 +420,87 @@ func _track_landing(vy_before: float, delta: float) -> void:
 			FX.burst(get_parent(), feet, Color(0.55, 0.45, 0.35, 0.8), 6, 60.0, 0.35, 1.5)
 		_fall_speed = 0.0
 	_was_on_floor = is_on_floor()
+
+
+func _pick_up() -> void:
+	var space := get_world_2d().direct_space_state
+	var q := PhysicsShapeQueryParameters2D.new()
+	var circle := CircleShape2D.new()
+	circle.radius = CARRY_REACH
+	q.shape = circle
+	q.transform = Transform2D(0, global_position)
+	q.collision_mask = 2  # ore and ingots
+	var best: RigidBody2D = null
+	var best_d := INF
+	for hit in space.intersect_shape(q, 16):
+		var b = hit.collider
+		if b is RigidBody2D and not b.has_meta("caught_by"):
+			var d: float = b.global_position.distance_to(global_position)
+			if d < best_d:
+				best_d = d
+				best = b
+	if best == null:
+		return
+	_carried = best
+	_carried.freeze_mode = RigidBody2D.FREEZE_MODE_KINEMATIC
+	_carried.set_deferred("freeze", true)
+	_carried.set_meta("caught_by", self)
+	SFX.play(self, SFX.sfx_mine_hit())
+	if _throw_arc == null:
+		_throw_arc = preload("res://scripts/trajectory_preview.gd").new()
+		_throw_arc.tilemap = _get_tilemap()
+		add_child(_throw_arc)
+	_throw_arc.visible = true
+
+
+func _throw_velocity() -> Vector2:
+	var hand := global_position + HOLD_OFFSET
+	var v := get_global_mouse_position() - hand
+	var speed := clampf(v.length() * 3.2, THROW_MIN, THROW_MAX)
+	return v.normalized() * speed if v.length() > 1 else Vector2(0, -THROW_MIN)
+
+
+func _throw_carried() -> void:
+	var b := _carried
+	_carried = null
+	if _throw_arc:
+		_throw_arc.visible = false
+	if not is_instance_valid(b):
+		return
+	b.remove_meta("caught_by")
+	b.freeze = false
+	b.sleeping = false
+	var v := _throw_velocity()
+	b.linear_velocity = v + Vector2(velocity.x * 0.5, 0)  # a running throw carries some of your speed
+	b.angular_velocity = randf_range(-10, 10)
+	_facing_right = v.x >= 0
+	_anim.flip_h = not _facing_right
+	SFX.play(self, SFX.sfx_bounce())
+
+
+func _drop_carried() -> void:
+	if _carried and is_instance_valid(_carried):
+		_carried.remove_meta("caught_by")
+		_carried.freeze = false
+	_carried = null
+	if _throw_arc:
+		_throw_arc.visible = false
+
+
+func _update_carry() -> void:
+	if not _carried:
+		return
+	if not is_instance_valid(_carried):
+		_carried = null
+		if _throw_arc:
+			_throw_arc.visible = false
+		return
+	_carried.global_position = global_position + HOLD_OFFSET
+	if "_timer" in _carried:
+		_carried._timer = 0.0  # held ore doesn't despawn
+	_throw_arc.origin = global_position + HOLD_OFFSET
+	_throw_arc.velocity = _throw_velocity() + Vector2(velocity.x * 0.5, 0)
+	_throw_arc.gravity = float(ProjectSettings.get_setting("physics/2d/default_gravity", 980.0))
 
 
 func _get_tilemap() -> TileMapLayer:

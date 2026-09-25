@@ -1749,6 +1749,37 @@ func feed_rec() -> void:
 				log_line("   ore %d at %s v %s" % [id % 1000, b.global_position.round(), b.linear_velocity.round()])
 
 
+func carry_rec() -> void:
+	# E picks up the nearest ore; holding shows the throw arc; E throws.
+	main._wave_timer = -9999.0
+	var p: CharacterBody2D = main.get_node("Player")
+	p.global_position = Vector2(1480, 70)
+	var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+	o.global_position = Vector2(1492, 80)
+	main.add_child(o)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.4, 2.4)
+	cam.global_position = Vector2(1580, 20)
+	await wait(0.6)
+	await tap(KEY_E)
+	await wait(0.2)
+	log_line("carrying: %s" % [p._carried == o])
+	var aim := Vector2(1560, -30)
+	get_root().warp_mouse(main.get_viewport().get_canvas_transform() * aim)
+	await wait(0.3)
+	await shot("holding")
+	var pred: Vector2 = p._throw_arc.velocity
+	await tap(KEY_E)
+	var t := 0.0
+	while t < 2.0 and is_instance_valid(o) and not (o.linear_velocity.length() < 5 and t > 0.3):
+		await physics_frame
+		t += 1.0 / 60.0
+	log_line("thrown with v %s; ore came to rest at %s" % [pred.round(), o.global_position.round()])
+	await shot("thrown")
+
+
 func banner() -> void:
 	main._wave_timer = -9999.0
 	await wait(0.8)
