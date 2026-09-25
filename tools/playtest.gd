@@ -3265,3 +3265,18 @@ func magnet_rec() -> void:
 				var e = es[i]
 				parts.append("%s %s" % [names[i], ("y%d hp%d" % [e.global_position.y, e.hp]) if is_instance_valid(e) and not e._dying else "dead"])
 			log_line("t=%4.1f magnet %s lifted %d, iron at face %d | %s" % [f / 60.0, "ON " if mg.on else "off", mg.lifted, near, "; ".join(parts)])
+
+
+func strata_look() -> void:
+	# Wide full-bright views of the rock layer boundaries (dirt/stone, stone/deep).
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await tap(KEY_L)   # full bright
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	for spot in [[Vector2(700, 420), 1.0, "dirt_stone"], [Vector2(1700, 1050), 1.0, "stone_deep"], [Vector2(900, 420), 2.5, "seam_close"]]:
+		cam.zoom = Vector2(spot[1], spot[1])
+		cam.global_position = spot[0]
+		await wait(0.4)
+		await shot(spot[2])

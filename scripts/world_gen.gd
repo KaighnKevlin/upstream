@@ -46,10 +46,11 @@ static func generate(tilemap: TileMapLayer, rng_seed: int = 0) -> void:
 	else:
 		rng.randomize()
 
+	_phase = rng.randf() * 1000.0
 	# Fill the world
 	for y in WORLD_HEIGHT:
 		for x in WORLD_WIDTH:
-			var tile := _get_base_tile(y)
+			var tile := base_at(Vector2i(x, y))
 			if tile != TILE_EMPTY:
 				set_tile(tilemap, Vector2i(x, y), tile, rng)
 
@@ -111,7 +112,7 @@ static func set_tile(tilemap: TileMapLayer, cell: Vector2i, tile: int, _rng: Ran
 static func _source(cell: Vector2i, tile: int, mask: int) -> int:
 	var block := 0
 	if tile == TILE_IRON or tile == TILE_COPPER:
-		match _get_base_tile(cell.y):
+		match base_at(cell):
 			TILE_DIRT: block = 1
 			TILE_DEEP_STONE: block = 2
 	return block * 2 + (mask >> 3)
@@ -168,7 +169,7 @@ static func generate_back_wall(wall: TileMapLayer, rng_seed: int = 0) -> void:
 	for y in range(SURFACE_ROWS, WORLD_HEIGHT):
 		for x in WORLD_WIDTH:
 			var c := Vector2i(x, y)
-			var t := _get_base_tile(y)
+			var t := base_at(c)
 			# the wall is one unbroken surface: plain slices, no edge frames
 			var row := posmod(x, SLICE_GRID) + posmod(y, SLICE_GRID) * SLICE_GRID
 			wall.set_cell(c, 0, Vector2i(t, row))
@@ -200,6 +201,26 @@ static func _generate_ledges(tilemap: TileMapLayer, rng: RandomNumberGenerator) 
 			x += length + rng.randi_range(LEDGE_HOLE_WIDTH.x, LEDGE_HOLE_WIDTH.y + 6)
 		offset = rng.randi_range(5, 17)
 		y += rng.randi_range(LEDGE_GAP_ROWS.x, LEDGE_GAP_ROWS.y)
+
+
+## The rock for a cell. Layer boundaries wander (a few rows up and down along
+## the world, with blobs of each rock poking into the other) rather than
+## running dead straight across. `_phase` varies them per world.
+static var _phase := 0.0
+
+static func base_at(cell: Vector2i) -> int:
+	if cell.y < SURFACE_ROWS:
+		return TILE_EMPTY
+	var x := float(cell.x) + _phase
+	var y := float(cell.y)
+	var wob := 2.6 * sin(x * 0.19) + 1.6 * sin(x * 0.47 + 1.7) \
+		+ 1.3 * sin(x * 0.9 + y * 0.8 + 0.5) * sin(y * 0.55 - x * 0.31)
+	var yy := y + wob
+	if yy < SURFACE_ROWS + DIRT_DEPTH or cell.y < SURFACE_ROWS + DIRT_DEPTH - 5:
+		return TILE_DIRT
+	elif yy < SURFACE_ROWS + DEEP_STONE_DEPTH:
+		return TILE_STONE
+	return TILE_DEEP_STONE
 
 
 static func _get_base_tile(y: int) -> int:

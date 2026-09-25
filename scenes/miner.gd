@@ -153,7 +153,7 @@ func _take_ore() -> bool:
 		vein_left[c] = left - 1
 		if left - 1 == 0 and tm:
 			# tapped out: back to the plain rock of that depth
-			WorldGen.set_tile(tm, c, WorldGen._get_base_tile(c.y))
+			WorldGen.set_tile(tm, c, WorldGen.base_at(c))
 			var at := tm.to_global(tm.map_to_local(c))
 			FX.burst(get_parent(), at, Color(0.55, 0.45, 0.35), 6, 40.0, 0.5, 2.0)
 		return true

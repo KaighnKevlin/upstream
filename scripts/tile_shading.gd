@@ -65,7 +65,7 @@ func _class(cell: Vector2i) -> String:
 		4: return "deep"
 		6: return "hard"
 		_:
-			match WorldGen._get_base_tile(cell.y):
+			match WorldGen.base_at(cell):
 				0: return "dirt"
 				4: return "deep"
 				_: return "stone"
