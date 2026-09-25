@@ -2,29 +2,47 @@
 
     python3 tools/art/gen_items.py [preview_dir]
 
-Writes assets/sprites/ore.png (3 variants, 12x12 each), ingot.png (14x8) and
+Writes assets/sprites/ore.png (5 faceted variants, 12x12 each), ingot.png (14x8) and
 trampoline.png (44x22: brass plate on a steel coil; the plate's top is
 3px from the top edge).
 """
 import math, random, sys
 from clockwork import *
+from clockwork import _hex
 from pixtools import write_png, write_gif
 from titan_lib import SPR, side_by_side
 
 
+ORE_ROCK_EXTRA = ['2a221c', '46382d', '62503f', '7e6a55', 'a08a6e', 'c2ad8e']
+ORE_ROCK = [_hex(h) for h in ORE_ROCK_EXTRA]
+
+
 def ore(seed):
+    """Faceted chunk of warm stone with bright copper nuggets. Facets are
+    triangles fanned from an off-centre apex, each shaded by how much it
+    faces the light (top-left), so the chunk reads as a solid lump."""
     r = random.Random(seed)
+    n = r.randint(6, 7)
+    pts = []
+    for k in range(n):
+        a = k / n * math.tau + r.uniform(-0.25, 0.25)
+        rad = r.uniform(4.3, 5.6)
+        pts.append((math.cos(a) * rad, math.sin(a) * rad * 0.9))
+    apex = (r.uniform(-1.2, 0.2), r.uniform(-1.4, -0.2))       # ridge leans to the light
     fig = Figure()
-    # lumpy rock: a few overlapping blobs
-    for k in range(4):
-        a = r.random() * math.tau
-        fig.ellipsoid((math.cos(a) * 1.4, math.sin(a) * 1.2), (3.4 + r.random() * 1.2, 2.8 + r.random()),
-                      ROCK, z=k * 0.01, tilt=r.random() * 90, grit=0.12)
-    # copper nuggets breaking the surface
-    for k in range(3 + seed % 2):
-        a = r.random() * math.tau; d = 1.2 + r.random() * 1.6
-        fig.sphere((math.cos(a) * d, math.sin(a) * d), 0.9 + r.random() * 0.6, COPPER, z=1 + k * 0.01, grit=0.03)
-    return fig.render(12, 12, (6, 6), extra=COPPER_EXTRA)
+    light = (-0.6, -0.8)
+    for k in range(n):
+        p0, p1 = pts[k], pts[(k + 1) % n]
+        mx, my = (p0[0] + p1[0]) / 2 - apex[0], (p0[1] + p1[1]) / 2 - apex[1]
+        L = math.hypot(mx, my) or 1
+        facing = (mx * light[0] + my * light[1]) / L            # -1..1
+        fig.poly([apex, p0, p1], ORE_ROCK, z=0, shade=0.45 + 0.4 * facing, grit=0.06)
+    for k in range(r.randint(2, 3)):                              # copper nuggets
+        a = r.uniform(0, math.tau); d = r.uniform(0.5, 2.8)
+        c = (apex[0] + math.cos(a) * d, apex[1] + math.sin(a) * d + 0.8)
+        fig.sphere(c, r.uniform(1.0, 1.5), COPPER, z=1, grit=0.02)
+    fig.sphere((apex[0] - 0.8, apex[1] - 0.6), 0.45, [(255, 240, 210)] * 2, z=2, emissive=True)  # glint
+    return fig.render(12, 12, (6, 6), extra=COPPER_EXTRA + ORE_ROCK_EXTRA + ['fff0d2'])
 
 
 def ingot():
@@ -121,9 +139,9 @@ def debris():
 
 
 def main():
-    ores = [ore(s) for s in (3, 8, 13)]
+    ores = [ore(s) for s in (3, 8, 13, 21, 34)]
     rows = [sum((f[y] for f in ores), []) for y in range(12)]
-    write_png(SPR + 'ore.png', 36, 12, rows)
+    write_png(SPR + 'ore.png', 12 * len(ores), 12, rows)
     ing = ingot(); write_png(SPR + 'ingot.png', 14, 8, ing)
     tr = trampoline(); write_png(SPR + 'trampoline.png', 44, 22, tr)
     write_png(SPR + 'trampoline_base.png', 28, 8, tramp_base())

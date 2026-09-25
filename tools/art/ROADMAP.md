@@ -215,3 +215,6 @@ Lights are additive over a 0.08 CanvasModulate and the framebuffer clips at 1.0,
 ### Loop pass (sandbox era) — girder stilts
 - gen_traps.py strut(): 16x8 tiling lattice girder (two brass rails, steel zig-zag brace, rivets). Hopper and funnel turret legs are Line2D with it in TILE mode (texture_repeat on) instead of 2px lines.
 
+### Loop pass (sandbox era) — ore chunks v2
+- gen_items.py ore(): 5 variants (was 3) of faceted warm-stone chunks: 6-7 point outline fanned into triangle facets from an off-centre apex, each shaded by how it faces the top-left light; 2-3 copper nuggets and a white glint. Own warm rock ramp (ORE_ROCK_EXTRA) so ore separates from the blue-grey stone tiles. ore.gd picks from 5.
+
