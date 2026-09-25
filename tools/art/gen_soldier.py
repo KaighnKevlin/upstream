@@ -97,6 +97,48 @@ def build(i, n=8, lunge=0.0, spear_back=0.0, lean=0.0, walk=True,
     return fig.render(FW, FH, ORIGIN)
 
 
+def climb(i, n=6, back_item=None):
+    """Climbing a ladder that leans on a wall to the right: hands on the rungs
+    ahead, reaching up one after the other, knees stepping high. The spear is
+    slung across the back. back_item(fig, cx, cy) draws something else there
+    (the shieldbearer's shield)."""
+    ph = i / n * 2 * math.pi
+    s = math.sin(ph)
+    rise = -1.2 * (1 - math.cos(ph)) / 2
+    cx, cy = 1.5, -26 + rise
+    hip = (cx - 1.5, cy + 8.5)
+    fig = Figure()
+    if back_item is None:
+        fig.capsule((cx - 9, cy + 9), (cx + 1, cy - 14), 0.6, BRONZE, z=0.5, grit=0.02)        # slung spear
+        fig.ellipsoid((cx + 2, cy - 15.3), (3.0, 1.2), STEEL, z=0.6, tilt=-66)
+    # legs: one knee drawn up to the next rung, the other pushing down
+    leg(fig, (hip[0] - 0.5, hip[1] - 0.4), 35 - 35 * s, 60 - 50 * s, False)
+    leg(fig, hip, 35 + 35 * s, 60 + 50 * s, True)
+    # far arm reaching for a rung
+    fig.capsule((cx + 0.5, cy - 4), (cx + 6.5, cy - 11 + 4 * s), 1.4, DARK, z=3)
+    fig.ellipsoid((cx - 5.5, cy - 1), (3.0, 5.6), STEEL, z=2)                               # boiler
+    fig.ellipsoid((cx, cy), (6, 7.5), BRONZE, z=5)
+    fig.ellipsoid((cx, cy + 6.3), (6.2, 1.6), DARK, z=5.2)
+    fig.disc((cx + 2.6, cy - 1), 2.4, DARK, z=5.4)
+    fig.sphere((cx + 2.9, cy - 1), 1.6, GLOW, z=5.5, emissive=True)
+    hx, hy = cx + 1.8, cy - 11.8
+    fig.sphere((cx + 0.4, cy - 7.8), 1.6, STEEL, z=5.8)
+    fig.ellipsoid((hx, hy), (4.4, 4.2), BRONZE, z=6)
+    fig.ellipsoid((hx - 0.8, hy - 4.2), (3.2, 1.2), BRONZE, z=5.9, grit=0.1)
+    fig.capsule((hx + 0.8, hy - 0.7), (hx + 4.0, hy - 1.2), 0.75, DARK, z=6.1)
+    fig.capsule_glow((hx + 1.4, hy - 0.8), (hx + 3.8, hy - 1.2), 0.55, z=6.2)                # visor, looking up
+    # near arm, the other hand, out of phase
+    sh = (cx - 0.5, cy - 4)
+    hand = (cx + 6.5, cy - 11 - 4 * s)
+    fig.capsule(sh, ((sh[0] + hand[0]) / 2 + 1, (sh[1] + hand[1]) / 2 + 1), 1.5, STEEL, z=7)
+    fig.capsule(((sh[0] + hand[0]) / 2 + 1, (sh[1] + hand[1]) / 2 + 1), hand, 1.4, STEEL, z=7.05)
+    fig.sphere(sh, 2.2, BRONZE, z=7.1)
+    fig.sphere(hand, 1.3, BRONZE, z=7.2)
+    if back_item:
+        back_item(fig, cx, cy)
+    return fig.render(FW, FH, ORIGIN)
+
+
 def _spear(fig, hand, spear_back, cy):
     sx0 = hand[0] - 8 - spear_back * 0.2; sx1 = hand[0] + 13
     fig.capsule((sx0, cy + 1.5), (sx1, cy - 0.5), 0.6, BRONZE, z=3.1, grit=0.02)   # shaft
@@ -152,11 +194,13 @@ def main():
                   lean=0.4 * math.sin(i / 6 * 2 * math.pi), dim=0.35 if i == 4 else 0.0)
             for i in range(6)]
     for name, frames in (('soldier_walk', walk), ('soldier_attack', attack), ('soldier_death', dead),
-                         ('soldier_idle', idle)):
+                         ('soldier_idle', idle), ('soldier_climb', [climb(i) for i in range(6)])):
         rows = [sum((f[y] for f in frames), []) for y in range(FH)]
         write_png(SPR + name + '.png', FW * len(frames), FH, rows)
     print('wrote soldier_walk.png, soldier_attack.png')
     if len(sys.argv) > 1:
+        big = side_by_side([climb(i) for i in range(6)], 6)
+        write_png(sys.argv[1] + '/soldier_climb_preview.png', len(big[0]), len(big), big)
         big = side_by_side(idle, 6)
         write_png(sys.argv[1] + '/soldier_idle_preview.png', len(big[0]), len(big), big)
         big = side_by_side(dead, 6)

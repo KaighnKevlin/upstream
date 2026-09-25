@@ -13,7 +13,7 @@ import math, sys
 from clockwork import *
 from pixtools import write_png, write_gif
 from titan_lib import SPR, side_by_side
-from gen_soldier import leg, over, FW, FH, ORIGIN
+from gen_soldier import leg, over, climb as soldier_climb, FW, FH, ORIGIN
 
 
 def shield(x, top, bottom, rot=0.0, pivot=None, z=9):
@@ -106,13 +106,17 @@ def main():
         build(4, walk=False, kneel=1.0, dim=1, shield_down=1.0, tip=55),
         build(5, walk=False, kneel=1.0, dim=1, shield_down=1.0, tip=78),
     ]
+    # climbing a ladder: the tower shield slung on its back
+    climb = [over(soldier_climb(i, back_item=lambda f, cx, cy: None),
+                  shield(-9.5, -44 + (-1.2 * (1 - math.cos(i / 6 * 2 * math.pi)) / 2), -14, rot=-8, z=0))
+             for i in range(6)]
     for name, frames in (('shieldbearer_walk', walk), ('shieldbearer_attack', attack),
-                         ('shieldbearer_death', dead)):
+                         ('shieldbearer_death', dead), ('shieldbearer_climb', climb)):
         rows = [sum((f[y] for f in frames), []) for y in range(FH)]
         write_png(SPR + name + '.png', FW * len(frames), FH, rows)
     print('wrote shieldbearer_walk/attack/death.png')
     if len(sys.argv) > 1:
-        big = side_by_side(walk + attack + dead, 6)
+        big = side_by_side(walk + attack + dead + climb, 6)
         write_png(sys.argv[1] + '/shieldbearer_preview.png', len(big[0]), len(big), big)
         write_gif(sys.argv[1] + '/shieldbearer_walk.gif', walk * 3, [10] * 24, 6)
 

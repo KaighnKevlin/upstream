@@ -2850,3 +2850,54 @@ func sapper_rec() -> void:
 		t += 1.0 / 60.0
 	Engine.time_scale = 1.0
 	log_line("second sapper under the tesla: dying %s at x %d after %.1f s, zaps %d, dome %d -> %d" % [is_instance_valid(sp2) and sp2._dying, sp2.global_position.x if is_instance_valid(sp2) else -1, t, te.zaps, hp1, main.dome_hp])
+
+
+func ditch_rec() -> void:
+	# A 4-deep ditch in the enemies' path. The soldier plants a ladder and
+	# climbs, the shieldbearer uses the same ladder, the scuttler crawls up
+	# the wall, the titan leaps out. Then iron ore knocks the ladder down.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var tm: TileMapLayer = main.get_node("TileMapLayer")
+	var WG := preload("res://scripts/world_gen.gd")
+	for x in range(100, 106):
+		for y in range(6, 10):
+			tm.set_cell(Vector2i(x, y), -1)
+	for x in range(99, 107):
+		for y in range(5, 11):
+			WG.reframe_around(tm, Vector2i(x, y))
+			get_root().get_tree().call_group("tile_shading", "mark_dirty", Vector2i(x, y))
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(3.2, 3.2)
+	cam.global_position = Vector2(1650, 90)
+	var names := ["soldier", "shieldbearer", "scuttler", "titan"]
+	var es := [_spawn(2, Vector2(1730, 60)), _spawn(5, Vector2(1790, 60)), _spawn(1, Vector2(1850, 60)), _spawn(0, Vector2(1960, 60))]
+	for f in 1500:
+		await physics_frame
+		if f % 30 == 0:
+			await _grab(Rect2(Vector2(1560, 20), Vector2(200, 150)), "ditch_%03d" % (f / 30), -4)
+		if f % 60 == 0:
+			var parts := []
+			for i in es.size():
+				var e = es[i]
+				parts.append("%s %s" % [names[i], ("x%d y%d %s w%s f%s h%d" % [e.global_position.x, e.global_position.y, e.get_node("AnimatedSprite2D").animation, e.is_on_wall(), e.is_on_floor(), e._wall_ahead()[0]]) if is_instance_valid(e) else "gone"])
+			log_line("t=%4.1f %s | ladders %d" % [f / 60.0, "; ".join(parts), get_nodes_in_group("siege_ladders").size()])
+	var got_out := 0
+	for e in es:
+		if is_instance_valid(e) and e.global_position.x < 1600:
+			got_out += 1
+	log_line("out of the ditch on the far side: %d/4" % got_out)
+	# knock the ladder down with iron
+	var lads := get_nodes_in_group("siege_ladders")
+	if lads.size() > 0:
+		var l: Node2D = lads[0]
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.kind = "iron"
+		o.global_position = l.global_position + Vector2(60, -40)
+		main.add_child(o)
+		o.linear_velocity = Vector2(-300, -20)
+		await wait(1.0)
+		log_line("after an iron hit: ladder falling %s" % [is_instance_valid(l) and l.falling])
+		await _grab(Rect2(Vector2(1560, 20), Vector2(200, 150)), "ditch_knocked", -4)

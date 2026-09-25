@@ -114,6 +114,7 @@ func _ready() -> void:
 				anim.sprite_frames = _strip_frames("res://assets/sprites/soldier_walk.png", 60, 50, 8, 10.0)
 				_add_strip_anim(anim.sprite_frames, "attack", "res://assets/sprites/soldier_attack.png", 60, 50, 6, 12.0)
 				_add_strip_anim(anim.sprite_frames, "death", "res://assets/sprites/soldier_death.png", 60, 50, 7, 11.0)
+				_add_strip_anim(anim.sprite_frames, "climb", "res://assets/sprites/soldier_climb.png", 60, 50, 6, 9.0, true)
 				if ResourceLoader.exists("res://assets/sprites/soldier_idle.png"):
 					anim.sprite_frames.remove_animation("idle")
 					_add_strip_anim(anim.sprite_frames, "idle", "res://assets/sprites/soldier_idle.png", 60, 50, 6, 6.0, true)
@@ -123,6 +124,7 @@ func _ready() -> void:
 				anim.sprite_frames = _strip_frames("res://assets/sprites/shieldbearer_walk.png", 60, 50, 8, 9.0)
 				_add_strip_anim(anim.sprite_frames, "attack", "res://assets/sprites/shieldbearer_attack.png", 60, 50, 6, 12.0)
 				_add_strip_anim(anim.sprite_frames, "death", "res://assets/sprites/shieldbearer_death.png", 60, 50, 6, 10.0)
+				_add_strip_anim(anim.sprite_frames, "climb", "res://assets/sprites/shieldbearer_climb.png", 60, 50, 6, 8.0, true)
 				anim.offset.y = -10
 				anim.frame_changed.connect(_on_melee_frame)
 			EnemyType.CASTER:
@@ -191,14 +193,16 @@ func _physics_process(delta: float) -> void:
 		velocity.y += GRAVITY * delta
 	else:
 		velocity.y = 0
-	# Walked into a wall (a pit side, a ledge): claw up it, slowly. Pits and
-	# spikes slow enemies down; they don't hold them forever.
-	if is_on_wall() and not _dying:
-		velocity.y = -CLIMB_SPEED.get(enemy_type, 25.0)
+	# Walked into a wall (a pit side, a ledge): each type has its own way out
+	# (_ditch_tactic). Pits slow enemies down; they don't hold them forever.
+	if not _dying and _ditch_tactic(delta):
+		return
 
 	# Melee types walk until something is in reach, then attack
 	if MELEE.has(enemy_type):
 		_melee_process(delta)
+		if _on_ladder:
+			$AnimatedSprite2D.play("climb")
 		move_and_slide()
 		return
 
@@ -238,6 +242,145 @@ func _physics_process(delta: float) -> void:
 				a.play("walk")
 		elif is_on_floor() and abs(velocity.x) > 5:
 			$AnimatedSprite2D.play("walk")
+
+
+# --- Getting out of ditches -------------------------------------------------
+# Soldiers and shieldbearers plant a siege ladder (scenes/siege_ladder.gd) and
+# climb it; later arrivals share it. Scuttlers crawl straight up the wall.
+# Titans crouch and leap out. Anything else (and any wall too tall for the
+# trick) claws its way up slowly, as before.
+const LADDER_SPEED := 40.0
+const PLANT_TIME := 0.9
+const MAX_LADDER := 150.0
+const MAX_LEAP := 115.0
+const CRAWL_SPEED := 62.0
+var _on_ladder := false
+var _plant_t := 0.0
+var _leap_crouch := 0.0
+var _leaping := false
+var _crawling := false
+
+
+func _feet_y() -> float:
+	var cs := $CollisionShape2D as CollisionShape2D
+	var r := cs.shape as RectangleShape2D
+	return cs.position.y + (r.size.y * 0.5 if r else 2.0)
+
+
+func _half_w() -> float:
+	var r := ($CollisionShape2D as CollisionShape2D).shape as RectangleShape2D
+	return r.size.x * 0.5 if r else 8.0
+
+
+## The wall ahead: [height above the feet, x of its face]. Height is huge
+## when it can't be read (no tilemap, a wall taller than 12 tiles).
+func _wall_ahead() -> Array:
+	var tm := get_tree().current_scene.get_node_or_null("TileMapLayer") as TileMapLayer
+	var feet := global_position + Vector2(0, _feet_y())
+	if tm == null:
+		return [9999.0, feet.x]
+	var cell := tm.local_to_map(tm.to_local(feet + Vector2(direction * (_half_w() + 4.0), -3.0)))
+	var n := 0
+	while n < 12 and tm.get_cell_source_id(Vector2i(cell.x, cell.y - n)) != -1:
+		n += 1
+	var centre := tm.to_global(tm.map_to_local(cell))
+	var face := centre.x - direction * 8.0
+	if n == 0 or n >= 12:
+		return [9999.0, face]
+	return [feet.y - (centre.y - 8.0 - (n - 1) * 16.0), face]
+
+
+func _find_ladder(face: float) -> Node2D:
+	var feet_y := global_position.y + _feet_y()
+	for l in get_tree().get_nodes_in_group("siege_ladders"):
+		if absf(l.global_position.x - face) < 16.0 and feet_y <= l.global_position.y + 10.0 \
+				and feet_y > l.top_y() - 6.0:
+			return l
+	return null
+
+
+## Returns true when it has moved the body itself this frame.
+func _ditch_tactic(delta: float) -> bool:
+	var anim := $AnimatedSprite2D as AnimatedSprite2D
+	match enemy_type:
+		EnemyType.TITAN:
+			if _leaping:
+				if is_on_floor() and velocity.y >= 0:
+					_leaping = false
+					anim.play()
+					FX.shake(self, 4.0, 0.25)
+					FX.burst(get_parent(), global_position + Vector2(0, _feet_y()), Color(0.55, 0.45, 0.35), 16, 110.0, 0.5, 2.2)
+					SFX.play(self, SFX.sfx_mine_break())
+					return false
+				velocity.x = direction * 55.0
+				move_and_slide()
+				return true
+			if _leap_crouch > 0:
+				_leap_crouch -= delta
+				velocity.x = 0
+				anim.scale = Vector2(1.06, 0.9)
+				if _leap_crouch <= 0:
+					var h: float = _wall_ahead()[0]
+					velocity.y = -sqrt(2.0 * GRAVITY * (minf(h, MAX_LEAP) + 34.0))
+					velocity.x = direction * 55.0
+					_leaping = true
+					anim.scale = Vector2(0.95, 1.08)
+					create_tween().tween_property(anim, "scale", Vector2.ONE, 0.3)
+					anim.pause()
+					FX.burst(get_parent(), global_position + Vector2(0, _feet_y()), Color(0.55, 0.45, 0.35), 10, 80.0, 0.4, 2.0)
+				move_and_slide()
+				return true
+			if is_on_wall():
+				if _wall_ahead()[0] < MAX_LEAP:
+					_leap_crouch = 0.4
+					return false
+		EnemyType.SCUTTLER:
+			if is_on_wall():
+				velocity.y = -CRAWL_SPEED
+				if not _crawling:
+					_crawling = true
+					anim.rotation = -direction * PI * 0.5
+					anim.position = Vector2(direction * 3.0, -6.0)
+				return false
+			if _crawling:
+				_crawling = false
+				anim.rotation = 0.0
+				anim.position = Vector2.ZERO
+			return false
+		EnemyType.SOLDIER, EnemyType.SHIELDBEARER:
+			if _plant_t > 0:
+				# setting the ladder against the wall
+				_plant_t -= delta
+				velocity.x = 0
+				anim.play("idle")
+				if _plant_t <= 0:
+					var w := _wall_ahead()
+					if w[0] < MAX_LADDER and _find_ladder(w[1]) == null:
+						var l: Node2D = preload("res://scenes/siege_ladder.gd").new()
+						l.height = w[0] + 8.0
+						l.side = direction
+						l.global_position = Vector2(w[1] - direction * 5.0, global_position.y + _feet_y())
+						get_parent().add_child(l)
+						SFX.play(self, SFX.sfx_clink(), -6.0, 0.7)
+				move_and_slide()
+				return true
+			if is_on_wall():
+				var w := _wall_ahead()
+				if w[0] >= MAX_LADDER:
+					_on_ladder = false
+					velocity.y = -CLIMB_SPEED.get(enemy_type, 25.0)
+					return false
+				_on_ladder = _find_ladder(w[1]) != null
+				if _on_ladder:
+					velocity.y = -LADDER_SPEED
+				elif is_on_floor():
+					_plant_t = PLANT_TIME
+				return false
+			_on_ladder = false
+			return false
+	if is_on_wall():
+		velocity.y = -CLIMB_SPEED.get(enemy_type, 25.0)
+	return false
 
 
 # where hits land on each body (sparks, chips), relative to the origin
