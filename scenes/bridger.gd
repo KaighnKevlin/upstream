@@ -166,6 +166,7 @@ func take_damage(amount: int) -> void:
 	_dying = true
 	remove_from_group("enemies")
 	collision_layer = 0
+	preload("res://scenes/ore.gd").spill(get_parent(), hit_center(), 3)
 	SFX.play(get_tree().current_scene, SFX.sfx_enemy_die())
 	FX.burst(get_parent(), hit_center(), Color(1.0, 0.75, 0.35), 14, 150.0, 0.4, 2.0)
 	FX.debris(get_parent(), hit_center(), 8, 180.0, false)

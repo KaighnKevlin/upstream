@@ -109,6 +109,28 @@ def spring():
     return fig.render(12, 12, (6, 6))
 
 
+def scrap(v):
+    """Wreckage from a destroyed automaton: a bent riveted plate, a snapped
+    gear segment, a twisted rod with a bolt, a dented boiler shard."""
+    fig = Figure()
+    if v == 0:
+        fig.poly([(-4.5, -2), (1, -4), (4.5, -1), (3, 3.5), (-3, 3)], BRONZE, z=0, shade=0.8)
+        fig.sphere((-1.5, 0), 0.6, STEEL, z=1)
+        fig.sphere((2, 0.5), 0.6, STEEL, z=1)
+    elif v == 1:
+        fig.gear((1.5, 1.5), 4.8, 9, 10, STEEL, z=0)
+        fig.disc((1.5, 1.5), 2.0, DARK, z=0.6)
+    elif v == 2:
+        fig.capsule((-4.5, 2.5), (0, -1), 0.9, STEEL, z=0)
+        fig.capsule((0, -1), (4, -3), 0.9, STEEL, z=0.1)
+        fig.ellipsoid((-4, 2.5), (1.6, 1.4), BRONZE, z=0.5)
+    else:
+        fig.ellipsoid((0, 0), (4.5, 3.5), STEEL, z=0, grit=0.1)
+        fig.ellipsoid((-1, -0.8), (2.5, 1.6), DARK, z=0.3)
+        fig.sphere((2.5, 1.5), 0.6, BRONZE, z=0.6)
+    return fig.render(12, 12, (6, 6))
+
+
 def gear():
     """A loose brass-and-steel gear: rolls like a wheel."""
     fig = Figure()
@@ -217,6 +239,8 @@ def main():
     write_png(SPR + 'gear_item.png', 16, 16, gear())
     write_png(SPR + 'flask.png', 12, 14, flask())
     write_png(SPR + 'spring_item.png', 12, 12, spring())
+    sc = [scrap(v) for v in range(4)]
+    write_png(SPR + 'scrap.png', 48, 12, [sum((f[y] for f in sc), []) for y in range(12)])
     tr = trampoline(); write_png(SPR + 'trampoline.png', 44, 22, tr)
     write_png(SPR + 'trampoline_base.png', 28, 8, tramp_base())
     tops = [tramp_top(l, sp) for l, sp in TRAMP_FRAMES]

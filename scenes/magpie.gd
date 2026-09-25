@@ -194,6 +194,7 @@ func take_damage(amount: int) -> void:
 	if hp <= 0:
 		_dying = true
 		_state = State.DYING
+		preload("res://scenes/ore.gd").spill(get_parent(), global_position, 1)
 		velocity = Vector2(velocity.x * 0.5, -60)
 		SFX.play(get_tree().current_scene, SFX.sfx_enemy_die())
 		_spr.stop()

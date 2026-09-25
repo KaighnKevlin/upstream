@@ -505,12 +505,20 @@ func _hit_react(amount: int, at: Vector2) -> void:
 			rock.tween_property(sprite, "rotation", 0.0, 0.2).set_trans(Tween.TRANS_SINE)
 
 
+# scrap each type bursts into when destroyed
+const SCRAP := {
+	EnemyType.TITAN: 4, EnemyType.SCUTTLER: 1, EnemyType.SOLDIER: 2, EnemyType.CASTER: 2,
+	EnemyType.ORNITHOPTER: 2, EnemyType.SHIELDBEARER: 2,
+}
+
+
 func _die() -> void:
 	# Leave the group at once so turrets/bullets stop targeting the corpse
 	_dying = true
 	remove_from_group("enemies")
 	set_physics_process(false)
 	$CollisionShape2D.set_deferred("disabled", true)
+	preload("res://scenes/ore.gd").spill(get_parent(), hit_center(), SCRAP.get(enemy_type, 1))
 	if enemy_type == EnemyType.TITAN and $AnimatedSprite2D.sprite_frames.has_animation("death"):
 		_titan_die()
 		return

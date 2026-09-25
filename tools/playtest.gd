@@ -3280,3 +3280,31 @@ func strata_look() -> void:
 		cam.global_position = spot[0]
 		await wait(0.4)
 		await shot(spot[2])
+
+
+func scrap_rec() -> void:
+	# Destroyed automatons burst into scrap: a titan, two soldiers, a scuttler,
+	# a bridge engine. Counts the pieces and grabs the scatter.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.6, 2.6)
+	cam.global_position = Vector2(1650, 30)
+	var es := [_spawn(0, Vector2(1600, 60)), _spawn(2, Vector2(1650, 60)), _spawn(2, Vector2(1680, 60)), _spawn(1, Vector2(1710, 60))]
+	var br: Node2D = preload("res://scenes/bridger.tscn").instantiate()
+	br.global_position = Vector2(1740, 80)
+	main.add_child(br)
+	es.append(br)
+	await wait(1.0)
+	for e in es:
+		e.take_damage(99)
+	for f in 8:
+		await wait(0.12)
+		await _grab(Rect2(Vector2(1540, -60), Vector2(240, 150)), "scrap_%d" % f, -4)
+	var n := 0
+	for o in get_nodes_in_group("ore"):
+		if o.get("kind") == "scrap":
+			n += 1
+	log_line("scrap on the ground: %d (expect 4 + 2 + 2 + 1 + 3 = 12)" % n)

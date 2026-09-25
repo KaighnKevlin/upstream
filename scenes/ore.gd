@@ -23,6 +23,9 @@ const KINDS := {
 	# grit: crushed ore (a crusher makes three from one). Light chips: triple
 	# the ammo, a third of the punch.
 	"grit": {"mass": 0.4, "bounce": 0.35, "friction": 0.5, "tex": "res://assets/sprites/grit.png", "size": 6, "frames": 3, "radius": 2.6},
+	# scrap: what's left of a destroyed automaton. Bounces about, a magnet
+	# pulls it, a laser melts it to iron, a crusher grinds it, magpies want it.
+	"scrap": {"mass": 1.4, "bounce": 0.35, "friction": 0.6, "tex": "res://assets/sprites/scrap.png", "size": 12, "frames": 4, "radius": 5.0},
 	"flask": {"mass": 0.6, "bounce": 0.15, "friction": 0.6, "tex": "res://assets/sprites/flask.png", "size": 12, "h": 14, "frames": 1, "radius": 5.0, "fragile": 300.0},
 }
 static var _shapes := {}
@@ -34,6 +37,17 @@ var _timer: float = 0.0
 const ObjectSprites = preload("res://scripts/object_sprites.gd")
 const FX = preload("res://scripts/fx.gd")
 const SFX = preload("res://scripts/sfx.gd")
+
+## A burst of scrap flying out of a wrecked automaton at `at`.
+static func spill(parent: Node, at: Vector2, n: int) -> void:
+	for k in n:
+		var o: RigidBody2D = load("res://scenes/ore.tscn").instantiate()
+		o.kind = "scrap"
+		o.global_position = at + Vector2(randf_range(-6, 6), randf_range(-6, 4))
+		o.linear_velocity = Vector2(randf_range(-150, 150), randf_range(-280, -120))
+		o.angular_velocity = randf_range(-12, 12)
+		parent.add_child.call_deferred(o)
+
 
 func _ready() -> void:
 	add_to_group("ore")

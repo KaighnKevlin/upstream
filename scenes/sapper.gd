@@ -221,6 +221,7 @@ func take_damage(amount: int) -> void:
 	_state = State.DYING
 	remove_from_group("enemies")
 	SFX.play(get_tree().current_scene, SFX.sfx_enemy_die())
+	preload("res://scenes/ore.gd").spill(get_parent(), global_position, 2)
 	FX.burst(get_parent(), global_position, Color(1.0, 0.75, 0.35), 14, 150.0, 0.4, 2.0)
 	FX.debris(get_parent(), global_position, 7, 180.0, false)
 	# the drill bit's gears scatter
