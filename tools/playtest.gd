@@ -32,6 +32,8 @@ func _run() -> void:
 		preload("res://scripts/world_gen.gd").generate(tilemap(), seed)
 		for c in main.get_node("TileShading").get_children():
 			c.queue_redraw()
+		# scenarios start clean: drop the sandbox showcase built on the old world
+		preload("res://scripts/sandbox_showcase.gd").clear(main)
 		var decor := main.get_node_or_null("CaveDecor")
 		if decor:  # re-dress the regenerated caves
 			for c in decor.get_children():
@@ -1528,6 +1530,38 @@ func turret_rec() -> void:
 			log_line("  f%d soldier x %.0f y %.0f hp %d | plate overlaps %s | turret ammo %d" % [i, s.global_position.x, s.global_position.y, s.hp, hop._plate_area.get_overlapping_bodies().size(), t._loaded().size()])
 	if is_instance_valid(s):
 		log_line("soldier hp %d -> %d, x %.0f; turret still loaded %d" % [hp0, s.hp, s.global_position.x, t._loaded().size()])
+
+
+func showcase() -> void:
+	# The sandbox starting layout on the regenerated world: stills + counts.
+	var sc := preload("res://scripts/sandbox_showcase.gd")
+	await wait(0.2)
+	sc.build(main)
+	main.get_node("Turret").set_physics_process(false)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.1, 1.1)
+	cam.global_position = Vector2(1250, 0)
+	var rx: Node = main.get_node("Receiver")
+	var in0: int = rx.buffer
+	await wait(9.0)
+	await shot("showcase_wide")
+	var turret: Node2D = null
+	var lift: Node2D = null
+	for n in get_nodes_in_group("showcase"):
+		if n.has_method("_loaded"):
+			turret = n
+		if "lift_speed" in n:
+			lift = n
+	log_line("after 9s: ingots in dome %d -> %d, turret loaded %d, lift holding %d" % [in0, rx.buffer, turret._loaded().size() if turret else -1, lift._held_items.size() if lift else -1])
+	cam.zoom = Vector2(2.2, 2.2)
+	cam.global_position = Vector2(1060, 10)
+	await wait(0.3)
+	await shot("showcase_west")
+	cam.global_position = Vector2(1480, 10)
+	await wait(0.3)
+	await shot("showcase_east")
 
 
 func banner() -> void:

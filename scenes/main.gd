@@ -13,6 +13,8 @@ const FX = preload("res://scripts/fx.gd")
 @export var wait_for_first_ingot: bool = true
 ## Sandbox: no wave timer at all; waves only come when you press P.
 @export var sandbox := true
+## Sandbox starts with every element built and running (scripts/sandbox_showcase.gd).
+@export var showcase := true
 
 const HUD_BAR_TOP := 668.0
 const HUD_BAR_BOTTOM := 680.0
@@ -58,6 +60,8 @@ func _ready() -> void:
 	_tilemap.tile_set = TileSetBuilder.create_tileset()
 	WorldGen.generate(_tilemap)
 	_setup_terrain_visuals()
+	if sandbox and showcase:
+		preload("res://scripts/sandbox_showcase.gd").build.call_deferred(self)
 
 	# Create boundary walls
 	_create_boundaries()
