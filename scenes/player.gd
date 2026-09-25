@@ -39,6 +39,7 @@ var _pick_sprite: Sprite2D
 func _ready() -> void:
 	hp = max_hp
 	add_to_group("player")
+	add_child(preload("res://scenes/grapple.gd").new())   # Shift: the grappling hook
 	var frames := PlayerSprite.create_prospector_frames()
 	if frames:
 		_anim.sprite_frames = frames

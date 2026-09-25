@@ -3384,3 +3384,51 @@ func meteor_rec() -> void:
 		if not is_instance_valid(e) or e._dying or e.hp < (8 if e.enemy_type == 2 else 2):
 			hurt += 1
 	log_line("meteors %d | ore %d -> %d | tiles cratered %d | walkers hurt or dead %d/6 | dome %d" % [main.meteors, ore0, get_nodes_in_group("ore").size(), cells0 - tm.get_used_cells().size(), hurt, main.dome_hp])
+
+
+func grapple_rec() -> void:
+	# The hook: (1) from the bottom of the dome shaft, fired at the lip above,
+	# reels the prospector up and out; (2) fired at a soldier, yanks it; (3)
+	# fired at a loose ore, drags it back.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var p: CharacterBody2D = main.get_node("Player")
+	var g = null
+	for c in p.get_children():
+		if c.has_method("fire"):
+			g = c
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.4, 2.4)
+	log_line("player at %s" % p.global_position.round())
+	cam.global_position = p.global_position + Vector2(0, -80)
+	await wait(0.5)
+	var y0 := p.global_position.y
+	g.fire(Vector2(p.global_position.x + 60, 100))
+	for f in 60:
+		await physics_frame
+		if f % 6 == 0:
+			await _grab(Rect2(cam.global_position - Vector2(130, 80), Vector2(260, 160)), "hook_%02d" % (f / 6), -4)
+	log_line("reel: state %d (2 = hanging on), reels %d, player y %d -> %d, hook y %d" % [g.state, g.reels, y0, p.global_position.y, g.hook.y])
+	g.release()
+	await wait(1.5)
+	# yank a soldier, up on the surface
+	p.global_position = Vector2(1500, 70)
+	await wait(0.6)
+	cam.global_position = p.global_position + Vector2(40, -30)
+	var so = _spawn(2, p.global_position + Vector2(150, -10))
+	await wait(1.0)
+	var sx: float = so.global_position.x
+	g.fire(so.hit_center())
+	await wait(0.6)
+	log_line("yank: yanks %d, soldier moved %d px toward the player" % [g.yanks, sx - so.global_position.x if p.global_position.x < sx else so.global_position.x - sx])
+	# drag an ore
+	var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+	o.global_position = p.global_position + Vector2(-120, -30)
+	main.add_child(o)
+	await wait(1.0)
+	var d0 := o.global_position.distance_to(p.global_position)
+	g.fire(o.global_position)
+	await wait(1.0)
+	log_line("drag: ore distance %d -> %d" % [d0, o.global_position.distance_to(p.global_position)])

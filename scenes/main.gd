@@ -150,7 +150,7 @@ func _style_hud() -> void:
 		l.add_theme_constant_override("shadow_offset_y", 2)
 	($CanvasLayer/DomeHpLabel as Label).horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	($CanvasLayer/BuildLabel as Label).text = \
-		"RMB remove   Q cancel   J mine   F shoot   E carry/throw   S drop through"
+		"RMB remove   Q cancel   J mine   F shoot   E carry/throw   S drop   Shift hook"
 	($CanvasLayer/Title as Label).text = "UPSTREAM"
 	var toolbar := preload("res://scripts/build_bar.gd").new()
 	toolbar.font = PixelFont.get_font()
