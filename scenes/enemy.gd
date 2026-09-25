@@ -226,6 +226,21 @@ const HIT_Y := {
 }
 
 
+const HIT_RADIUS := {
+	EnemyType.TITAN: 26.0, EnemyType.SCUTTLER: 12.0, EnemyType.SOLDIER: 13.0,
+	EnemyType.CASTER: 13.0, EnemyType.ORNITHOPTER: 14.0,
+}
+
+
+## Body centre and radius for things that hit by proximity (ore, bullets).
+func hit_center() -> Vector2:
+	return global_position + Vector2(0, HIT_Y.get(enemy_type, -10.0))
+
+
+func hit_radius() -> float:
+	return HIT_RADIUS.get(enemy_type, 12.0)
+
+
 func take_damage(amount: int) -> void:
 	if _dying:
 		return

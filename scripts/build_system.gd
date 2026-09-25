@@ -1,6 +1,6 @@
 extends Node
 
-enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, PLATE, SPIKES }
+enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, TURRET, SPIKES }
 
 var current_build: BuildType = BuildType.NONE
 var _ghost: Node2D = null
@@ -12,7 +12,7 @@ var _scenes := {
 	BuildType.LASER: preload("res://scenes/laser_smelter.tscn"),
 	BuildType.UPSTREAM: preload("res://scenes/upstream_shaft.tscn"),
 	BuildType.HOPPER: preload("res://scenes/hopper.tscn"),
-	BuildType.PLATE: preload("res://scenes/pressure_plate.tscn"),
+	BuildType.TURRET: preload("res://scenes/funnel_turret.tscn"),
 	BuildType.SPIKES: preload("res://scenes/spikes.tscn"),
 }
 
@@ -22,7 +22,7 @@ var _ghost_colors := {
 	BuildType.LASER: Color(1.0, 0.2, 0.1, 0.4),
 	BuildType.UPSTREAM: Color(0.3, 0.5, 1.0, 0.4),
 	BuildType.HOPPER: Color(1.0, 0.85, 0.5, 0.5),
-	BuildType.PLATE: Color(1.0, 0.85, 0.5, 0.5),
+	BuildType.TURRET: Color(1.0, 0.85, 0.5, 0.5),
 	BuildType.SPIKES: Color(1.0, 0.85, 0.5, 0.5),
 }
 
@@ -44,7 +44,7 @@ func _input(event: InputEvent) -> void:
 			KEY_5:
 				_set_build(BuildType.HOPPER)
 			KEY_6:
-				_set_build(BuildType.PLATE)
+				_set_build(BuildType.TURRET)
 			KEY_7:
 				_set_build(BuildType.SPIKES)
 			KEY_ESCAPE, KEY_Q:
@@ -106,7 +106,7 @@ func _can_place(pos: Vector2) -> bool:
 				return false
 			if tilemap.get_cell_source_id(tile_pos + Vector2i(0, -1)) != -1:
 				return false
-	elif current_build == BuildType.PLATE or current_build == BuildType.SPIKES:
+	elif current_build == BuildType.SPIKES:
 		# on a floor: empty cell with solid ground just below
 		if tilemap:
 			var tile_pos := tilemap.local_to_map(tilemap.to_local(pos))

@@ -141,6 +141,8 @@ func _ore_remaining() -> int:
 
 
 func _take_ore() -> bool:
+	if _infinite():
+		return true  # sandbox: veins never run dry
 	var tm := _get_tilemap()
 	for c in _cells:
 		var left: int = vein_left.get(c, 0)
@@ -154,6 +156,11 @@ func _take_ore() -> bool:
 			FX.burst(get_parent(), at, Color(0.55, 0.45, 0.35), 6, 40.0, 0.5, 2.0)
 		return true
 	return false
+
+
+func _infinite() -> bool:
+	var scene := get_tree().current_scene
+	return scene != null and scene.get("sandbox") == true
 
 
 func _update_meter() -> void:

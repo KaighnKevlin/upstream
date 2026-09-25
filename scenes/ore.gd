@@ -12,7 +12,7 @@ const FX = preload("res://scripts/fx.gd")
 func _ready() -> void:
 	add_to_group("ore")
 	collision_layer = 2
-	collision_mask = 1 | 8  # terrain + enemies: flying ore is a weapon
+	collision_mask = 1
 
 	contact_monitor = true
 	max_contacts_reported = 4
@@ -41,13 +41,25 @@ var _puff_cooldown := 0.0
 var _prev_speed := 0.0
 var _hurt_cooldown := 0.0
 
+
+## Flying ore is a weapon: passing through an enemy's body fast (dropped
+## from a hopper, fired from a funnel turret, a stray bounce) hurts it,
+## scaled by speed, and knocks the ore back off it.
+func _check_enemy_hit() -> void:
+	if _hurt_cooldown > 0 or _prev_speed < 160.0:
+		return
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if not e.has_method("hit_center") or ("_dying" in e and e._dying):
+			continue
+		var c: Vector2 = e.hit_center()
+		if global_position.distance_to(c) < e.hit_radius() + 7.0:
+			_hurt_cooldown = 0.35
+			e.take_damage(clampi(int(_prev_speed / 110.0), 1, 6))
+			var away := (global_position - c).normalized()
+			linear_velocity = linear_velocity.bounce(away) * 0.35 if linear_velocity.dot(away) < 0 else linear_velocity * 0.5
+			return
+
 func _on_impact(other: Node) -> void:
-	# enemies take damage from ore that hits them fast (dropped from a hopper,
-	# a stray bounce), scaled by the speed it was travelling before contact
-	if other.is_in_group("enemies") and other.has_method("take_damage") and _hurt_cooldown <= 0 \
-			and _prev_speed > 160.0:
-		_hurt_cooldown = 0.3
-		other.take_damage(clampi(int(_prev_speed / 110.0), 1, 6))
 	if _puff_cooldown > 0 or linear_velocity.length() < 120:
 		return
 	_puff_cooldown = 0.25
@@ -58,6 +70,7 @@ func _physics_process(delta: float) -> void:
 	_puff_cooldown -= delta
 	_hurt_cooldown -= delta
 	_prev_speed = linear_velocity.length()
+	_check_enemy_hit()
 	_timer += delta
 	if _timer >= lifetime:
 		queue_free()

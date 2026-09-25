@@ -89,7 +89,7 @@ func _ready() -> void:
 	_player.player_died.connect(_on_player_died)
 	_update_hp_bar()
 	_update_player_hp_bar()
-	_ammo_label.text = "Ammo: 0/%d" % _receiver.max_buffer
+	_ammo_label.text = "Ingots in dome: 0/%d" % _receiver.max_buffer
 	_waves_started = not wait_for_first_ingot
 	if _waves_started:
 		_wave_label.text = "Next wave: %ds" % int(wave_interval)
@@ -145,7 +145,7 @@ func _style_hud() -> void:
 		l.add_theme_constant_override("shadow_offset_y", 2)
 	($CanvasLayer/DomeHpLabel as Label).horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	($CanvasLayer/BuildLabel as Label).text = \
-		"[1] Tramp [2] Tapper [3] Laser [4] Lift [5] Hopper [6] Plate [7] Spikes\n[RMB] Remove  [Q] Cancel  [J] Mine  [F] Shoot  [S] drop through"
+		"[1] Tramp [2] Tapper [3] Laser [4] Lift [5] Hopper [6] Turret [7] Spikes\n[RMB] Remove  [Q] Cancel  [J] Mine  [F] Shoot  [S] drop through"
 	($CanvasLayer/Title as Label).text = "UPSTREAM"
 	# HP bars: brass rim, dark well, fill on top
 	for bar in [["PlayerHp", 20.0, 140.0], ["DomeHp", 300.0, 500.0]]:
@@ -368,6 +368,9 @@ func _build_dome() -> void:
 	_dome_sprite = root.get_child(1)  # the ribs flash when the dome is hit
 	_turret.position = Vector2(1200, 36)
 	_turret.z_index = 1
+	# The dome no longer shoots: defence comes from placed funnel turrets.
+	_turret.visible = false
+	_turret.process_mode = Node.PROCESS_MODE_DISABLED
 
 
 func _setup_terrain_visuals() -> void:
@@ -532,7 +535,7 @@ func damage_dome(amount: int) -> void:
 
 
 func _on_ammo_changed(current: int, max_ammo: int) -> void:
-	_ammo_label.text = "Ammo: %d/%d" % [current, max_ammo]
+	_ammo_label.text = "Ingots in dome: %d/%d" % [current, max_ammo]
 	if not _waves_started and current > 0:
 		_waves_started = true
 		_wave_timer = 0.0
@@ -571,8 +574,8 @@ var _build_names := {
 	2: "Building: VEIN TAPPER (on dug-out ore)",
 	3: "Building: LASER",
 	4: "Building: UPSTREAM",
-	5: "Building: DROP HOPPER",
-	6: "Building: PRESSURE PLATE",
+	5: "Building: DROP HOPPER (click it to move its plate)",
+	6: "Building: FUNNEL TURRET (bounce ore into its funnel)",
 	7: "Building: SPIKES",
 }
 

@@ -74,9 +74,52 @@ def spikes():
     return fig.render(16, 15, (8, 15))
 
 
+# Funnel turret (match scenes/funnel_turret.gd): origin = barrel pivot.
+# Funnel mouth y=-74 (x +/-24) narrowing to the magazine at y=-60 (x +/-9);
+# magazine x=+/-9 from y=-60 to y=-10 (gate); pedestal around the pivot.
+TW, TH, TO = 60, 92, (30, 80)
+
+
+def turret_back():
+    fig = Figure()
+    fig.poly([(-23, -73), (-8, -59), (-8, -10), (8, -10), (8, -59), (23, -73)], DARK, z=0, shade=0.15)
+    return fig.render(TW, TH, TO, outline=False)
+
+
+def turret_front():
+    fig = Figure()
+    fig.capsule((-24, -74), (-9, -60), 1.8, BRONZE, z=1)
+    fig.capsule((24, -74), (9, -60), 1.8, BRONZE, z=1)
+    for x in (-9, 9):
+        fig.capsule((x, -60), (x, -10), 1.6, BRONZE, z=1)
+    for y in (-46, -30):
+        fig.box((-9, y - 0.9, 9, y + 0.9), BRONZE, z=1.2, bevel=0.5)
+    fig.box((-11, -62, 11, -58.5), STEEL, z=1.3, bevel=0.8)                 # collar
+    fig.box((-11, -11, 11, -7), STEEL, z=1.3, bevel=0.8)                     # breech gate
+    # pedestal around the pivot, with the ammo feed chute into the breech
+    fig.ellipsoid((0, 2), (11, 5.5), BRONZE, z=1.5)
+    fig.box((-8, 2, 8, 9), BRONZE, z=1.4, bevel=1.4)
+    fig.disc((0, 1.5), 3.2, DARK, z=1.6)
+    fig.sphere((0, 1.5), 2.0, GLOW, z=1.7, emissive=True)
+    return fig.render(TW, TH, TO)
+
+
+def turret_barrel():
+    """Ore cannon, pointing +x, pivot at the breech (5, 6)."""
+    fig = Figure()
+    fig.sphere((1, 0), 4.2, BRONZE, z=0)
+    fig.capsule((1, 0), (18, 0), 3.4, BRONZE, z=1)
+    for x in (8, 13):
+        fig.ellipsoid((x, 0), (0.9, 3.9), STEEL, z=1.5)
+    fig.ellipsoid((19.5, 0), (1.8, 4.6), STEEL, z=2)
+    fig.ellipsoid((20.8, 0), (0.9, 3.1), DARK, z=2.1, grit=0.0)
+    return fig.render(28, 12, (5, 6))
+
+
 def main():
     parts = {'hopper_back': hopper_back(), 'hopper_front': hopper_front(),
-             'trapdoor': trapdoor(), 'spikes': spikes()}
+             'trapdoor': trapdoor(), 'spikes': spikes(),
+             'turret_back': turret_back(), 'turret_front': turret_front(), 'turret_barrel': turret_barrel()}
     for name, img in parts.items():
         write_png(SPR + name + '.png', len(img[0]), len(img), img)
     plates = [plate(False), plate(True)]
@@ -90,6 +133,17 @@ def main():
                     comp[y][x] = p
         big = side_by_side([comp], 6)
         write_png(sys.argv[1] + '/hopper_preview.png', len(big[0]), len(big), big)
+        tc = [row[:] for row in parts['turret_back']]
+        for y, row in enumerate(parts['turret_front']):
+            for x, p in enumerate(row):
+                if p[3]:
+                    tc[y][x] = p
+        for y, row in enumerate(parts['turret_barrel']):
+            for x, p in enumerate(row):
+                if p[3]:
+                    tc[TO[1] - 6 + y][TO[0] - 5 + x] = p
+        big = side_by_side([tc], 6)
+        write_png(sys.argv[1] + '/turret_preview.png', len(big[0]), len(big), big)
         big = side_by_side(plates + [parts['spikes'], parts['trapdoor']], 8)
         write_png(sys.argv[1] + '/traps_preview.png', len(big[0]), len(big), big)
 

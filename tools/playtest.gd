@@ -1440,10 +1440,11 @@ func trap_rec() -> void:
 	main.add_child(sp2)
 	var hop: Node2D = preload("res://scenes/hopper.tscn").instantiate()
 	hop.global_position = Vector2(1680, 22)
+	hop.plate_offset_x = 0.0  # the hopper's own plate, placed right under it below
 	main.add_child(hop)
-	var plate: Node2D = preload("res://scenes/pressure_plate.tscn").instantiate()
-	plate.global_position = Vector2(1680, 88)
-	main.add_child(plate)
+	hop.plate_offset_x = 16.0
+	hop._place_plate()
+	var plate := hop
 	var p: CharacterBody2D = main.get_node("Player")
 	p.global_position = Vector2(1300, 60)
 	var cam: Camera2D = main.get_node("Player/Camera2D")
@@ -1456,7 +1457,7 @@ func trap_rec() -> void:
 		o.global_position = Vector2(1676 + (k % 2) * 8, -80 - k * 14)
 		main.add_child(o)
 	await wait(2.5)
-	log_line("hopper holds %d ore, plate linked=%s" % [hop.stored_count(), plate._hopper == hop])
+	log_line("hopper holds %d ore, plate at %s" % [hop.stored_count(), hop._plate.global_position])
 	var s: Node2D = _spawn(2, Vector2(1790, 76))
 	s.hp = 40
 	var i := 0
@@ -1470,7 +1471,7 @@ func trap_rec() -> void:
 		await wait(0.05)
 		min_y = maxf(min_y, s.global_position.y)
 		if i % 10 == 0:
-			log_line("  f%d soldier %s floor=%s wall=%s | plate %s overlaps=%s" % [i, s.global_position.round(), s.is_on_floor(), s.is_on_wall(), plate.global_position, plate._area.get_overlapping_bodies().map(func(b): return b.name)])
+			log_line("  f%d soldier %s floor=%s wall=%s" % [i, s.global_position.round(), s.is_on_floor(), s.is_on_wall()])
 		i += 1
 	for k in 16:
 		if not is_instance_valid(s):
@@ -1481,6 +1482,52 @@ func trap_rec() -> void:
 		log_line("soldier end: hp %d, x %.0f, deepest y %.0f (surface 96), climbed out=%s" % [s.hp, s.global_position.x, min_y, s.global_position.y < 100 and s.global_position.x < 1500])
 	else:
 		log_line("soldier destroyed")
+
+
+func turret_rec() -> void:
+	# Funnel turret loaded with ore vs a soldier (clear line of fire); then a
+	# hopper with its own plate further right, on the soldier's path.
+	main._wave_timer = -9999.0
+	var t: Node2D = preload("res://scenes/funnel_turret.tscn").instantiate()
+	t.global_position = Vector2(1480, 40)
+	main.add_child(t)
+	var hop: Node2D = preload("res://scenes/hopper.tscn").instantiate()
+	hop.global_position = Vector2(1840, 22)
+	main.add_child(hop)
+	for k in 5:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.global_position = Vector2(1480, -90 - k * 20)
+		main.add_child(o)
+	for k in 4:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.global_position = Vector2(1840, -90 - k * 20)
+		main.add_child(o)
+	var p: CharacterBody2D = main.get_node("Player")
+	p.global_position = Vector2(1300, 60)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.zoom = Vector2(2.0, 2.0)
+	cam.position_smoothing_enabled = false
+	cam.global_position = Vector2(1680, 10)
+	await wait(2.5)
+	log_line("turret loaded %d, hopper holds %d, plate at %s" % [t._loaded().size(), hop.stored_count(), hop._plate.global_position])
+	var s: Node2D = _spawn(2, Vector2(1960, 76))
+	s.hp = 60
+	var hp0: int = s.hp
+	var dumped := false
+	for i in 150:
+		await _grab(Rect2(Vector2(1440, -100), Vector2(540, 210)), "tur_%03d" % i, -2)
+		await wait(0.04)
+		if not is_instance_valid(s):
+			log_line("soldier destroyed at frame %d" % i)
+			break
+		if hop._open and not dumped:
+			dumped = true
+			log_line("hopper dumped at frame %d, soldier x %.0f hp %d" % [i, s.global_position.x, s.hp])
+		if i % 15 == 0:
+			log_line("  f%d soldier x %.0f y %.0f hp %d | plate overlaps %s | turret ammo %d" % [i, s.global_position.x, s.global_position.y, s.hp, hop._plate_area.get_overlapping_bodies().size(), t._loaded().size()])
+	if is_instance_valid(s):
+		log_line("soldier hp %d -> %d, x %.0f; turret still loaded %d" % [hp0, s.hp, s.global_position.x, t._loaded().size()])
 
 
 func banner() -> void:
