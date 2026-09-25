@@ -46,6 +46,15 @@ func _physics_process(_delta: float) -> void:
 		return
 	var foot := global_position
 	var top := foot + Vector2(side * lean, -height)
+	# the ditch got filled in (a mason): nothing left to climb
+	var tm := get_tree().current_scene.get_node_or_null("TileMapLayer") as TileMapLayer
+	if tm and tm.get_cell_source_id(tm.local_to_map(tm.to_local(foot + Vector2(0, -8)))) != -1:
+		falling = true
+		remove_from_group("siege_ladders")
+		var t := create_tween()
+		t.tween_property(self, "modulate:a", 0.0, 0.4)
+		t.tween_callback(queue_free)
+		return
 	for o in get_tree().get_nodes_in_group("ore"):
 		if not is_instance_valid(o) or o.freeze or o.linear_velocity.length() < 140.0:
 			continue

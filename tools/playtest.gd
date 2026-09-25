@@ -2953,3 +2953,44 @@ func bridge_rec() -> void:
 			await _grab(Rect2(Vector2(1560, 20), Vector2(200, 150)), "bridge_b%03d" % (f / 30), -4)
 			log_line("  b%d titan x%d y%d bridge dmg %.1f broken %s" % [f / 30, ti.global_position.x if is_instance_valid(ti) else -1, ti.global_position.y if is_instance_valid(ti) else -1, bridge._damage if is_instance_valid(bridge) else -1.0, bridge.broken if is_instance_valid(bridge) else true])
 	log_line("after the iron rain: bridge broken %s, titan y %d (in the ditch if > 120)" % [bridge == null or not is_instance_valid(bridge) or bridge.broken, ti.global_position.y if is_instance_valid(ti) else -1])
+
+
+func mason_rec() -> void:
+	# Two masons reach a 6-wide, 4-deep ditch and brick it in from the bottom;
+	# a soldier waiting in the ditch must not get bricked over.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var tm: TileMapLayer = main.get_node("TileMapLayer")
+	var WG := preload("res://scripts/world_gen.gd")
+	for x in range(100, 106):
+		for y in range(6, 10):
+			tm.set_cell(Vector2i(x, y), -1)
+	for x in range(99, 107):
+		for y in range(5, 11):
+			WG.reframe_around(tm, Vector2i(x, y))
+			get_root().get_tree().call_group("tile_shading", "mark_dirty", Vector2i(x, y))
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(3.2, 3.2)
+	cam.global_position = Vector2(1650, 90)
+	var ms := []
+	for k in 2:
+		var m: Node2D = preload("res://scenes/mason.tscn").instantiate()
+		m.global_position = Vector2(1730 + k * 40, 80)
+		main.add_child(m)
+		ms.append(m)
+	var so = _spawn(2, Vector2(1660, 120))
+	for f in 1800:
+		await physics_frame
+		if f % 60 == 0:
+			await _grab(Rect2(Vector2(1560, 20), Vector2(200, 150)), "mason_%03d" % (f / 60), -4)
+		if f % 180 == 0:
+			var filled := 0
+			for x in range(100, 106):
+				for y in range(6, 10):
+					if tm.get_cell_source_id(Vector2i(x, y)) != -1:
+						filled += 1
+			log_line("t=%4.1f filled %d/24 | masons %s | soldier %s" % [f / 60.0, filled,
+				", ".join(ms.map(func(m): return ("x%d bricks %d laid %d" % [m.global_position.x, m.bricks, m.laid]) if is_instance_valid(m) else "gone")),
+				("x%d y%d" % [so.global_position.x, so.global_position.y]) if is_instance_valid(so) else "gone"])
