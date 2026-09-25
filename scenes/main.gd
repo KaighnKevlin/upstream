@@ -581,17 +581,17 @@ func _update_player_hp_bar() -> void:
 
 var _build_names := {
 	0: "",
-	1: "Building: TRAMPOLINE",
-	2: "Building: VEIN TAPPER (on dug-out ore)",
-	3: "Building: LASER",
-	4: "Building: UPSTREAM",
-	5: "Building: DROP HOPPER (click it to move its plate)",
-	6: "Building: FUNNEL TURRET (bounce ore into its funnel)",
-	7: "Building: SPIKES",
-	8: "Building: CATAPULT (click it to aim)",
-	9: "Building: CHUTE (click it, drag the end)",
-	10: "Building: SPLITTER (click it: alt/left/right)",
-	11: "Building: BUMPER (kicks ore, enemies, you)",
+	1: "Build: TRAMPOLINE",
+	2: "Build: TAPPER (on dug-out ore)",
+	3: "Build: LASER",
+	4: "Build: UPSTREAM LIFT",
+	5: "Build: HOPPER (click: move plate)",
+	6: "Build: TURRET (fill its funnel)",
+	7: "Build: SPIKES",
+	8: "Build: CATAPULT (click to aim)",
+	9: "Build: CHUTE (drag top to end)",
+	10: "Build: SPLITTER (click: mode)",
+	11: "Build: BUMPER",
 }
 
 

@@ -67,12 +67,25 @@ func _input(event: InputEvent) -> void:
 			KEY_ESCAPE, KEY_Q:
 				_set_build(BuildType.NONE)
 
+	# Chutes are drawn: press at the top end, drag, release at the other end
+	if event is InputEventMouseButton and not event.pressed and event.button_index == MOUSE_BUTTON_LEFT \
+			and _drag_from != null:
+		_place_chute(_drag_from, _get_world_mouse_pos() - _drag_from)
+		_drag_from = null
+		get_viewport().set_input_as_handled()
+		return
+
 	# Place building on click
 	if event is InputEventMouseButton and event.pressed:
 		for r in ui_rects:
 			if (r.call() as Rect2).has_point(event.position):
 				return  # the HUD handles it
-		if event.button_index == MOUSE_BUTTON_LEFT and current_build != BuildType.NONE:
+		if event.button_index == MOUSE_BUTTON_LEFT and current_build == BuildType.CHUTE:
+			var at := _get_world_mouse_pos()
+			if _can_place(at):
+				_drag_from = at
+			get_viewport().set_input_as_handled()
+		elif event.button_index == MOUSE_BUTTON_LEFT and current_build != BuildType.NONE:
 			_place_building()
 			get_viewport().set_input_as_handled()
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
@@ -81,6 +94,13 @@ func _input(event: InputEvent) -> void:
 
 
 func _process(_delta: float) -> void:
+	if _ghost != null and _drag_from != null:
+		# drawing a chute: the ghost's top stays put, its end follows the mouse
+		_ghost.global_position = _drag_from
+		var off: Vector2 = _get_world_mouse_pos() - _drag_from
+		if off.length() >= DRAG_MIN:
+			_ghost.set_end(off)
+		return
 	if _ghost != null:
 		var pos := _get_world_mouse_pos()
 		_ghost.global_position = pos
@@ -90,7 +110,23 @@ func _process(_delta: float) -> void:
 		_ghost.modulate = _ghost_colors[current_build] if valid else Color(1.0, 0.2, 0.2, 0.4)
 
 
+var _drag_from = null   # Vector2 while a chute is being drawn
+const DRAG_MIN := 12.0
+
+
+func _place_chute(from: Vector2, off: Vector2) -> void:
+	var building: Node2D = _scenes[BuildType.CHUTE].instantiate()
+	building.global_position = from
+	if off.length() >= DRAG_MIN:  # a plain click keeps the default slope
+		building.end_offset = off.normalized() * clampf(off.length(), building.LEN_MIN, building.LEN_MAX)
+	get_tree().current_scene.add_child(building)
+	_placed_buildings.append(building)
+	if _ghost:
+		_ghost.set_end(building.end_offset)  # next one starts from the same shape
+
+
 func _set_build(build_type: BuildType) -> void:
+	_drag_from = null
 	current_build = build_type
 	build_mode_changed.emit(build_type)
 

@@ -2088,3 +2088,41 @@ func knock_rec() -> void:
 		await wait(0.07)
 	await wait(2.0)
 	log_line("pour of 20 into the funnel: knocks played %d, skipped by the cap %d" % [S.small_played - p0, S.small_skipped])
+
+
+func chute_draw() -> void:
+	# Build mode 9: press at the top, drag, release at the end.
+	main._wave_timer = -9999.0
+	var bs := get_root().get_node("BuildSystem")
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.0, 2.0)
+	cam.global_position = Vector2(1580, 0)
+	await wait(0.3)
+	await tap(KEY_9)
+	var xf := main.get_viewport().get_canvas_transform()
+	var a: Vector2 = xf * Vector2(1500, -40)
+	var b: Vector2 = xf * Vector2(1640, 20)
+	for step in [[a, true], [a.lerp(b, 0.5), null], [b, null], [b, false]]:
+		get_root().warp_mouse(step[0])
+		await process_frame
+		if step[1] != null:
+			var ev := InputEventMouseButton.new()
+			ev.button_index = MOUSE_BUTTON_LEFT
+			ev.pressed = step[1]
+			ev.position = step[0]
+			ev.global_position = step[0]
+			Input.parse_input_event(ev)
+		await wait(0.15)
+		if step[1] == null and step[0] == b:
+			await shot("dragging")
+	var placed = bs._placed_buildings.back() if not bs._placed_buildings.is_empty() else null
+	log_line("placed %s at %s end %s" % [placed.name if placed else "nothing", placed.global_position.round() if placed else "", placed.end_offset.round() if placed else ""])
+	await tap(KEY_Q)
+	var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+	o.global_position = Vector2(1512, -90)
+	main.add_child(o)
+	await wait(1.2)
+	log_line("ore dropped on it now at %s" % [o.global_position.round()])
+	await shot("placed")
