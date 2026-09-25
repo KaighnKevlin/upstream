@@ -108,8 +108,12 @@ func _build_legs() -> void:
 			continue
 		var leg := Line2D.new()
 		leg.points = PackedVector2Array([to_local(top), to_local(hit.position)])
-		leg.width = 2.0
-		leg.default_color = Color(0.66, 0.52, 0.32)
+		# riveted lattice girder (tools/art/gen_traps.py strut), tiled along the leg
+		leg.texture = preload("res://assets/sprites/strut.png")
+		leg.texture_mode = Line2D.LINE_TEXTURE_TILE
+		leg.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+		leg.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		leg.width = 7.0
 		leg.z_index = -2
 		add_child(leg)
 

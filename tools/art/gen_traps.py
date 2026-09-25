@@ -116,10 +116,30 @@ def turret_barrel():
     return fig.render(28, 12, (5, 6))
 
 
+def strut():
+    """Lattice girder segment for stilts, tiled along a Line2D: x runs along
+    the leg, 16px period; two brass rails with a steel cross-brace."""
+    fig = Figure()
+    for y in (-2.2, 2.2):
+        fig.capsule((-1, y), (17, y), 0.9, BRONZE, z=1)
+    fig.capsule((0, -2), (8, 2), 0.55, STEEL, z=0.5)
+    fig.capsule((8, 2), (16, -2), 0.55, STEEL, z=0.5)
+    fig.sphere((8, 2.2), 0.7, STEEL, z=1.2)
+    fig.sphere((0, -2.2), 0.7, STEEL, z=1.2)
+    img = fig.render(16, 8, (0, 4), outline=False)
+    # dark edge lines top and bottom so the girder reads against the sky
+    for x in range(16):
+        for y in (0, 7):
+            if img[y][x][3] == 0 and (img[1][x][3] or img[6][x][3]):
+                img[y][x] = (41, 38, 31, 255)
+    return img
+
+
 def main():
     parts = {'hopper_back': hopper_back(), 'hopper_front': hopper_front(),
              'trapdoor': trapdoor(), 'spikes': spikes(),
-             'turret_back': turret_back(), 'turret_front': turret_front(), 'turret_barrel': turret_barrel()}
+             'turret_back': turret_back(), 'turret_front': turret_front(), 'turret_barrel': turret_barrel(),
+             'strut': strut()}
     for name, img in parts.items():
         write_png(SPR + name + '.png', len(img[0]), len(img), img)
     plates = [plate(False), plate(True)]

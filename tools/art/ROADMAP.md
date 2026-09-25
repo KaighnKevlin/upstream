@@ -212,3 +212,6 @@ Lights are additive over a 0.08 CanvasModulate and the framebuffer clips at 1.0,
 - enemy.gd _hit_react(): white flash (FX.flash) instead of the red tint, sprite jolts 1-2px away from its facing, a brass chip (FX.debris x1) on hits of 2+ or 25% of the time, titan rocks back when not mid-swing. HIT_Y per type places sparks/chips on the body. playtest: hit_rec.
 - Art loop stopped here (2026-09-24): work moves to the physics sandbox (trampoline physics, hard rock, miner v3, traps, sound).
 
+### Loop pass (sandbox era) — girder stilts
+- gen_traps.py strut(): 16x8 tiling lattice girder (two brass rails, steel zig-zag brace, rivets). Hopper and funnel turret legs are Line2D with it in TILE mode (texture_repeat on) instead of 2px lines.
+
