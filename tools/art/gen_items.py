@@ -95,6 +95,20 @@ def flask():
     return fig.render(12, 14, (6, 7), extra=['4a6068', '70969e', 'a0c4c8', 'cde4e6', '3c1214', '781e20', 'b4342c', 'e65c40', 'ffa06e', 'ebf5f5'])
 
 
+def spring():
+    """Springsteel coil: an open steel helix between two brass end caps, seen
+    side-on. Bounces off nearly everything, enemies included."""
+    fig = Figure()
+    for k in range(4):
+        x = -3.3 + k * 2.2
+        fig.capsule((x, 3.4), (x + 1.1, -3.4), 0.5, STEEL, z=1)              # front of each turn
+        if k < 3:
+            fig.capsule((x + 1.1, -3.4), (x + 2.2, 3.4), 0.35, DARK, z=0.2)  # back of the turn
+    fig.capsule((-4.6, -3.8), (-4.6, 3.8), 0.7, BRONZE, z=1.5)
+    fig.capsule((4.6, -3.8), (4.6, 3.8), 0.7, BRONZE, z=1.5)
+    return fig.render(12, 12, (6, 6))
+
+
 def gear():
     """A loose brass-and-steel gear: rolls like a wheel."""
     fig = Figure()
@@ -202,6 +216,7 @@ def main():
     write_png(SPR + 'iron_shot.png', 8, 8, shot())
     write_png(SPR + 'gear_item.png', 16, 16, gear())
     write_png(SPR + 'flask.png', 12, 14, flask())
+    write_png(SPR + 'spring_item.png', 12, 12, spring())
     tr = trampoline(); write_png(SPR + 'trampoline.png', 44, 22, tr)
     write_png(SPR + 'trampoline_base.png', 28, 8, tramp_base())
     tops = [tramp_top(l, sp) for l, sp in TRAMP_FRAMES]

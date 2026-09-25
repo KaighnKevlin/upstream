@@ -19,6 +19,7 @@ const RECIPES := [
 	{"name": "Iron shot", "in": {"iron_ingot": 1}, "out": "shot", "count": 4, "time": 1.2},
 	{"name": "Gear", "in": {"iron_ingot": 1, "copper_ingot": 1}, "out": "gear", "count": 1, "time": 1.8},
 	{"name": "Science flask", "in": {"gear": 1, "copper_ingot": 1}, "out": "flask", "count": 1, "time": 2.0},
+	{"name": "Springsteel", "in": {"iron_ingot": 2}, "out": "spring", "count": 3, "time": 1.6},
 ]
 const HOLD := 3            # keeps up to this many batches of each ingredient
 const SPOUT := Vector2(23, -16)
@@ -176,7 +177,7 @@ func _finish() -> void:
 func _show_recipe() -> void:
 	var rec: Dictionary = RECIPES[recipe]
 	var tex := load({"shot": "res://assets/sprites/iron_shot.png", "gear": "res://assets/sprites/gear_item.png",
-		"flask": "res://assets/sprites/flask.png"}[rec["out"]]) as Texture2D
+		"flask": "res://assets/sprites/flask.png", "spring": "res://assets/sprites/spring_item.png"}[rec["out"]]) as Texture2D
 	_icon.texture = tex
 	var k := minf(8.0 / tex.get_width(), 5.0 / tex.get_height()) * 1.0
 	_icon.scale = Vector2(k, k) if tex.get_width() > 8 else Vector2.ONE * 0.75

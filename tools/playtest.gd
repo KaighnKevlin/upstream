@@ -3041,3 +3041,77 @@ func trapdoor_rec() -> void:
 				br.global_position.x, br.global_position.y, br.bridges,
 				ms.global_position.x, ms.global_position.y, ms.laid,
 				doors[0].sprung, doors[1].sprung, doors[0].is_open, doors[1].is_open])
+
+
+func spring_rec() -> void:
+	# Springsteel: rebound height vs copper; one spring vs one copper fired
+	# into a line of four soldiers (how many each hits); an assembler turning
+	# two iron ingots into three springs.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.0, 2.0)
+	cam.global_position = Vector2(1700, 20)
+	var drops := {}
+	for k in ["spring", "copper"]:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.kind = k
+		o.global_position = Vector2(1500 if k == "spring" else 1540, -120)
+		main.add_child(o)
+		drops[k] = o
+	var landed := {"spring": false, "copper": false}
+	var peak := {"spring": 999.0, "copper": 999.0}
+	for f in 150:
+		await physics_frame
+		for k in drops:
+			var o: RigidBody2D = drops[k]
+			if o.linear_velocity.y < -20:
+				landed[k] = true
+			if landed[k]:
+				peak[k] = minf(peak[k], o.global_position.y)
+	log_line("dropped from y -120 onto ground ~y 90: first rebound peak y spring %d, copper %d" % [peak.spring, peak.copper])
+	# ricochet through a line of soldiers
+	for k in ["spring", "copper"]:
+		var y0 := 80.0
+		var line := []
+		for i in 4:
+			var s = _spawn(2, Vector2(1700 + i * 26, y0))
+			s.speed = 0.0
+			line.append(s)
+		await wait(0.4)
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.kind = k
+		o.global_position = Vector2(1640, line[0].hit_center().y)
+		main.add_child(o)
+		o.linear_velocity = Vector2(520, -30)
+		await wait(2.0)
+		var hit := 0
+		for s in line:
+			if not is_instance_valid(s) or s.hp < 8:
+				hit += 1
+		log_line("%s fired into 4 soldiers: %d hit" % [k, hit])
+		await _grab(Rect2(Vector2(1580, -60), Vector2(300, 170)), "spring_after_" + k, -3)
+		for s in line:
+			if is_instance_valid(s):
+				s.queue_free()
+		await wait(0.3)
+	var a: Node2D = preload("res://scenes/assembler.tscn").instantiate()
+	a.global_position = Vector2(1620, 60)
+	a.recipe = 3
+	main.add_child(a)
+	await wait(0.4)
+	for k in 2:
+		var ing: RigidBody2D = preload("res://scenes/ingot.tscn").instantiate()
+		ing.kind = "iron"
+		ing.global_position = a.global_position + Vector2(0, -80)
+		main.add_child(ing)
+		await wait(0.4)
+	await wait(8.0)
+	var springs := 0
+	for o in get_nodes_in_group("ore"):
+		if o.get("kind") == "spring":
+			springs += 1
+	log_line("assembler (springsteel): made %d, springs loose %d (expect 3)" % [a.made, springs])
+	await _grab(Rect2(Vector2(1540, -40), Vector2(260, 140)), "spring_assembler", -3)

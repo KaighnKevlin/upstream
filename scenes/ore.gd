@@ -17,6 +17,9 @@ const KINDS := {
 	"shot": {"mass": 2.0, "bounce": 0.25, "friction": 0.4, "tex": "res://assets/sprites/iron_shot.png", "size": 8, "frames": 1, "radius": 3.6},
 	"gear": {"mass": 1.5, "bounce": 0.3, "friction": 0.9, "tex": "res://assets/sprites/gear_item.png", "size": 16, "frames": 1, "radius": 7.5, "rolls": true},
 	# science flask: light, glass. Lands too hard and it shatters.
+	# springsteel coil: bounces off nearly everything and keeps its speed
+	# through an enemy (ricochet), so one shot can clatter through a crowd.
+	"spring": {"mass": 1.2, "bounce": 0.92, "friction": 0.15, "tex": "res://assets/sprites/spring_item.png", "size": 12, "frames": 1, "radius": 5.0, "ricochet": true},
 	"flask": {"mass": 0.6, "bounce": 0.15, "friction": 0.6, "tex": "res://assets/sprites/flask.png", "size": 12, "h": 14, "frames": 1, "radius": 5.0, "fragile": 300.0},
 }
 static var _shapes := {}
@@ -79,6 +82,7 @@ var _puff_cooldown := 0.0
 
 var _prev_speed := 0.0
 var _hurt_cooldown := 0.0
+var _last_hit: Node = null
 
 
 ## Flying ore is a weapon: passing through an enemy's body fast (dropped
@@ -92,6 +96,8 @@ func _check_enemy_hit() -> void:
 			continue
 		if e.get("_target") == self:
 			continue  # a magpie closing its claw on this piece
+		if e == _last_hit and _hurt_cooldown > -0.3:
+			continue  # a ricocheting spring: each enemy once per pass
 		var c: Vector2 = e.hit_center()
 		if global_position.distance_to(c) < e.hit_radius() + 7.0:
 			_hurt_cooldown = 0.35
@@ -109,6 +115,15 @@ func _check_enemy_hit() -> void:
 				linear_velocity *= 0.7
 				return
 			var away := (global_position - c).normalized()
+			if KINDS.get(kind, {}).get("ricochet", false):
+				# springs off it with most of its speed, glancing up a little,
+				# and is ready to hit the next one almost at once
+				_hurt_cooldown = 0.04
+				_last_hit = e
+				linear_velocity = linear_velocity.rotated(-signf(linear_velocity.x) * randf_range(0.05, 0.25)) * 0.88
+				SFX.play_small(self, SFX.sfx_bounce(), -10.0, randf_range(1.3, 1.6))
+				FX.burst(get_parent(), global_position, Color(0.8, 0.9, 0.95), 3, 70.0, 0.2, 1.0)
+				return
 			linear_velocity = linear_velocity.bounce(away) * 0.35 if linear_velocity.dot(away) < 0 else linear_velocity * 0.5
 			return
 
@@ -118,6 +133,8 @@ func _on_impact(other: Node) -> void:
 		_shatter()
 		return
 	_knock_sound(other)
+	if kind == "spring" and _prev_speed > 140 and _knock_cooldown <= 0.06:
+		SFX.play_small(self, SFX.sfx_bounce(), lerpf(-24.0, -12.0, clampf(_prev_speed / 600.0, 0.0, 1.0)), randf_range(1.2, 1.5))
 	if _puff_cooldown > 0 or linear_velocity.length() < 120:
 		return
 	_puff_cooldown = 0.25
