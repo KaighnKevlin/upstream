@@ -70,6 +70,14 @@ static func generate(tilemap: TileMapLayer, rng_seed: int = 0) -> void:
 		DIRT_DEPTH, WORLD_HEIGHT)
 	_scatter_ore(tilemap, rng, TILE_COPPER, COPPER_CHANCE, COPPER_VEIN_SIZE,
 		STONE_DEPTH, WORLD_HEIGHT)
+	# starter veins: a few shallow ones either side of the dome, so the first
+	# dig finds ore (the deep veins are behind ironstone and fog)
+	var mid := WORLD_WIDTH / 2
+	for k in 4:
+		var side := -1 if k % 2 == 0 else 1
+		var x := mid + side * rng.randi_range(8 + (k / 2) * 12, 16 + (k / 2) * 14)
+		var y := SURFACE_ROWS + rng.randi_range(3, 7)
+		_place_vein(tilemap, rng, Vector2i(x, y), TILE_COPPER if k < 3 else TILE_IRON, 4)
 
 	# Place grass on the surface row (first row of dirt)
 	for x in WORLD_WIDTH:

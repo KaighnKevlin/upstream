@@ -4434,3 +4434,16 @@ func goals_rec() -> void:
 	bs._placed_buildings.append(t)
 	await wait(0.8)
 	log_line("final step %d of %d, waves started %s, label '%s'" % [g.step, g.GOALS.size(), main._waves_started, g._label.text])
+
+
+func starter_veins() -> void:
+	# Shallow ore near the dome on a few seeds.
+	await wait(0.3)
+	for seed in [1, 2, 3, 4]:
+		tilemap().clear()
+		preload("res://scripts/world_gen.gd").generate(tilemap(), seed)
+		var near := []
+		for c in tilemap().get_used_cells():
+			if tilemap().get_cell_atlas_coords(c).x in [2, 3] and c.y <= 14 and absi(c.x - 75) <= 32:
+				near.append(c)
+		log_line("seed %d: ore cells within 8 rows of the surface and 32 tiles of the dome: %d" % [seed, near.size()])
