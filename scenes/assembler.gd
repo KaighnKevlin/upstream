@@ -21,6 +21,7 @@ const RECIPES := [
 	{"name": "Science flask", "in": {"gear": 1, "copper_ingot": 1}, "out": "flask", "count": 1, "time": 2.0},
 	{"name": "Springsteel", "in": {"iron_ingot": 2}, "out": "spring", "count": 3, "time": 1.6},
 	{"name": "Blast shell", "in": {"iron_ingot": 1, "grit": 3}, "out": "shell", "count": 2, "time": 2.2},
+	{"name": "Reclaimed flask", "in": {"scrap": 3}, "out": "flask", "count": 1, "time": 2.5},
 ]
 const HOLD := 3            # keeps up to this many batches of each ingredient
 const SPOUT := Vector2(23, -16)

@@ -28,7 +28,7 @@ const TABS := [
 		["B", "Bumper", "kicks items and enemies away hard"],
 		["M", "Wrecking pendulum", "ore knocks it swinging; it smashes walkers"],
 		["N", "Gravity wheel", "falling ore turns it; powers machines nearby"],
-		["T", "Assembler", "turns ingots into shot, gears, flasks, springs, blast shells; click: recipe"],
+		["T", "Assembler", "ingots into shot, gears, flasks, springs, shells; 3 scrap into a flask; click: recipe"],
 		["R", "Crusher", "grinds ore to grit; chews anything standing on its rollers"],
 		["Y", "Research lab", "feed it science flasks; click it for the research screen"],
 		["U", "Tesla coil", "fed ingots: chain lightning, reaches through rock"],

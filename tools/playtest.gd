@@ -4357,3 +4357,25 @@ func wave5_rec() -> void:
 		if main.dome_hp <= 0 or (dn != null and not is_instance_valid(dn)):
 			break
 	Engine.time_scale = 1.0
+
+
+func reclaim_rec() -> void:
+	# The assembler's reclaimed-flask recipe: 3 scrap in, 1 science flask out.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var a: Node2D = preload("res://scenes/assembler.tscn").instantiate()
+	a.global_position = Vector2(1450, 60)
+	a.recipe = 5
+	main.add_child(a)
+	await wait(0.4)
+	for k in 3:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.kind = "scrap"
+		o.global_position = a.global_position + Vector2(0, -80)
+		main.add_child(o)
+		await wait(0.4)
+	await wait(9.0)
+	var flasks := 0
+	for o in get_nodes_in_group("ore"):
+		flasks += 1 if o.get("kind") == "flask" else 0
+	log_line("recipe '%s': made %d, flasks loose %d" % [a.RECIPES[5].name, a.made, flasks])
