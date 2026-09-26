@@ -4066,6 +4066,65 @@ func tube_rec() -> void:
 	log_line("tube sent %d; ore now past the outlet side %d/5" % [tb.sent, out])
 
 
+func keg_rec() -> void:
+	# Three powder kegs in a row east of the dome; soldiers march into the
+	# first, its fuse burns, it goes up and takes the other two with it.
+	# Then a lone keg hit by a fast ore chunk goes off at once.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var kegs := []
+	for x in [1640, 1720, 1800]:
+		var k: Node2D = preload("res://scenes/keg.tscn").instantiate()
+		k.global_position = Vector2(x, 40)
+		main.add_child(k)
+		kegs.append(k)
+	var solid := func() -> int:
+		var n := 0
+		for cx in range(95, 120):
+			for cy in range(0, 12):
+				if tilemap().get_cell_source_id(Vector2i(cx, cy)) != -1:
+					n += 1
+		return n
+	var before: int = solid.call()
+	var foes := []
+	for k in 5:
+		var e = _spawn(2, Vector2(1900 + k * 30, 40))
+		foes.append(e)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.8, 1.8)
+	cam.global_position = Vector2(1760, 0)
+	await shot("keg_row")
+	var lit := false
+	for t in 80:
+		await wait(0.1)
+		if not lit and kegs[2].fuse > 0:
+			lit = true
+			log_line("fuse lit at t=%.1f" % (t * 0.1))
+			await shot("keg_fuse")
+		if kegs.all(func(k): return not is_instance_valid(k)):
+			break
+	await wait(0.15)
+	await shot("keg_boom")
+	await wait(1.0)
+	await shot("keg_after")
+	var alive := foes.filter(func(e): return is_instance_valid(e) and not e._dying).size()
+	log_line("kegs left %d/3 | soldiers alive %d/5 | tiles blown %d" % [kegs.filter(func(k): return is_instance_valid(k)).size(), alive, before - solid.call()])
+	# fast ore into a lone keg
+	var k2: Node2D = preload("res://scenes/keg.tscn").instantiate()
+	k2.global_position = Vector2(1500, 40)
+	main.add_child(k2)
+	await wait(0.3)
+	var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+	o.kind = "iron"
+	o.global_position = k2.center() + Vector2(-60, -4)
+	o.linear_velocity = Vector2(420, -20)
+	main.add_child(o)
+	await wait(0.6)
+	log_line("fast ore into a keg: blown %s" % (not is_instance_valid(k2)))
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0

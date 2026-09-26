@@ -898,6 +898,7 @@ var _build_names := {
 	23: "Build: HARPOON BALLISTA (feed it scrap; downs fliers)",
 	24: "Build: SEESAW (drop heavy on one end)",
 	25: "Build: PNEUMATIC TUBE (drag intake to outlet)",
+	26: "Build: POWDER KEG (shoot it, hit it, or let them walk in)",
 }
 
 

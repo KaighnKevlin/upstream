@@ -26,12 +26,12 @@ const PIECES := {
 	7: ["7", "Spikes"], 8: ["8", "Catapult"], 9: ["9", "Chute"], 10: ["0", "Splitter"],
 	11: ["B", "Bumper"], 12: ["C", "Conveyor belt"], 13: ["V", "Bellows fan"],
 	14: ["M", "Wrecking pendulum"], 15: ["N", "Gravity wheel"], 16: ["T", "Assembler"],
-	17: ["Y", "Research lab"], 18: ["U", "Tesla coil"], 19: ["I", "Flame turret"], 20: ["X", "Trapdoor"], 21: ["R", "Crusher"], 22: ["Z", "Electromagnet"], 23: ["", "Harpoon ballista (anti-air)"], 24: ["", "Seesaw"], 25: ["", "Pneumatic tube"],
+	17: ["Y", "Research lab"], 18: ["U", "Tesla coil"], 19: ["I", "Flame turret"], 20: ["X", "Trapdoor"], 21: ["R", "Crusher"], 22: ["Z", "Electromagnet"], 23: ["", "Harpoon ballista (anti-air)"], 24: ["", "Seesaw"], 25: ["", "Pneumatic tube"], 26: ["", "Powder keg"],
 }
 const CATS := [
 	["Transport", [1, 9, 12, 25, 10, 8, 24, 4, 13]],
 	["Production", [2, 3, 15, 16, 21, 17]],
-	["Defence", [6, 18, 23, 19, 5, 7, 20, 22, 11, 14]],
+	["Defence", [6, 18, 23, 19, 5, 7, 20, 22, 26, 11, 14]],
 ]
 
 var font: Font
@@ -232,6 +232,8 @@ func _build_icon(slot: Node2D, t: int) -> void:
 			_part(art, S + "turret_barrel.png", Rect2(), Vector2(-5, 28))
 		7:
 			_part(art, S + "spikes.png", Rect2(), Vector2(-8, -8))
+		26:
+			_part(art, S + "keg.png", Rect2(0, 0, 22, 26), Vector2(-11, -13))
 		25:
 			var tb: Node2D = preload("res://scenes/tube.gd").new()
 			tb.set_meta("ghost", true)

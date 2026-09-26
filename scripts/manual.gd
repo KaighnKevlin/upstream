@@ -22,6 +22,7 @@ const TABS := [
 		["9", "Chute", "drag top to bottom: a sloped rail that ore slides down"],
 		["0", "Splitter", "alternates items left and right; click for left/right only"],
 		["C", "Conveyor belt", "drag out: carries items along; faster when powered"],
+		["", "Powder keg", "big blast + crater: shoot it, hit it with fast ore, chain it; walkers light its fuse"],
 		["", "Pneumatic tube", "drag funnel to nozzle: sucks items in and shoots them out, any way"],
 		["", "Seesaw", "drop something heavy on one end to fling what sits on the other"],
 		["V", "Bellows fan", "an aimed air stream that carries light items and buffets fliers"],

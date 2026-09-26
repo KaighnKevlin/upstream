@@ -248,6 +248,9 @@ func explode() -> void:
 		elif d < radius * 1.5:
 			o.sleeping = false
 			o.linear_velocity += (o.global_position - at).normalized() * 320.0 * (1.0 - d / (radius * 1.5)) + Vector2(0, -80)
+	for kg in get_tree().get_nodes_in_group("kegs"):
+		if kg.center().distance_to(at) < radius * 1.3:
+			kg.call_deferred("detonate")
 	var p := get_tree().current_scene.get_node_or_null("Player") as Node2D
 	if p and p.global_position.distance_to(at) < radius * 0.6 and p.has_method("take_damage"):
 		p.take_damage(8)
