@@ -4031,3 +4031,36 @@ func gilded_rec() -> void:
 		scrap += 1 if o.get("kind") == "scrap" else 0
 		gears += 1 if o.get("kind") == "gear" else 0
 	log_line("drops: scrap %d (expect 8 + 4 + 2 = 14), gears %d (expect 2)" % [scrap, gears])
+
+
+func tube_rec() -> void:
+	# A pneumatic tube from a funnel on the ground up and over to an outlet
+	# 200px right and 140px up: ore dropped in rides it and shoots out.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var tb: Node2D = preload("res://scenes/tube.tscn").instantiate()
+	tb.global_position = Vector2(1480, 80)
+	tb.end_offset = Vector2(200, -140)
+	main.add_child(tb)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.2, 2.2)
+	cam.global_position = Vector2(1590, 10)
+	var ores := []
+	for k in 5:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.kind = "iron" if k % 2 else "copper"
+		o.global_position = tb.global_position + Vector2(0, -60)
+		main.add_child(o)
+		ores.append(o)
+		await wait(0.35)
+		if k == 2:
+			await shot("tube_riding")
+	await wait(2.0)
+	await shot("tube_out")
+	var out := 0
+	for o in ores:
+		if is_instance_valid(o) and o.global_position.x > 1600:
+			out += 1
+	log_line("tube sent %d; ore now past the outlet side %d/5" % [tb.sent, out])

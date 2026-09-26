@@ -1,6 +1,6 @@
 extends Node
 
-enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, TURRET, SPIKES, CATAPULT, CHUTE, SPLITTER, BUMPER, BELT, BELLOWS, PENDULUM, WHEEL, ASSEMBLER, LAB, TESLA, FLAMER, TRAPDOOR, CRUSHER, MAGNET, HARPOON, SEESAW }
+enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, TURRET, SPIKES, CATAPULT, CHUTE, SPLITTER, BUMPER, BELT, BELLOWS, PENDULUM, WHEEL, ASSEMBLER, LAB, TESLA, FLAMER, TRAPDOOR, CRUSHER, MAGNET, HARPOON, SEESAW, TUBE }
 
 var current_build: BuildType = BuildType.NONE
 var _ghost: Node2D = null
@@ -32,6 +32,7 @@ var _scenes := {
 	BuildType.MAGNET: preload("res://scenes/magnet.tscn"),
 	BuildType.HARPOON: preload("res://scenes/harpoon.tscn"),
 	BuildType.SEESAW: preload("res://scenes/seesaw.tscn"),
+	BuildType.TUBE: preload("res://scenes/tube.tscn"),
 }
 
 var _ghost_colors := {
@@ -59,6 +60,7 @@ var _ghost_colors := {
 	BuildType.MAGNET: Color(1.0, 0.85, 0.5, 0.5),
 	BuildType.HARPOON: Color(1.0, 0.85, 0.5, 0.5),
 	BuildType.SEESAW: Color(1.0, 0.85, 0.5, 0.5),
+	BuildType.TUBE: Color(1.0, 0.85, 0.5, 0.5),
 }
 
 signal build_mode_changed(build_type: BuildType)
@@ -128,7 +130,7 @@ func _input(event: InputEvent) -> void:
 		for r in ui_rects:
 			if (r.call() as Rect2).has_point(event.position):
 				return  # the HUD handles it
-		if event.button_index == MOUSE_BUTTON_LEFT and current_build in [BuildType.CHUTE, BuildType.BELT]:
+		if event.button_index == MOUSE_BUTTON_LEFT and current_build in [BuildType.CHUTE, BuildType.BELT, BuildType.TUBE]:
 			var at := _get_world_mouse_pos()
 			if _can_place(at):
 				_drag_from = at
