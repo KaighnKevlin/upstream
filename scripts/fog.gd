@@ -8,6 +8,7 @@ extends Sprite2D
 ## known world is a soft gradient rather than a staircase.
 
 const WorldGen = preload("res://scripts/world_gen.gd")
+const Tech = preload("res://scripts/tech.gd")
 
 const PLAYER_RADIUS := 8.5      # tiles
 const BUILD_RADIUS := 5.0
@@ -78,7 +79,7 @@ func _process(delta: float) -> void:
 		var cell := Vector2i(p.global_position / WorldGen.TILE_SIZE)
 		if cell != _last_cell:
 			_last_cell = cell
-			reveal(p.global_position, PLAYER_RADIUS)
+			reveal(p.global_position, PLAYER_RADIUS * Tech.mult("lamps"))
 	_scan_t -= delta
 	if _scan_t <= 0:
 		_scan_t = 0.5

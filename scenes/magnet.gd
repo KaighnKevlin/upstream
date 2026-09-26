@@ -13,6 +13,7 @@ const Power = preload("res://scripts/power.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const FX = preload("res://scripts/fx.gd")
 const LightTextures = preload("res://scripts/light_textures.gd")
+const Tech = preload("res://scripts/tech.gd")
 
 const FACE := Vector2(0, 32)      # the pull point, from the bracket
 const ON_TIME := 1.6
@@ -58,7 +59,7 @@ func _ready() -> void:
 
 
 func reach() -> float:
-	return REACH + 45.0 * clampf((_rate - Power.UNPOWERED) / (1.0 - Power.UNPOWERED), 0.0, 1.0)
+	return (REACH + 45.0 * clampf((_rate - Power.UNPOWERED) / (1.0 - Power.UNPOWERED), 0.0, 1.0)) * Tech.mult("magnets")
 
 
 func _physics_process(delta: float) -> void:
@@ -104,7 +105,7 @@ func _physics_process(delta: float) -> void:
 				lifted += 1
 				FX.burst(get_parent(), at, Color(0.6, 0.85, 1.0), 5, 60.0, 0.3, 1.2)
 			e._knock_t = 0.12          # its legs have nothing to push against
-			var v: Vector2 = e.velocity + d / maxf(dist, 1.0) * LIFT * delta + Vector2(0, -980.0 * delta)
+			var v: Vector2 = e.velocity + d / maxf(dist, 1.0) * LIFT * Tech.mult("magnets") * delta + Vector2(0, -980.0 * delta)
 			if dist < 10.0:
 				v *= 0.5
 			e.velocity = v.limit_length(LIFT_MAX)

@@ -12,6 +12,7 @@ extends Node2D
 
 const SFX = preload("res://scripts/sfx.gd")
 const LightTextures = preload("res://scripts/light_textures.gd")
+const Tech = preload("res://scripts/tech.gd")
 
 ## How fast items float upward through the shaft (pixels/sec)
 @export var lift_speed: float = 100.0
@@ -246,7 +247,7 @@ func _physics_process(delta: float) -> void:
 					if at_top:
 						_held_items.append(body)
 					else:
-						body.linear_velocity.y = -lift_speed
+						body.linear_velocity.y = -lift_speed * Tech.mult("lifts")
 						body.linear_velocity.x = move_toward(body.linear_velocity.x, 0, 150 * delta)
 						body.gravity_scale = 0
 

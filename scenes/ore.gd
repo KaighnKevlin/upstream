@@ -209,6 +209,8 @@ const BLAST_DAMAGE := 7
 func explode() -> void:
 	if is_queued_for_deletion():
 		return
+	var k: float = preload("res://scripts/tech.gd").mult("charges")
+	var radius := BLAST_RADIUS * k
 	queue_free()
 	var at := global_position
 	var parent := get_parent()
@@ -233,21 +235,21 @@ func explode() -> void:
 			continue
 		var c: Vector2 = e.hit_center() if e.has_method("hit_center") else e.global_position
 		var d := c.distance_to(at)
-		if d < BLAST_RADIUS + (e.hit_radius() if e.has_method("hit_radius") else 10.0) * 0.5:
-			e.take_damage(maxi(2, int(BLAST_DAMAGE * (1.0 - d / (BLAST_RADIUS * 1.5)))))
+		if d < radius + (e.hit_radius() if e.has_method("hit_radius") else 10.0) * 0.5:
+			e.take_damage(maxi(2, int(BLAST_DAMAGE * k * (1.0 - d / (radius * 1.5)))))
 			if is_instance_valid(e) and e.has_method("knock"):
 				e.knock((c - at).normalized() * 200.0 + Vector2(0, -180))
 	for o in get_tree().get_nodes_in_group("ore"):
 		if not is_instance_valid(o) or o == self or o.freeze or o.has_meta("store_material"):
 			continue
 		var d: float = o.global_position.distance_to(at)
-		if o.get("kind") == "shell" and d < BLAST_RADIUS * 0.8:
+		if o.get("kind") == "shell" and d < radius * 0.8:
 			o.call_deferred("explode")   # sympathetic detonation
-		elif d < BLAST_RADIUS * 1.5:
+		elif d < radius * 1.5:
 			o.sleeping = false
-			o.linear_velocity += (o.global_position - at).normalized() * 320.0 * (1.0 - d / (BLAST_RADIUS * 1.5)) + Vector2(0, -80)
+			o.linear_velocity += (o.global_position - at).normalized() * 320.0 * (1.0 - d / (radius * 1.5)) + Vector2(0, -80)
 	var p := get_tree().current_scene.get_node_or_null("Player") as Node2D
-	if p and p.global_position.distance_to(at) < BLAST_RADIUS * 0.6 and p.has_method("take_damage"):
+	if p and p.global_position.distance_to(at) < radius * 0.6 and p.has_method("take_damage"):
 		p.take_damage(8)
 
 

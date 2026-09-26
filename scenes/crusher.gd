@@ -132,7 +132,7 @@ func _physics_process(delta: float) -> void:
 		_chew_t = CHEW_EVERY
 		for e in _teeth.get_overlapping_bodies():
 			if e.is_in_group("enemies") and e.has_method("take_damage") and not ("_dying" in e and e._dying):
-				e.take_damage(CHEW_DAMAGE)
+				e.take_damage(int(round(CHEW_DAMAGE * Tech.mult("grinders"))))
 				chewed += 1
 				FX.burst(get_parent(), global_position + Vector2(randf_range(-10, 10), TOP), Color(1.0, 0.8, 0.4), 5, 110.0, 0.25, 1.2, -120.0)
 				FX.burst(get_parent(), global_position + Vector2(randf_range(-10, 10), TOP - 2), Color(0.6, 0.66, 0.66), 3, 80.0, 0.4, 1.6)

@@ -10,6 +10,7 @@ extends Node2D
 const Power = preload("res://scripts/power.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const FX = preload("res://scripts/fx.gd")
+const Tech = preload("res://scripts/tech.gd")
 
 const PIVOT := Vector2(0, -24)
 const RANGE := 430.0
@@ -202,7 +203,7 @@ func _winch(delta: float) -> void:
 		return
 	var from := to_global(PIVOT)
 	var c := _center(_target)
-	var pull := (from - c).normalized() * WINCH * (0.55 + 1.65 * _rate) * delta
+	var pull := (from - c).normalized() * WINCH * (0.55 + 1.65 * _rate) * Tech.mult("harpoons") * delta
 	_target.global_position += pull
 	# dragged down to the ground: it smashes into it
 	var ground := global_position.y

@@ -3710,3 +3710,43 @@ func fog_rec() -> void:
 	await wait(0.5)
 	await shot("fog_explored")
 	log_line("revealed at the tunnel's end: %s, far east underground: %s" % [main.get_node("Fog").is_revealed(Vector2(1530, 250)), main.get_node("Fog").is_revealed(Vector2(2100, 400))])
+
+
+func tech_rec() -> void:
+	# The new techs: a lab set to Packed charges gets 5 flasks and researches
+	# it; a blast shell after that hits harder than one before. The lab's
+	# cycle reaches every tech.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var T := preload("res://scripts/tech.gd")
+	log_line("techs: %d (%s)" % [T.TECHS.size(), ", ".join(T.TECHS.map(func(t): return t.id))])
+	var boom := func(x: float) -> int:
+		var s = _spawn(2, Vector2(x, 60))
+		s.speed = 0.0
+		await wait(0.8)
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.kind = "shell"
+		o.global_position = Vector2(x + 30, 70)
+		main.add_child(o)
+		await wait(0.2)
+		o.explode()
+		await wait(0.3)
+		return 8 - (s.hp if is_instance_valid(s) and not s._dying else 0)
+	var before: int = await boom.call(1500.0)
+	var lab: Node2D = preload("res://scenes/lab.tscn").instantiate()
+	lab.global_position = Vector2(1700, 60)
+	lab.research = T.TECHS.map(func(t): return t.id).find("charges")
+	main.add_child(lab)
+	await wait(0.4)
+	for k in 5:
+		var f: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		f.kind = "flask"
+		f.global_position = lab.global_position + Vector2(-11, -80)
+		main.add_child(f)
+		await wait(0.5)
+	Engine.time_scale = 4.0
+	await wait(45.0)
+	Engine.time_scale = 1.0
+	log_line("Packed charges level %d (mult %.2f)" % [T.level("charges"), T.mult("charges")])
+	var after: int = await boom.call(1900.0)
+	log_line("blast shell damage to a soldier 30px away: before %d, after %d" % [before, after])

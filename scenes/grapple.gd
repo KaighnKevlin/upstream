@@ -12,6 +12,7 @@ extends Node2D
 
 const SFX = preload("res://scripts/sfx.gd")
 const FX = preload("res://scripts/fx.gd")
+const Tech = preload("res://scripts/tech.gd")
 
 enum State { IDLE, FLYING, ANCHORED, RETRACT }
 
@@ -112,7 +113,7 @@ func _fly(delta: float) -> void:
 	var hit := get_world_2d().direct_space_state.intersect_ray(q)
 	if hit.is_empty():
 		hook = to
-		if hook.distance_to(_hand()) > MAX_LEN:
+		if hook.distance_to(_hand()) > MAX_LEN * Tech.mult("hook"):
 			state = State.RETRACT
 		return
 	hook = hit.position
@@ -171,7 +172,7 @@ func _hold(_delta: float) -> void:
 			return
 		hook = anchor_node.global_position + anchor_off
 	var d := hook - _hand()
-	if d.length() > MAX_LEN * 1.2:
+	if d.length() > MAX_LEN * Tech.mult("hook") * 1.2:
 		release()
 		return
 	_player.set("_launch_timer", 0.05)
