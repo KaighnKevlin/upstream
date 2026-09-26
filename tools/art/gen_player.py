@@ -43,6 +43,10 @@ def limb(fig, a, ang, bend, l1, l2, mat, r1, r2, z):
     return k, e
 
 
+SCARF = [_hex(h) for h in ('29261f', '5a1a16', '8c2a20', 'b8402c', 'd86448')]
+SCARF_EXTRA = ['5a1a16', '8c2a20', 'b8402c', 'd86448']
+
+
 def build(legs=(0, 0), bends=(8, 8), arms=(0, 0), bob=0.0, lamp=1.0,
           rot=0.0, shift=(0, 0), size=(FW, FH, ORIGIN), eye=True):
     fig = Figure()
@@ -50,44 +54,62 @@ def build(legs=(0, 0), bends=(8, 8), arms=(0, 0), bob=0.0, lamp=1.0,
         fig.transform(rot, (0, -1), shift)
     hip = (0, -12 + bob)
     near_leg, far_leg = legs
-    # far leg / far arm (darker, behind)
-    _, fe = limb(fig, (hip[0] - 0.5, hip[1]), far_leg, bends[1], THIGH, SHIN, BEARD, 1.5, 1.35, 1)
-    fig.ellipsoid((fe[0] + 1, fe[1] - 0.3), (2.3, 1.2), CLOTH, z=1.3)
+    swing = (near_leg - far_leg) / 70.0          # coat-tails and scarf follow the stride
+    # far leg with its boot (darker, behind)
+    _, fe = limb(fig, (hip[0] - 0.5, hip[1]), far_leg, bends[1], THIGH, SHIN, BEARD, 1.6, 1.45, 1)
+    fig.ellipsoid((fe[0] + 1.1, fe[1] - 0.4), (2.6, 1.5), CLOTH, z=1.3)
     sh = (0.5, -20.5 + bob)
-    limb(fig, (sh[0] - 1, sh[1]), -arms[0], -20, 4.2, 4.0, CLOTH, 1.3, 1.1, 2)
-    # backpack tank + gauge
-    fig.box((-6.4, -24.5 + bob, -3.0, -15 + bob), BRONZE, z=3, bevel=1.3)
-    fig.ellipsoid((-4.7, -24.5 + bob), (1.7, 0.8), BRONZE, z=3.1)
-    fig.disc((-4.7, -19.5 + bob), 1.2, DARK, z=3.2)
-    fig.sphere((-4.7, -19.5 + bob), 0.8, GLOW, z=3.3, emissive=True)
-    # body: coat, belt
-    fig.ellipsoid((0, -17.5 + bob), (3.8, 5.8), COAT, z=4)
-    fig.box((-3.8, -13.6 + bob, 3.8, -12.2 + bob), DARK, z=4.2, bevel=0.5)
-    fig.box((0.6, -13.8 + bob, 2.4, -12.0 + bob), BRONZE, z=4.3, bevel=0.5)       # buckle
-    # near leg
-    _, ne = limb(fig, hip, near_leg, bends[0], THIGH, SHIN, LEATHER, 1.6, 1.45, 5)
-    fig.ellipsoid((ne[0] + 1, ne[1] - 0.3), (2.4, 1.3), CLOTH, z=5.3)
-    # head: face, eye, short beard, brass helmet with brim, goggles, lamp
+    limb(fig, (sh[0] - 1, sh[1]), -arms[0], -20, 4.2, 4.0, CLOTH, 1.4, 1.2, 2)
+    # scarf tail streaming back from the neck
+    fig.poly([(-1.5, -23.2 + bob), (-7.5, -22.5 + bob - swing * 1.5), (-8.5, -20.8 + bob - swing), (-1.5, -21.5 + bob)], SCARF, z=2.6, shade=0.7)
+    # backpack boiler: tank, chimney, gauge, a copper pipe to the shoulder
+    fig.box((-7.2, -25.5 + bob, -3.0, -14.5 + bob), BRONZE, z=3, bevel=1.6, grit=0.05)
+    fig.capsule((-6.2, -25.5 + bob), (-6.2, -28.5 + bob), 0.8, DARK, z=2.9)
+    fig.ellipsoid((-6.2, -28.8 + bob), (1.3, 0.6), BRONZE, z=2.95)
+    fig.disc((-5.1, -20.0 + bob), 1.4, DARK, z=3.2)
+    fig.sphere((-5.1, -20.0 + bob), 0.9, GLOW, z=3.3, emissive=True)
+    fig.capsule((-3.4, -16.0 + bob), (-1.5, -19.0 + bob), 0.55, COPPER, z=3.4)
+    # duster: long coat with tails that swing out behind
+    fig.poly([(-3.8, -17 + bob), (2.8, -17 + bob), (2.4, -11.5 + bob), (-5.2 - swing * 1.5, -10.8 + bob)], COAT, z=3.8, shade=0.6)
+    fig.ellipsoid((0, -17.8 + bob), (4.2, 6.0), COAT, z=4, grit=0.04)
+    for y in (-20.5, -17.5, -14.5):
+        fig.sphere((2.6, y + bob), 0.45, BRONZE, z=4.2)                        # buttons
+    fig.capsule((-3.0, -22.5 + bob), (3.2, -13.8 + bob), 0.65, LEATHER, z=4.25)  # bandolier
+    fig.box((-4.0, -13.8 + bob, 4.0, -12.2 + bob), DARK, z=4.3, bevel=0.5)   # belt
+    fig.box((0.8, -14.0 + bob, 2.6, -12.0 + bob), BRONZE, z=4.4, bevel=0.5)  # buckle
+    fig.box((-3.6, -13.0 + bob, -1.4, -10.8 + bob), LEATHER, z=4.35, bevel=0.5)  # pouch
+    # near leg and its boot, brass toe cap
+    _, ne = limb(fig, hip, near_leg, bends[0], THIGH, SHIN, LEATHER, 1.7, 1.55, 5)
+    fig.ellipsoid((ne[0] + 1.1, ne[1] - 0.4), (2.7, 1.6), CLOTH, z=5.3)
+    fig.sphere((ne[0] + 3.0, ne[1] - 0.2), 0.8, BRONZE, z=5.4)
+    # head: face, eye, beard, the red scarf at the throat
     hx, hy = 1.4, -26.3 + bob
     fig.ellipsoid((hx, hy), (3.1, 3.3), SKIN, z=6, grit=0.03)
     if eye:
-        fig.sphere((hx + 1.7, hy - 0.2), 0.5, DARK, z=6.15)                       # eye
+        fig.sphere((hx + 1.7, hy - 0.2), 0.5, DARK, z=6.15)
     else:
-        fig.capsule((hx + 1.1, hy - 0.1), (hx + 2.3, hy - 0.1), 0.3, DARK, z=6.15)  # shut
-    fig.ellipsoid((hx + 0.8, hy + 2.3), (2.1, 1.1), BEARD, z=6.1, grit=0.1)       # beard
-    fig.sphere((hx + 2.8, hy + 0.5), 0.75, SKIN, z=6.2)                           # nose
-    fig.ellipsoid((hx - 0.4, hy - 2.9), (3.8, 2.5), BRONZE, z=6.5)                 # helmet
-    fig.ellipsoid((hx + 0.3, hy - 1.5), (4.6, 0.8), BRONZE, z=6.6, grit=0.03)      # brim
-    fig.disc((hx + 1.2, hy - 3.2), 1.0, STEEL, z=6.7)                             # goggle
+        fig.capsule((hx + 1.1, hy - 0.1), (hx + 2.3, hy - 0.1), 0.3, DARK, z=6.15)
+    fig.ellipsoid((hx + 0.8, hy + 2.3), (2.1, 1.1), BEARD, z=6.1, grit=0.1)
+    fig.sphere((hx + 2.8, hy + 0.5), 0.75, SKIN, z=6.2)
+    fig.ellipsoid((hx - 0.8, hy + 3.9), (2.8, 0.9), SCARF, z=5.9)               # scarf at the collar
+    # brass dome helmet: a riveted band, goggles pushed up, a big headlamp
+    fig.ellipsoid((hx - 0.4, hy - 3.2), (4.4, 3.2), BRONZE, z=6.5, grit=0.03)
+    fig.capsule((hx - 4.6, hy - 1.6), (hx + 4.0, hy - 1.6), 0.75, STEEL, z=6.6)  # band
+    fig.sphere((hx - 2.6, hy - 1.6), 0.45, BRONZE, z=6.65)
+    fig.ellipsoid((hx + 0.6, hy - 1.0), (5.2, 0.8), BRONZE, z=6.55, grit=0.03)   # brim
+    for gx in (-1.2, 1.2):
+        fig.disc((hx + gx, hy - 4.3), 1.1, DARK, z=6.7)
+        fig.disc((hx + gx, hy - 4.3), 0.7, GLOW, z=6.75)                      # goggle lenses
+    fig.box((hx + 2.6, hy - 4.6, hx + 4.2, hy - 2.0), STEEL, z=6.8, bevel=0.4)  # lamp housing
     if lamp > 0.5:
-        fig.sphere((hx + 3.3, hy - 3.0), 1.3, LAMP, z=6.8, emissive=True)          # headlamp
+        fig.sphere((hx + 4.3, hy - 3.3), 1.5, LAMP, z=6.9, emissive=True)
     else:
-        fig.sphere((hx + 3.3, hy - 3.0), 1.3, BRONZE, z=6.8)                      # lamp out
-    # near arm (swings), hand
-    _, hand = limb(fig, sh, arms[1], -24, 4.2, 4.0, COAT, 1.4, 1.2, 7)
-    fig.sphere(hand, 1.2, SKIN, z=7.2)
+        fig.sphere((hx + 4.3, hy - 3.3), 1.5, BRONZE, z=6.9)
+    # near arm (swings) in a leather glove
+    _, hand = limb(fig, sh, arms[1], -24, 4.2, 4.0, COAT, 1.5, 1.3, 7)
+    fig.sphere(hand, 1.3, LEATHER, z=7.2)
     w, h, o = size
-    return fig.render(w, h, o, extra=SKIN_EXTRA + LAMP_EXTRA)
+    return fig.render(w, h, o, extra=SKIN_EXTRA + LAMP_EXTRA + SCARF_EXTRA + COPPER_EXTRA)
 
 
 def pickaxe():
