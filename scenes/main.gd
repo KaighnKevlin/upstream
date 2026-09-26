@@ -40,7 +40,7 @@ var _arrow_count: Label
 var _arrow_t := 0.0
 var _game_over_panel: NinePatchRect
 
-const ENEMY_NAMES := ["titan", "scuttler", "soldier", "caster", "ornithopter", "shieldbearer", "magpie", "sapper", "bridger", "mason", "foundry", "airship", "tinker", "dreadnought"]
+const ENEMY_NAMES := ["titan", "scuttler", "soldier", "caster", "ornithopter", "shieldbearer", "magpie", "sapper", "bridger", "mason", "foundry", "airship", "tinker", "dreadnought", "gremlin"]
 
 @onready var _receiver: Area2D = $Receiver
 @onready var _turret: Node2D = $Turret
@@ -723,6 +723,9 @@ func _spawn_wave() -> void:
 	var tinkers := wave_number / 3 if wave_number >= 4 else 0   # repair crews from wave 4
 	if tinkers > 0:
 		kinds[12] = tinkers
+	var gremlins := (wave_number - 3) / 2 if wave_number >= 5 else 0   # saboteurs from wave 5
+	if gremlins > 0:
+		kinds[14] = gremlins
 	var sky_boss := wave_number % 10 == 0   # the Dreadnought every tenth wave
 	var boss := wave_number % 5 == 0 and not sky_boss   # the Foundry Engine on the other fifths
 	if boss:
@@ -778,6 +781,11 @@ func _spawn_wave() -> void:
 		var tk: Node2D = preload("res://scenes/tinker.tscn").instantiate()
 		tk.global_position = Vector2(spawn_x - 50 - k * 40, 40)   # behind the front of the pack
 		add_child(tk)
+
+	for k in gremlins:
+		var gr: Node2D = preload("res://scenes/gremlin.tscn").instantiate()
+		gr.global_position = Vector2(spawn_x + 10 + k * 25, 40)
+		add_child(gr)
 
 	for k in airships:
 		var ab: Node2D = preload("res://scenes/airship.tscn").instantiate()
@@ -985,7 +993,7 @@ func _god_key(event: InputEventKey) -> void:
 		KEY_G:
 			if event.echo:
 				return
-			if ENEMY_NAMES[_god_type] in ["magpie", "sapper", "bridger", "mason", "foundry", "airship", "tinker", "dreadnought"]:
+			if ENEMY_NAMES[_god_type] in ["magpie", "sapper", "bridger", "mason", "foundry", "airship", "tinker", "dreadnought", "gremlin"]:
 				var mp: Node2D = load("res://scenes/%s.tscn" % ENEMY_NAMES[_god_type]).instantiate()
 				mp.global_position = at
 				add_child(mp)

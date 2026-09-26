@@ -4125,6 +4125,45 @@ func keg_rec() -> void:
 	log_line("fast ore into a keg: blown %s" % (not is_instance_valid(k2)))
 
 
+func gremlin_rec() -> void:
+	# Two machines east of the dome, a gremlin from the east: it should
+	# unscrew the nearer one, then the other, then head for the dome.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var bs = main.get_node("/root/BuildSystem")
+	var ms := []
+	for spec in [["res://scenes/crusher.tscn", 1720], ["res://scenes/catapult.tscn", 1600]]:
+		var n: Node2D = load(spec[0]).instantiate()
+		n.global_position = Vector2(spec[1], 60)
+		main.add_child(n)
+		bs._placed_buildings.append(n)
+		ms.append(n)
+	var gr: Node2D = preload("res://scenes/gremlin.tscn").instantiate()
+	gr.global_position = Vector2(1950, 40)
+	main.add_child(gr)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.4, 2.4)
+	cam.global_position = Vector2(1700, 20)
+	var shot_work := false
+	for t in 140:
+		await wait(0.1)
+		if not shot_work and gr._work > 1.8:
+			shot_work = true
+			await shot("gremlin_wrench")
+		if not is_instance_valid(gr) or gr.wrecked >= 2:
+			break
+	log_line("gremlin alive %s wrecked %s/2 | crusher gone %s, catapult gone %s" % [is_instance_valid(gr), gr.wrecked if is_instance_valid(gr) else -1, not is_instance_valid(ms[0]), not is_instance_valid(ms[1])])
+	await wait(1.5)
+	await shot("gremlin_after")
+	if not is_instance_valid(gr):
+		return
+	# now shoot it
+	gr.take_damage(5)
+	log_line("gremlin now at x %.0f (heading %s)" % [gr.global_position.x, "to the dome" if gr.direction < 0 else "away"])
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0
