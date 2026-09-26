@@ -4379,3 +4379,19 @@ func reclaim_rec() -> void:
 	for o in get_nodes_in_group("ore"):
 		flasks += 1 if o.get("kind") == "flask" else 0
 	log_line("recipe '%s': made %d, flasks loose %d" % [a.RECIPES[5].name, a.made, flasks])
+
+
+func dome_repair_rec() -> void:
+	# A damaged dome with 5 ingots in stock repairs itself, one ingot a go.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	main.damage_dome(30)
+	for k in 5:
+		var ing: RigidBody2D = preload("res://scenes/ingot.tscn").instantiate()
+		ing.global_position = Vector2(1200, 40)
+		main.add_child(ing)
+		await wait(0.3)
+	var r = main.get_node("Receiver") if main.has_node("Receiver") else main._receiver
+	log_line("dome %d, stock %d" % [main.dome_hp, r.buffer])
+	await wait(10.0)
+	log_line("after 10 s: dome %d, stock %d, repaired %d" % [main.dome_hp, r.buffer, main.repaired])

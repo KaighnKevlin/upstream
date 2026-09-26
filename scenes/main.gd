@@ -104,7 +104,7 @@ func _ready() -> void:
 	_player.player_died.connect(_on_player_died)
 	_update_hp_bar()
 	_update_player_hp_bar()
-	_ammo_label.text = "Ingots in dome: 0/%d" % _receiver.max_buffer
+	_ammo_label.text = "Ingots in dome: 0/%d  (repair stock)" % _receiver.max_buffer
 	_waves_started = not wait_for_first_ingot
 	if _waves_started:
 		_wave_label.text = "Next wave: %ds" % int(wave_interval)
@@ -412,6 +412,35 @@ func _process(delta: float) -> void:
 	if sandbox:
 		_god_pour(delta)
 	_update_offscreen_marker(delta)
+	_repair_dome(delta)
+
+
+# --- Dome repair ------------------------------------------------------------
+# Ingots delivered to the dome are its repair stock: while it's damaged it
+# welds one in every REPAIR_EVERY seconds for REPAIR_HP. So the supply chain
+# keeps the base alive under pressure.
+const REPAIR_EVERY := 3.0
+const REPAIR_HP := 4
+var repaired := 0   # tests
+var _repair_t := 0.0
+
+
+func _repair_dome(delta: float) -> void:
+	if _game_over or dome_hp >= dome_max_hp:
+		_repair_t = 0.0
+		return
+	_repair_t += delta
+	if _repair_t < REPAIR_EVERY:
+		return
+	_repair_t = 0.0
+	if not _receiver.consume_ammo():
+		return
+	dome_hp = mini(dome_max_hp, dome_hp + REPAIR_HP)
+	repaired += REPAIR_HP
+	_update_hp_bar()
+	for k in 3:
+		FX.burst(self, Vector2(1200 + randf_range(-60, 60), 96 - randf_range(10, 60)), Color(1.0, 0.85, 0.45), 6, 60.0, 0.3, 1.2)
+	SFX.play(self, SFX.sfx_clink(), -8.0, 1.2)
 
 
 func _update_offscreen_marker(delta: float) -> void:
@@ -802,7 +831,7 @@ func damage_dome(amount: int) -> void:
 
 
 func _on_ammo_changed(current: int, max_ammo: int) -> void:
-	_ammo_label.text = "Ingots in dome: %d/%d" % [current, max_ammo]
+	_ammo_label.text = "Ingots in dome: %d/%d  (repair stock)" % [current, max_ammo]
 	if not _waves_started and current > 0:
 		_waves_started = true
 		_wave_timer = 0.0

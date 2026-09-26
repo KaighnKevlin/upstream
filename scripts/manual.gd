@@ -57,7 +57,7 @@ const TABS := [
 	["ITEMS AND EVENTS", [
 		["", "Copper ore", "light and bouncy: the basic ammo and ingot"],
 		["", "Iron ore", "heavy: hits harder, punches through shields"],
-		["", "Ingots", "smelted ore: dome ammo, tesla charge, assembler input"],
+		["", "Ingots", "smelted ore: into the dome they repair it; tesla charge, assembler input"],
 		["", "Iron shot", "dense ammo from the assembler"],
 		["", "Springsteel", "ricochets through a whole line of enemies"],
 		["", "Blast shell", "explodes on impact; sets off other shells nearby"],
