@@ -32,6 +32,8 @@ func _run() -> void:
 		preload("res://scripts/world_gen.gd").generate(tilemap(), seed)
 		for c in main.get_node("TileShading").get_children():
 			c.queue_redraw()
+		for c in main.get_tree().get_nodes_in_group("caches"):
+			c.free()   # placed on the old world
 		# scenarios start clean: drop the sandbox showcase built on the old world
 		preload("res://scripts/sandbox_showcase.gd").clear(main)
 		var decor := main.get_node_or_null("CaveDecor")
@@ -3791,3 +3793,29 @@ func _click() -> InputEventMouseButton:
 	ev.button_index = MOUSE_BUTTON_LEFT
 	ev.pressed = true
 	return ev
+
+
+func cache_rec() -> void:
+	# Salvage caches: scattered on a fresh world; the player walks into one.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	preload("res://scenes/cache.gd").scatter(main, tilemap())
+	await wait(0.2)
+	var caches := get_nodes_in_group("caches")
+	log_line("caches placed: %d at %s" % [caches.size(), ", ".join(caches.map(func(c): return str(c.global_position.round())))])
+	var c: Node2D = caches[0]
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.6, 2.6)
+	cam.global_position = c.global_position + Vector2(0, -30)
+	var p: CharacterBody2D = main.get_node("Player")
+	p.global_position = c.global_position + Vector2(-60, -20)
+	await wait(0.6)
+	await shot("cache_closed")
+	p.global_position = c.global_position + Vector2(0, -16)
+	await wait(0.3)
+	await shot("cache_open")
+	await wait(1.2)
+	await shot("cache_haul")
+	log_line("opened %s, haul %d" % [c.opened, c.haul])

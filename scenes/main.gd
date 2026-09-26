@@ -62,6 +62,7 @@ func _ready() -> void:
 	var fog := preload("res://scripts/fog.gd").new()   # fog of war underground
 	fog.name = "Fog"
 	add_child(fog)
+	preload("res://scenes/cache.gd").scatter(self, _tilemap)   # salvage caches in the caves
 	_setup_terrain_visuals()
 	if sandbox and showcase:
 		preload("res://scripts/sandbox_showcase.gd").build.call_deferred(self)
