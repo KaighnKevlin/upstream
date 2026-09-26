@@ -4365,6 +4365,46 @@ func gate_rec() -> void:
 	log_line("after 20 s: snares snapped %s | coil zaps %d | enemies %d | dome %d" % [snares.map(func(s): return s.snapped), coil.zaps, get_nodes_in_group("enemies").size(), main.dome_hp])
 
 
+func latch_rec() -> void:
+	# A catapult with a pressure plate 90px away is wired: ore dropped in its
+	# bucket stays there, cocked, until something presses the plate. An
+	# unwired catapult far away throws at once, as always.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var cat: Node2D = preload("res://scenes/catapult.tscn").instantiate()
+	cat.aim_angle = 40.0
+	cat.throw_speed = 420.0
+	cat.global_position = Vector2(1600, 80)
+	main.add_child(cat)
+	var pl: Node2D = preload("res://scenes/plate.tscn").instantiate()
+	pl.global_position = Vector2(1690, 60)
+	main.add_child(pl)
+	var free_cat: Node2D = preload("res://scenes/catapult.tscn").instantiate()
+	free_cat.global_position = Vector2(2000, 80)
+	main.add_child(free_cat)
+	await wait(0.3)
+	for c in [cat, free_cat]:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.kind = "copper"
+		o.global_position = c.to_global(c._bucket_at(c._arm.rotation)) + Vector2(0, -24)
+		main.add_child(o)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(3.0, 3.0)
+	cam.global_position = Vector2(1640, 40)
+	await wait(2.0)
+	await shot("latch_cocked")
+	log_line("after 2 s: wired cocked %s (thrown %s) | unwired thrown %s" % [cat.cocked, cat.last_thrown != null, free_cat.last_thrown != null])
+	var w: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+	w.kind = "iron"
+	w.global_position = pl.global_position + Vector2(0, -24)
+	main.add_child(w)
+	await wait(0.5)
+	await shot("latch_fired")
+	log_line("plate pressed: tripped %d, wired thrown %s, cocked %s" % [pl.tripped, cat.last_thrown != null, cat.cocked])
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0

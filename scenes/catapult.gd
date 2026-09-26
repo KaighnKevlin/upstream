@@ -7,6 +7,10 @@ extends Node2D
 ## the aim direction and lets go at the aimed speed -> the arm drops back.
 ## Aim: click it, drag the handle (direction = aim, distance = force); a
 ## dotted arc previews the throw.
+## Latch: a catapult wired to a trigger (a tripwire or a pressure plate
+## within reach, see tripwire.gd LINK) holds what it catches, cocked, and
+## only throws when that trigger fires; a lamp on the hub glows while it's
+## cocked. Unwired, it throws as soon as it catches.
 ## Art: tools/art/gen_catapult.py (origin = the arm's pivot).
 
 const FX = preload("res://scripts/fx.gd")
@@ -35,6 +39,8 @@ var _dragging := false
 var _handle: Polygon2D
 var _arc: Node2D
 var last_thrown: RigidBody2D   # for inspection/tests
+var cocked := false            # holding a shot for its trigger
+var _lamp: Node2D
 
 
 func _ready() -> void:
@@ -55,6 +61,17 @@ func _ready() -> void:
 	_arm.rotation = _rest_angle()
 	if has_meta("ghost"):
 		return
+	add_to_group("triggerable")
+	_lamp = Node2D.new()             # the latch lamp: over the frame, lit in the dark
+	_lamp.z_index = 3
+	var mat := CanvasItemMaterial.new()
+	mat.light_mode = CanvasItemMaterial.LIGHT_MODE_UNSHADED
+	_lamp.material = mat
+	_lamp.draw.connect(func():
+		if cocked:
+			_lamp.draw_circle(Vector2(0, 10), 2.5, Color(1.0, 0.55, 0.15, 0.5))   # on the cross-tie
+			_lamp.draw_circle(Vector2(0, 10), 1.2, Color(1.0, 0.85, 0.5)))
+	add_child(_lamp)
 	_catch = Area2D.new()
 	_catch.collision_layer = 0
 	_catch.collision_mask = 2   # ore, ingots
@@ -125,7 +142,34 @@ func _on_catch(body) -> void:   # untyped: a deferred call can arrive after the 
 	_held.set_deferred("freeze", true)
 	_held.set_meta("caught_by", self)
 	SFX.play(self, SFX.sfx_mine_hit())
+	if _wired():
+		cocked = true          # wait for the trigger
+		SFX.play_small(self, SFX.sfx_clink(), -8.0, 1.5)
+		_lamp.queue_redraw()
+		return
 	_throw()
+
+
+## Wired to a trigger: a tripwire stake or a pressure plate within reach.
+func _wired() -> bool:
+	var reach: float = preload("res://scenes/tripwire.gd").LINK
+	for tw in get_tree().get_nodes_in_group("tripwires"):
+		if global_position.distance_to(tw.global_position) < reach or global_position.distance_to(tw.global_position + tw.end_offset) < reach:
+			return true
+	for pl in get_tree().get_nodes_in_group("plates"):
+		if global_position.distance_to(pl.global_position) < reach:
+			return true
+	return false
+
+
+## The trigger fired: let fly (no wind-up, it's already cocked).
+func trigger() -> void:
+	if cocked:
+		cocked = false
+		_lamp.queue_redraw()
+		_throw(true)
+
+
 
 
 func _physics_process(_delta: float) -> void:
@@ -136,8 +180,9 @@ func _physics_process(_delta: float) -> void:
 			_held._timer = 0.0
 
 
-func _throw() -> void:
-	await get_tree().create_timer(WIND_UP).timeout
+func _throw(now := false) -> void:
+	if not now:
+		await get_tree().create_timer(WIND_UP).timeout
 	if not is_inside_tree():
 		return
 	var release := _aim_dir().angle()
