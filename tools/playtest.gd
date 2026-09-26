@@ -4667,7 +4667,7 @@ func crawler_rec() -> void:
 	var cell := tm.local_to_map(c.global_position)
 	while tm.get_cell_source_id(cell + Vector2i.DOWN) == -1 and cell.y < 78:
 		cell.y += 1
-	p.global_position = tm.to_global(tm.map_to_local(cell)) + Vector2(30, 0)
+	p.global_position = tm.to_global(tm.map_to_local(cell)) + Vector2(80, 0)   # outside its trigger
 	await wait(0.5)
 	await shot("crawler_hanging")
 	var hp0: int = p.hp

@@ -27,6 +27,8 @@ var _knock_t := 0.0
 var _state := State.HANGING
 var _wander := 0.0
 var _spr: AnimatedSprite2D
+var _eyes: PointLight2D
+var _blink := 0.0
 
 
 func _ready() -> void:
@@ -60,11 +62,29 @@ func _ready() -> void:
 	add_child(_spr)
 	_spr.play("curl")
 	_spr.flip_v = true                 # upside down on the ceiling
-	_spr.position = Vector2(0, -16)
+	_spr.position = Vector2(0, 6)       # dangling a little under the rock on its thread
+	# red eyes in the dark: the only thing you see of it on a cave ceiling
+	_eyes = PointLight2D.new()
+	_eyes.texture = preload("res://scripts/light_textures.gd").create_radial_light(32)
+	_eyes.color = Color(1.0, 0.25, 0.15)
+	_eyes.energy = 0.9
+	_eyes.texture_scale = 0.9
+	_eyes.position = Vector2(4, -3)
+	add_child(_eyes)
+	var mat := CanvasItemMaterial.new()   # the eye pixels unshaded, so they glow under the darkness
+	mat.light_mode = CanvasItemMaterial.LIGHT_MODE_UNSHADED
+	var dots := Node2D.new()
+	dots.material = mat
+	dots.name = "EyeDots"
+	dots.draw.connect(func():
+		if _state == State.HANGING and _blink <= 0:
+			for x in [2.5, 4.5, 6.0]:
+				dots.draw_rect(Rect2(Vector2(x, -4 + (x - 4) * 0.4), Vector2(1, 1)), Color(1.0, 0.35, 0.25)))
+	add_child(dots)
 
 
 func hit_center() -> Vector2:
-	return global_position + Vector2(0, -6 if _state != State.HANGING else -14)
+	return global_position + Vector2(0, -6 if _state != State.HANGING else -2)
 
 
 func hit_radius() -> float:
@@ -87,6 +107,9 @@ func _drop() -> void:
 		return
 	_state = State.FALLING
 	buried = false
+	_eyes.queue_free()
+	get_node("EyeDots").queue_redraw()
+	queue_redraw()
 	_spr.flip_v = false
 	_spr.position = Vector2.ZERO
 	SFX.play_small(self, SFX.sfx_clink(), -8.0, 1.6)
@@ -99,6 +122,11 @@ func _physics_process(delta: float) -> void:
 	var p := _player()
 	match _state:
 		State.HANGING:
+			_blink -= delta
+			if _blink < -randf_range(2.0, 6.0):
+				_blink = 0.15             # blink
+			_eyes.enabled = _blink <= 0
+			get_node("EyeDots").queue_redraw()
 			if p:
 				var d := p.global_position - global_position
 				if absf(d.x) < TRIGGER.x and d.y > 0 and d.y < TRIGGER.y:
@@ -135,6 +163,12 @@ func _physics_process(delta: float) -> void:
 			direction = -direction
 	move_and_slide()
 	_spr.flip_h = direction < 0
+
+
+## Its silk thread up to the rock while it hangs.
+func _draw() -> void:
+	if _state == State.HANGING:
+		draw_line(Vector2(0, -16), Vector2(0, -10), Color(0.8, 0.8, 0.75, 0.45), 1.0)
 
 
 func take_damage(amount: int) -> void:
