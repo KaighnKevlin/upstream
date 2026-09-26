@@ -1,7 +1,22 @@
 extends Node
 
 
+## Built once per size and colour and shared: callers only read it (lights,
+## flashes, glows), and building one pixel by pixel costs 10-60 ms, which
+## hitched the game every time a slag gob, meteor, shell or bolt made one.
+static var _cache := {}
+
+
 static func create_radial_light(size: int, color: Color = Color.WHITE) -> ImageTexture:
+	var key := "%d:%s" % [size, color.to_html()]
+	if _cache.has(key):
+		return _cache[key]
+	var tex := _build(size, color)
+	_cache[key] = tex
+	return tex
+
+
+static func _build(size: int, color: Color) -> ImageTexture:
 	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
 	var center := Vector2(size / 2.0, size / 2.0)
 	var radius := size / 2.0

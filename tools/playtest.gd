@@ -3890,3 +3890,107 @@ func seesaw_rec() -> void:
 			await _grab(Rect2(Vector2(1470, -40), Vector2(180, 140)), "seesaw_%02d" % (f / 6), -4)
 	log_line("copper rest y %s -> highest y %s" % [ys.map(func(y): return int(y)), coppers.map(func(o): return int(top.get(o, 0)))])
 	log_line("plank tilt after the iron: %.1f deg" % rad_to_deg(ss._plank.rotation))
+
+
+func perf_rec() -> void:
+	# The full showcase with wave 5 (the Foundry) under way: frame rate,
+	# frame time, physics time and object counts every 2 s.
+	var sc := preload("res://scripts/sandbox_showcase.gd")
+	await wait(0.2)
+	sc.build(main)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.0, 1.0)
+	cam.global_position = Vector2(1700, -20)
+	await wait(3.0)
+	main.wave_number = 4
+	await tap(KEY_P)
+	for s in 12:
+		await wait(2.0)
+		log_line("t=%2d fps %d | process %.1f ms physics %.1f ms | ore %d, enemies %d, nodes %d, bodies %d" % [s * 2,
+			Engine.get_frames_per_second(), Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0,
+			Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
+			get_nodes_in_group("ore").size(), get_nodes_in_group("enemies").size(),
+			Performance.get_monitor(Performance.OBJECT_NODE_COUNT), Performance.get_monitor(Performance.PHYSICS_2D_ACTIVE_OBJECTS)])
+
+
+func spawn_cost() -> void:
+	# How long spawning each enemy type takes (first and second time).
+	main._wave_timer = -9999.0
+	await wait(0.5)
+	for t in 6:
+		for k in 2:
+			var t0 := Time.get_ticks_usec()
+			var e := _spawn(t, Vector2(1700 + t * 40, 40))
+			log_line("type %d spawn #%d: %.1f ms" % [t, k + 1, (Time.get_ticks_usec() - t0) / 1000.0])
+			await physics_frame
+	for n in ["magpie", "sapper", "bridger", "mason", "foundry", "airship"]:
+		var t0 := Time.get_ticks_usec()
+		var x: Node2D = load("res://scenes/%s.tscn" % n).instantiate()
+		x.global_position = Vector2(1500, 40)
+		main.add_child(x)
+		log_line("%s spawn: %.1f ms" % [n, (Time.get_ticks_usec() - t0) / 1000.0])
+		await physics_frame
+	var t1 := Time.get_ticks_usec()
+	main._spawn_wave()
+	log_line("a whole wave (%d): %.1f ms" % [main.wave_number, (Time.get_ticks_usec() - t1) / 1000.0])
+
+
+func light_cost() -> void:
+	var L := preload("res://scripts/light_textures.gd")
+	for k in 3:
+		var t0 := Time.get_ticks_usec()
+		L.create_radial_light(256)
+		var t1 := Time.get_ticks_usec()
+		L.create_radial_light(128)
+		log_line("radial light #%d: 256px %.1f ms, 128px %.1f ms" % [k + 1, (t1 - t0) / 1000.0, (Time.get_ticks_usec() - t1) / 1000.0])
+
+
+func hitch_rec() -> void:
+	# Every frame slower than 40 ms in the 4 s after pressing P on the
+	# showcase (wave 5), with what was happening.
+	var sc := preload("res://scripts/sandbox_showcase.gd")
+	await wait(0.2)
+	sc.build(main)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.global_position = Vector2(1700, -20)
+	await wait(3.0)
+	main.wave_number = 4
+	var t_p := Time.get_ticks_usec()
+	await tap(KEY_P)
+	var last := Time.get_ticks_usec()
+	for f in 900:
+		if f == 450:
+			main.get_tree().call_group("enemies", "queue_free")
+			await tap(KEY_P)
+			log_line("second wave at %.2f s" % ((Time.get_ticks_usec() - t_p) / 1e6))
+		await process_frame
+		var now := Time.get_ticks_usec()
+		if now - last > 40000:
+			log_line("hitch %.0f ms at %.2f s after P | physics %.1f ms, process %.1f ms | enemies %d" % [(now - last) / 1000.0, (now - t_p) / 1e6,
+				Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0, Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0,
+				get_nodes_in_group("enemies").size()])
+		last = now
+
+
+func sfx_cost() -> void:
+	var S := preload("res://scripts/sfx.gd")
+	var fns := {
+		"mine_hit": func(): return S.sfx_mine_hit(), "mine_break0": func(): return S.sfx_mine_break(0),
+		"mine_break1": func(): return S.sfx_mine_break(1), "clink": func(): return S.sfx_clink(),
+		"knock_metal": func(): return S.sfx_ore_knock("metal"), "knock_ore": func(): return S.sfx_ore_knock("ore"),
+		"knock_ground": func(): return S.sfx_ore_knock("ground"), "knock_wood": func(): return S.sfx_ore_knock("wood"),
+		"shotgun": func(): return S.sfx_shotgun(), "bounce": func(): return S.sfx_bounce(),
+		"bumper": func(): return S.sfx_bumper(), "laser": func(): return S.sfx_laser(),
+		"enemy_hit": func(): return S.sfx_enemy_hit(), "enemy_die": func(): return S.sfx_enemy_die(),
+		"turret_fire": func(): return S.sfx_turret_fire(), "ammo": func(): return S.sfx_ammo_received(),
+	}
+	for n in fns:
+		var t0 := Time.get_ticks_usec()
+		fns[n].call()
+		var t1 := Time.get_ticks_usec()
+		fns[n].call()
+		log_line("%s: first %.1f ms, again %.2f ms" % [n, (t1 - t0) / 1000.0, (Time.get_ticks_usec() - t1) / 1000.0])

@@ -4,6 +4,7 @@ const WorldGen = preload("res://scripts/world_gen.gd")
 const TileSetBuilder = preload("res://scripts/tileset_builder.gd")
 const ObjectSprites = preload("res://scripts/object_sprites.gd")
 const FX = preload("res://scripts/fx.gd")
+const SFX = preload("res://scripts/sfx.gd")
 
 @export var dome_max_hp: int = 100
 @export var wave_interval: float = 30.0
@@ -64,6 +65,7 @@ func _ready() -> void:
 	add_child(fog)
 	preload("res://scenes/cache.gd").scatter(self, _tilemap)   # salvage caches in the caves
 	_start_music()
+	_prebuild_sounds()
 	_setup_terrain_visuals()
 	if sandbox and showcase:
 		preload("res://scripts/sandbox_showcase.gd").build.call_deferred(self)
@@ -178,6 +180,14 @@ func _style_hud() -> void:
 
 ## Title card over the paused, dimmed world: brass logo, subtitle, prompt.
 ## Any key or click fades it out and starts the game.
+## Synthesise every sound effect now, one a frame (it happens under the
+## title screen), instead of the first time each one plays mid-fight.
+func _prebuild_sounds() -> void:
+	for b in SFX.all_builders():
+		b.call()
+		await get_tree().process_frame
+
+
 func _show_title() -> void:
 	get_tree().paused = true
 	$CanvasLayer.visible = false

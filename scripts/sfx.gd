@@ -276,3 +276,15 @@ static func play(node: Node, stream: AudioStreamWAV, volume_db := -6.0, pitch_ba
 		node.add_child(player)
 		player.play()
 		player.finished.connect(player.queue_free)
+
+
+## Every sound, for building ahead of time (synthesising one the first time
+## it plays hitched the game: the enemy death sound alone takes ~0.4 s).
+static func all_builders() -> Array[Callable]:
+	return [
+		func(): sfx_enemy_die(), func(): sfx_shotgun(), func(): sfx_mine_break(1), func(): sfx_bumper(),
+		func(): sfx_ammo_received(), func(): sfx_clink(), func(): sfx_turret_fire(), func(): sfx_mine_break(0),
+		func(): sfx_enemy_hit(), func(): sfx_ore_knock("ore"), func(): sfx_ore_knock("metal"),
+		func(): sfx_laser(), func(): sfx_bounce(), func(): sfx_ore_knock("ground"), func(): sfx_ore_knock("wood"),
+		func(): sfx_mine_hit(),
+	]
