@@ -32,7 +32,7 @@ func _run() -> void:
 		preload("res://scripts/world_gen.gd").generate(tilemap(), seed)
 		for c in main.get_node("TileShading").get_children():
 			c.queue_redraw()
-		for c in main.get_tree().get_nodes_in_group("caches"):
+		for c in main.get_tree().get_nodes_in_group("caches") + main.get_tree().get_nodes_in_group("geysers"):
 			c.free()   # placed on the old world
 		# scenarios start clean: drop the sandbox showcase built on the old world
 		preload("res://scripts/sandbox_showcase.gd").clear(main)
@@ -4157,3 +4157,33 @@ func daynight_rec() -> void:
 		await wait(0.4)
 		log_line("%s: daylight %.2f warm %.2f" % [spec[1], dn.daylight(), dn.warmth()])
 		await shot("day_" + spec[1])
+
+
+func geyser_rec() -> void:
+	# Ore geysers: scattered on a fresh world; one watched through an
+	# eruption (forced soon) with a soldier standing on its vent.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	preload("res://scenes/geyser.gd").scatter(main, tilemap())
+	await wait(0.2)
+	var gs := get_nodes_in_group("geysers")
+	log_line("geysers placed: %d at %s" % [gs.size(), ", ".join(gs.map(func(g): return str(g.global_position.round())))])
+	var g: Node2D = gs[0]
+	g._t = 3.0
+	var so = _spawn(2, g.global_position + Vector2(0, -24))
+	so.speed = 0.0
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.0, 2.0)
+	cam.global_position = g.global_position + Vector2(0, -100)
+	await tap(KEY_L)
+	var ore0 := get_nodes_in_group("ore").size()
+	var so_top := 9999.0
+	for f in 330:
+		await physics_frame
+		if is_instance_valid(so):
+			so_top = minf(so_top, so.global_position.y)
+		if f in [120, 175, 195, 230]:
+			await shot("geyser_%03d" % f)
+	log_line("eruptions %d, ore spewed %d, thrown %d, soldier rose to %d px above the vent" % [g.eruptions, get_nodes_in_group("ore").size() - ore0, g.thrown, int(g.global_position.y - so_top)])
