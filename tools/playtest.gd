@@ -4230,3 +4230,29 @@ func steam_jump_rec() -> void:
 	log_line("plain jump peaks ~%d px; with two steam bursts it reached %d px above the ground (bursts %d)" % [int(p.jump_force * p.jump_force / (2 * 980.0)), int(y0 - top), p.steam_jumps])
 	await wait(1.0)
 	log_line("landed: steam refilled to %.2f" % p.steam)
+
+
+func quake_rec() -> void:
+	# F4 over a cavern with loose ore and two soldiers in it.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.0, 2.0)
+	cam.global_position = Vector2(1480, 470)
+	await tap(KEY_L)
+	var tm := tilemap()
+	var cells0 := tm.get_used_cells().size()
+	for k in 8:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.global_position = Vector2(1400 + k * 20, 440)
+		main.add_child(o)
+	await wait(1.0)
+	await tap(KEY_F4)
+	for s in 10:
+		await wait(1.0)
+		if s in [3, 5]:
+			await shot("quake_%d" % s)
+	var q = main.quake
+	log_line("quake: ceiling falls %d, tiles gone %d, jolts %d" % [q.falls if is_instance_valid(q) else -1, cells0 - tm.get_used_cells().size(), q.jolts if is_instance_valid(q) else -1])
