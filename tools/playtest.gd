@@ -3750,3 +3750,33 @@ func tech_rec() -> void:
 	log_line("Packed charges level %d (mult %.2f)" % [T.level("charges"), T.mult("charges")])
 	var after: int = await boom.call(1900.0)
 	log_line("blast shell damage to a soldier 30px away: before %d, after %d" % [before, after])
+
+
+func tech_panel_rec() -> void:
+	# The research screen: open it on a lab (one tech part-done, one level
+	# researched), then pick a tech from it.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var T := preload("res://scripts/tech.gd")
+	T.levels["barrels"] = 1
+	T.levels["lamps"] = 2
+	preload("res://scenes/lab.gd").progress["hook"] = 2
+	var lab: Node2D = preload("res://scenes/lab.tscn").instantiate()
+	lab.global_position = Vector2(1500, 60)
+	main.add_child(lab)
+	await wait(0.4)
+	lab.open_panel()
+	await wait(0.3)
+	await shot("tech_panel")
+	var panel = main.get_node("TechPanel")
+	var i := T.TECHS.map(func(t): return t.id).find("harpoons")
+	panel._on_row_input(_click(), i)
+	await wait(0.2)
+	log_line("picked row %d: lab research now %s, panel open %s" % [i, T.TECHS[lab.research].id, panel.visible])
+
+
+func _click() -> InputEventMouseButton:
+	var ev := InputEventMouseButton.new()
+	ev.button_index = MOUSE_BUTTON_LEFT
+	ev.pressed = true
+	return ev

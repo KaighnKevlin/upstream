@@ -3,7 +3,7 @@ extends Node2D
 ## the bell jar and works them into the selected research (faster when a
 ## gravity wheel drives it). Each level of a tech costs a few flasks; the
 ## upgrade applies at once to every machine it affects (scripts/tech.gd).
-## Click it to pick what to research. Anything that isn't a flask is spat
+## Click it to open the research screen. Anything that isn't a flask is spat
 ## back out.
 ## Art: tools/art/gen_lab.py (4 frames of 48x58, feet at the bottom).
 
@@ -179,7 +179,16 @@ func _input(event: InputEvent) -> void:
 		return
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		if Rect2(-16, -46, 32, 44).has_point(to_local(get_global_mouse_position())):
-			research = (research + 1) % Tech.TECHS.size()
-			_update_label()
-			SFX.play(self, SFX.sfx_clink())
+			open_panel()
 			get_viewport().set_input_as_handled()
+
+
+## The research screen (scripts/tech_panel.gd), for this lab.
+func open_panel() -> void:
+	var scene := get_tree().current_scene
+	var panel := scene.get_node_or_null("TechPanel")
+	if panel == null:
+		panel = preload("res://scripts/tech_panel.gd").new()
+		panel.name = "TechPanel"
+		scene.add_child(panel)
+	panel.open(self)
