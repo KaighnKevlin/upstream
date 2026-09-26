@@ -3851,3 +3851,42 @@ func music_rec() -> void:
 	log_line("music: %s, loop mode %d, length %.1f s, playing %s at %.2f s" % [st.resource_path.get_file(), st.loop_mode, st.get_length(), m.playing, m.get_playback_position()])
 	main.toggle_music()
 	log_line("after F8: paused %s" % m.stream_paused)
+
+
+func seesaw_rec() -> void:
+	# A seesaw with three copper ore resting on its left end and a soldier
+	# on it; iron dropped from high onto the right end flings them.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var ss: Node2D = preload("res://scenes/seesaw.tscn").instantiate()
+	ss.global_position = Vector2(1560, 60)
+	main.add_child(ss)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.4, 2.4)
+	cam.global_position = Vector2(1560, 0)
+	await wait(0.5)
+	var coppers := []
+	for k in 3:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.global_position = ss.global_position + Vector2(-26 + k * 6, -40 - k * 10)
+		main.add_child(o)
+		coppers.append(o)
+	await wait(1.5)
+	log_line("plank tilt with copper on the left: %.1f deg" % rad_to_deg(ss._plank.rotation))
+	var ys := coppers.map(func(o): return o.global_position.y)
+	var drop: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+	drop.kind = "iron"
+	drop.global_position = ss.global_position + Vector2(28, -200)
+	main.add_child(drop)
+	var top := {}
+	for f in 90:
+		await physics_frame
+		for o in coppers:
+			if is_instance_valid(o):
+				top[o] = minf(top.get(o, 9999.0), o.global_position.y)
+		if f % 6 == 0 and f > 20 and f < 70:
+			await _grab(Rect2(Vector2(1470, -40), Vector2(180, 140)), "seesaw_%02d" % (f / 6), -4)
+	log_line("copper rest y %s -> highest y %s" % [ys.map(func(y): return int(y)), coppers.map(func(o): return int(top.get(o, 0)))])
+	log_line("plank tilt after the iron: %.1f deg" % rad_to_deg(ss._plank.rotation))
