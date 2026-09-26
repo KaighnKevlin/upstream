@@ -4136,3 +4136,24 @@ func manual_rec() -> void:
 		main.get_node("Manual")._build()
 		await wait(0.3)
 		await shot("manual_%d" % t)
+
+
+func daynight_rec() -> void:
+	# Stills of the showcase across a day: midnight, dawn, noon, dusk.
+	var sc := preload("res://scripts/sandbox_showcase.gd")
+	await wait(0.2)
+	sc.build(main)
+	main._wave_timer = -9999.0
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.2, 1.2)
+	cam.global_position = Vector2(1300, -60)
+	var dn = main.get_node("DayNight")
+	dn.paused = true
+	for spec in [[0.0, "midnight"], [0.29, "dawn"], [0.5, "noon"], [0.71, "dusk"]]:
+		dn.clock = spec[0]
+		dn.apply()
+		await wait(0.4)
+		log_line("%s: daylight %.2f warm %.2f" % [spec[1], dn.daylight(), dn.warmth()])
+		await shot("day_" + spec[1])

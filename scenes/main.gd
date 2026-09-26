@@ -498,6 +498,9 @@ func _setup_terrain_visuals() -> void:
 	decor.setup(_tilemap)
 
 	_add_moonlight()
+	var dn := preload("res://scripts/daynight.gd").new()   # day and night
+	dn.name = "DayNight"
+	add_child(dn)
 
 
 func _add_moonlight() -> void:
