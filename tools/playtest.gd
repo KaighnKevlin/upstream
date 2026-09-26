@@ -1984,7 +1984,7 @@ func bumper_rec() -> void:
 	await wait(0.3)
 	log_line("bumper stands at %s" % [bm.global_position])
 	await shot("bumper")
-	var e: CharacterBody2D = _spawn(2, Vector2(1760, 60))
+	var e: CharacterBody2D = _spawn(2, Vector2(1640, 60))
 	var hp0: int = e.hp
 	var min_x := 9999.0
 	var max_back := 0.0
