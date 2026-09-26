@@ -160,7 +160,7 @@ func _style_hud() -> void:
 		l.add_theme_constant_override("shadow_offset_y", 2)
 	($CanvasLayer/DomeHpLabel as Label).horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	($CanvasLayer/BuildLabel as Label).text = \
-		"Tab/wheel pick   RMB remove   Q cancel   J mine   F shoot   E carry   Shift hook"
+		"F1 manual   Tab/wheel pick   RMB remove   Q cancel   J mine   F shoot   Shift hook"
 	($CanvasLayer/Title as Label).text = "UPSTREAM"
 	var toolbar := preload("res://scripts/build_bar.gd").new()
 	toolbar.font = PixelFont.get_font()
@@ -304,6 +304,15 @@ func _start_music() -> void:
 	add_child(_music)
 	if OS.get_cmdline_user_args().is_empty():   # not in the test harness
 		_music.play()
+
+
+func open_manual() -> void:
+	var m := get_node_or_null("Manual")
+	if m == null:
+		m = preload("res://scripts/manual.gd").new()
+		m.name = "Manual"
+		add_child(m)
+	m.toggle()
 
 
 func toggle_music() -> void:
@@ -960,6 +969,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_god_key(event)
 		if event.keycode == KEY_F8 and not event.echo:
 			toggle_music()
+		if event.keycode == KEY_F1 and not event.echo:
+			open_manual()
 		# Cheat: L to toggle lighting (see underground)
 		if event.keycode == KEY_L:
 			if has_node("Fog"):

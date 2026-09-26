@@ -4126,3 +4126,13 @@ func tinker_rec() -> void:
 	tk.take_damage(99)
 	await wait(4.0)
 	log_line("tinker destroyed; wounded soldier stays at hp %d" % so1.hp)
+
+
+func manual_rec() -> void:
+	await wait(0.3)
+	for t in 3:
+		main.open_manual() if t == 0 else null
+		main.get_node("Manual")._tab = t
+		main.get_node("Manual")._build()
+		await wait(0.3)
+		await shot("manual_%d" % t)
