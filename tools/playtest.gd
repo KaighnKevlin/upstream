@@ -3610,3 +3610,39 @@ func shell_rec() -> void:
 		if is_instance_valid(s):
 			left += 1
 	log_line("chain: %d of 4 resting shells left (0 = all went up)" % left)
+
+
+func tall_lift_rec() -> void:
+	# The expandable upstream: a lift on the ground, extended twice by
+	# building on its top (3 segments, 360px); ore tipped in at the bottom
+	# rides all the way up and stacks at the new top.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var bs := get_root().get_node("BuildSystem")
+	var lift: Node2D = preload("res://scenes/upstream_shaft.tscn").instantiate()
+	lift.global_position = Vector2(1500, 36)
+	main.add_child(lift)
+	bs._placed_buildings.append(lift)
+	await wait(0.2)
+	for k in 2:
+		var hit = bs._lift_below(Vector2(1502, lift.top_y() - 20))
+		log_line("build on top #%d: found lift %s -> extend %s, segments %d, top y %d" % [k + 1, hit != null, hit.extend() if hit else false, lift.segments, lift.top_y()])
+	var miss = bs._lift_below(Vector2(1502, lift.top_y() - 200))
+	log_line("far above the top: extends? %s" % (miss != null))
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.8, 1.8)
+	cam.global_position = Vector2(1500, -110)
+	for k in 6:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.global_position = Vector2(1500 + randf_range(-6, 6), 60)
+		main.add_child(o)
+		await wait(0.3)
+	await wait(4.0)
+	var ys := []
+	for o in get_nodes_in_group("ore"):
+		ys.append(int(o.global_position.y))
+	ys.sort()
+	log_line("ore heights (top of lift at %d): %s" % [lift.top_y(), ys])
+	await shot("tall_lift")

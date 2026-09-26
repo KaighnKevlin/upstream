@@ -242,6 +242,12 @@ func _can_place(pos: Vector2) -> bool:
 
 func _place_building() -> void:
 	var pos := _get_world_mouse_pos()
+	if current_build == BuildType.UPSTREAM:
+		# on top of a lift: it grows instead
+		var lift := _lift_below(pos)
+		if lift:
+			lift.extend()
+			return
 	if not _can_place(pos):
 		return
 
@@ -249,6 +255,15 @@ func _place_building() -> void:
 	building.global_position = pos
 	get_tree().current_scene.add_child(building)
 	_placed_buildings.append(building)
+
+
+## A lift whose top is just under `pos` (building there extends it).
+func _lift_below(pos: Vector2) -> Node2D:
+	for b in _placed_buildings:
+		if is_instance_valid(b) and b.has_method("extend") and absf(b.global_position.x - pos.x) < 28.0 \
+				and pos.y < b.top_y() + 30.0 and pos.y > b.top_y() - 100.0:
+			return b
+	return null
 
 
 func _get_tilemap() -> TileMapLayer:
