@@ -18,8 +18,12 @@ extends Node
 ##     tapper -> catapult -> back over into the hopper, so the trap rearms
 ##     iron tapper -> splitter -> a chute each way -> two funnel turrets
 ##   Far east (the first things a wave meets)
+##     the gate: a tripwire across the path wired to two powder kegs, an
+##       ambush that greets the first wave (one-shot: they're gone after)
 ##     the grinder: a trapdoor over a pit with a crusher at the bottom
-##     a tesla coil and a flame turret, charged and fuelled, covering it
+##     a tesla coil and a flame turret, charged and fuelled, covering it,
+##       and two snares just past the grinder that pin walkers in the
+##       coil's reach
 ##
 ## Aims were solved with a small simulation of the same physics (gravity
 ## 980, 60 Hz, the trampoline's reflect + kick, the laser's 0.6 slowdown)
@@ -65,6 +69,9 @@ const GROUND_TO := 142
 const GRINDER_PIT := Rect2i(128, 6, 3, 4)      # tiles; a trapdoor over it, a crusher at the bottom
 const TESLA_AT := Vector2(1960, 80)
 const FLAMER_AT := Vector2(2010, 80)
+const SNARES := [Vector2(2118, 80), Vector2(2146, 80)]   # past the grinder, in the coil's reach
+const GATE_WIRE := [Vector2(2190, 72), Vector2(2250, 72)]   # waist-high across the path
+const GATE_KEGS := [Vector2(2210, 80), Vector2(2232, 80)]
 
 # one tapper, two turrets: splitter on a post, a chute down to each funnel
 const SPLIT_TAPPER := Vector2i(104, 7)
@@ -154,6 +161,14 @@ static func build(main: Node) -> void:
 	te.charge = te.MAX_CHARGE
 	var fl: Node2D = _add(main, preload("res://scenes/flamer.tscn"), FLAMER_AT)
 	fl.fuel = fl.MAX_FUEL
+	for at in SNARES:
+		_add(main, preload("res://scenes/snare.tscn"), at)
+	# the gate: a wire across the path, two kegs under it
+	for at in GATE_KEGS:
+		_add(main, preload("res://scenes/keg.tscn"), at)
+	var wire: Node2D = preload("res://scenes/tripwire.tscn").instantiate()
+	wire.end_offset = GATE_WIRE[1] - GATE_WIRE[0]
+	_add_node(main, wire, GATE_WIRE[0])
 	WorldGen.reframe_all(tm)   # the cleared strip changed the ground's edges
 	if shading:
 		for c in shading.get_children():

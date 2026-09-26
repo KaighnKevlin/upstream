@@ -4328,6 +4328,43 @@ func plate_rec() -> void:
 	log_line("walkers on the plate: tripped %d, tesla overload zaps %d (charge now %d)" % [pl.tripped, ts.zaps - z0, ts.charge])
 
 
+func gate_rec() -> void:
+	# Wave 3 into the showcase: the gate's tripwire should blow its kegs
+	# under the front of the pack; snares then pin walkers for the coil.
+	var sc := preload("res://scripts/sandbox_showcase.gd")
+	await wait(0.2)
+	sc.build(main)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.6, 1.6)
+	cam.global_position = Vector2(2050, 0)
+	await wait(2.0)
+	var wire = null
+	var snares := []
+	var coil = null
+	for n in get_nodes_in_group("showcase"):
+		match n.get_script().resource_path.get_file():
+			"tripwire.gd": wire = n
+			"snare.gd": snares.append(n)
+			"tesla.gd": coil = n
+	await shot("gate_set")
+	main.wave_number = 2
+	await tap(KEY_P)
+	var n0 := get_nodes_in_group("enemies").size()
+	var boomed := false
+	for t in 40:
+		await wait(0.5)
+		if not boomed and wire.tripped > 0:
+			boomed = true
+			await wait(0.1)
+			await shot("gate_boom")
+			log_line("gate tripped at t=%.1f: enemies %d -> %d, kegs left %d" % [t * 0.5, n0, get_nodes_in_group("enemies").size(), get_nodes_in_group("kegs").size()])
+		if t == 24:
+			await shot("gate_snares")
+	log_line("after 20 s: snares snapped %s | coil zaps %d | enemies %d | dome %d" % [snares.map(func(s): return s.snapped), coil.zaps, get_nodes_in_group("enemies").size(), main.dome_hp])
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0

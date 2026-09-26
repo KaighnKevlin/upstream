@@ -761,9 +761,8 @@ func _spawn_wave() -> void:
 		enemy.setup(type)
 		enemy.gilded = randf() < gild_chance
 		gilded += 1 if enemy.gilded else 0
-		enemy.global_position = Vector2(spawn_x - i * 20, surface_y)
 		enemy.direction = -1.0
-		add_child(enemy)
+		_march_in(enemy, Vector2(spawn_x, surface_y), i)
 
 	for k in bearers:
 		var sb := _enemy_scene.instantiate()
@@ -771,9 +770,8 @@ func _spawn_wave() -> void:
 		sb.setup(5)  # SHIELDBEARER
 		sb.gilded = randf() < gild_chance
 		gilded += 1 if sb.gilded else 0
-		sb.global_position = Vector2(spawn_x - (count + k) * 20, surface_y)
 		sb.direction = -1.0
-		add_child(sb)
+		_march_in(sb, Vector2(spawn_x, surface_y), count + k)
 
 	for k in magpies:
 		var mp: Node2D = preload("res://scenes/magpie.tscn").instantiate()
@@ -782,18 +780,15 @@ func _spawn_wave() -> void:
 
 	for k in tinkers:
 		var tk: Node2D = preload("res://scenes/tinker.tscn").instantiate()
-		tk.global_position = Vector2(spawn_x - 50 - k * 40, 40)   # behind the front of the pack
-		add_child(tk)
+		_march_in(tk, Vector2(spawn_x, 40), 3 + k * 3)   # a little behind the front of the pack
 
 	for k in gremlins:
 		var gr: Node2D = preload("res://scenes/gremlin.tscn").instantiate()
-		gr.global_position = Vector2(spawn_x + 10 + k * 25, 40)
-		add_child(gr)
+		_march_in(gr, Vector2(spawn_x, 40), 1 + k * 2)
 
 	for k in mortars:
 		var mo: Node2D = preload("res://scenes/mortar.tscn").instantiate()
-		mo.global_position = Vector2(spawn_x + 40 + k * 45, 40)   # at the back
-		add_child(mo)
+		_march_in(mo, Vector2(spawn_x, 40), count + bearers + 2 + k * 2)   # at the back
 
 	for k in airships:
 		var ab: Node2D = preload("res://scenes/airship.tscn").instantiate()
@@ -839,6 +834,33 @@ func _on_enemy_reached_dome(body: Node2D) -> void:
 		var dmg: int = body.damage if "damage" in body else 10
 		body.queue_free()
 		damage_dome(dmg)
+
+
+## Walkers enter at the world's edge one after another (a column marching
+## in) rather than appearing strung out over the far east, on top of
+## whatever the player built there.
+const MARCH_GAP := 0.35
+
+func _march_in(n: Node2D, at: Vector2, place: int) -> void:
+	n.global_position = at
+	if place <= 0:
+		add_child(n)
+		return
+	# a Timer of our own: it goes with this scene if we leave mid-column
+	var t := Timer.new()
+	t.one_shot = true
+	t.wait_time = place * MARCH_GAP
+	add_child(t)
+	t.timeout.connect(func():
+		t.queue_free()
+		if _game_over:
+			n.free()
+		else:
+			add_child(n))
+	t.tree_exiting.connect(func():
+		if is_instance_valid(n) and not n.is_inside_tree():
+			n.free())
+	t.start()
 
 
 func damage_dome(amount: int) -> void:
