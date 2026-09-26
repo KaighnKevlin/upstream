@@ -87,6 +87,7 @@ func setup(type: EnemyType) -> void:
 ## more damage, and twice the scrap (and a gear) when it's destroyed. Waves
 ## gild a growing share of their walkers from wave 6 (main.gd).
 var gilded := false
+var max_hp := 1                  # full health (tinkers weld up to it)
 const GILD_TINT := Color(1.3, 1.08, 0.62)
 
 
@@ -100,6 +101,7 @@ func _ready() -> void:
 		hp *= 2
 		damage = int(damage * 1.25)
 		call_deferred("_gild")
+	max_hp = hp
 
 	if has_node("AnimatedSprite2D"):
 		var anim := $AnimatedSprite2D as AnimatedSprite2D

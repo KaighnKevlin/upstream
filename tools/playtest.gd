@@ -4094,3 +4094,35 @@ func ambience_rec() -> void:
 				c += Vector2i.UP
 	log_line("view %s | of 400 points: air %d, found a ceiling above %d" % [v, air, ceil])
 	await shot("cave_life")
+
+
+func tinker_rec() -> void:
+	# A tinker behind two wounded soldiers welds them back up; then it's
+	# killed and the welding stops.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var so1 = _spawn(2, Vector2(1600, 60))
+	var so2 = _spawn(2, Vector2(1640, 60))
+	for s in [so1, so2]:
+		s.speed = 0.0
+	var tk: Node2D = preload("res://scenes/tinker.tscn").instantiate()
+	tk.global_position = Vector2(1700, 60)
+	main.add_child(tk)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.8, 2.8)
+	cam.global_position = Vector2(1650, 30)
+	await wait(0.8)
+	so1.take_damage(5)
+	so2.take_damage(3)
+	log_line("wounded: soldiers hp %d, %d" % [so1.hp, so2.hp])
+	for f in 300:
+		await physics_frame
+		if tk._arc_t > 0.35 and f < 200:
+			await _grab(Rect2(Vector2(1570, -20), Vector2(170, 100)), "tinker_weld_%03d" % f, -4)
+	log_line("after 5 s: soldiers hp %d, %d | tinker healed %d" % [so1.hp, so2.hp, tk.healed])
+	so1.take_damage(3)
+	tk.take_damage(99)
+	await wait(4.0)
+	log_line("tinker destroyed; wounded soldier stays at hp %d" % so1.hp)

@@ -40,7 +40,7 @@ var _arrow_count: Label
 var _arrow_t := 0.0
 var _game_over_panel: NinePatchRect
 
-const ENEMY_NAMES := ["titan", "scuttler", "soldier", "caster", "ornithopter", "shieldbearer", "magpie", "sapper", "bridger", "mason", "foundry", "airship"]
+const ENEMY_NAMES := ["titan", "scuttler", "soldier", "caster", "ornithopter", "shieldbearer", "magpie", "sapper", "bridger", "mason", "foundry", "airship", "tinker"]
 
 @onready var _receiver: Area2D = $Receiver
 @onready var _turret: Node2D = $Turret
@@ -652,6 +652,9 @@ func _spawn_wave() -> void:
 	var airships := 1 if wave_number >= 4 and wave_number % 2 == 0 else 0   # troop drops from wave 4
 	if airships > 0:
 		kinds[11] = airships
+	var tinkers := wave_number / 3 if wave_number >= 4 else 0   # repair crews from wave 4
+	if tinkers > 0:
+		kinds[12] = tinkers
 	var boss := wave_number % 5 == 0   # the Foundry Engine every fifth wave
 	if boss:
 		kinds[10] = 1
@@ -699,6 +702,11 @@ func _spawn_wave() -> void:
 		var mp: Node2D = preload("res://scenes/magpie.tscn").instantiate()
 		mp.global_position = Vector2(spawn_x + 20 + k * 60, -120 - k * 20)
 		add_child(mp)
+
+	for k in tinkers:
+		var tk: Node2D = preload("res://scenes/tinker.tscn").instantiate()
+		tk.global_position = Vector2(spawn_x - 50 - k * 40, 40)   # behind the front of the pack
+		add_child(tk)
 
 	for k in airships:
 		var ab: Node2D = preload("res://scenes/airship.tscn").instantiate()
@@ -900,7 +908,7 @@ func _god_key(event: InputEventKey) -> void:
 		KEY_G:
 			if event.echo:
 				return
-			if ENEMY_NAMES[_god_type] in ["magpie", "sapper", "bridger", "mason", "foundry", "airship"]:
+			if ENEMY_NAMES[_god_type] in ["magpie", "sapper", "bridger", "mason", "foundry", "airship", "tinker"]:
 				var mp: Node2D = load("res://scenes/%s.tscn" % ENEMY_NAMES[_god_type]).instantiate()
 				mp.global_position = at
 				add_child(mp)
