@@ -178,6 +178,7 @@ func take_damage(amount: int) -> void:
 	if _dying:
 		return
 	hp -= amount
+	preload("res://scripts/fx.gd").damage_number(get_parent(), hit_center() if has_method("hit_center") else global_position, amount)
 	_bar_fill.size.x = 390.0 * maxf(0.0, float(hp) / MAX_HP)
 	_spr.modulate = Color(1.8, 1.8, 2.0)
 	create_tween().tween_property(_spr, "modulate", Color.WHITE, 0.12)

@@ -4447,3 +4447,20 @@ func starter_veins() -> void:
 			if tilemap().get_cell_atlas_coords(c).x in [2, 3] and c.y <= 14 and absi(c.x - 75) <= 32:
 				near.append(c)
 		log_line("seed %d: ore cells within 8 rows of the surface and 32 tiles of the dome: %d" % [seed, near.size()])
+
+
+func dmg_numbers() -> void:
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var so = _spawn(0, Vector2(1600, 60))
+	so.speed = 0.0
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(3.0, 3.0)
+	cam.global_position = Vector2(1600, 20)
+	await wait(0.6)
+	for a in [2, 4, 9]:
+		so.take_damage(a)
+		await wait(0.12)
+	await shot("dmg_numbers")

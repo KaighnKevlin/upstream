@@ -147,3 +147,29 @@ static func tile_break(parent: Node, tilemap: TileMapLayer, cell: Vector2i, sour
 		t.parallel().tween_property(spr, "modulate:a", 0.0, life * 0.5).set_delay(life * 0.5)
 		t.tween_callback(spr.queue_free)
 
+
+## A damage number popping off whatever was hit: rises and fades. Big hits
+## are bigger and hotter.
+static var _dmg_font: Font
+
+static func damage_number(parent: Node, pos: Vector2, amount: int) -> void:
+	if parent == null or amount <= 0:
+		return
+	if _dmg_font == null:
+		_dmg_font = preload("res://scripts/pixel_font.gd").get_font()
+	var l := Label.new()
+	l.text = str(amount)
+	l.add_theme_font_override("font", _dmg_font)
+	var big := amount >= 6
+	l.add_theme_font_size_override("font_size", 10 if not big else 20)
+	l.add_theme_color_override("font_color", Color(1.0, 0.95, 0.75) if not big else Color(1.0, 0.62, 0.25))
+	l.add_theme_color_override("font_shadow_color", Color(0.08, 0.06, 0.05, 0.95))
+	l.add_theme_constant_override("shadow_offset_x", 1)
+	l.add_theme_constant_override("shadow_offset_y", 1)
+	l.z_index = 12
+	l.position = pos + Vector2(randf_range(-8, 2), -22)
+	parent.add_child(l)
+	var t := l.create_tween().set_parallel()
+	t.tween_property(l, "position:y", l.position.y - 18.0, 0.7).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.tween_property(l, "modulate:a", 0.0, 0.35).set_delay(0.4)
+	t.chain().tween_callback(l.queue_free)
