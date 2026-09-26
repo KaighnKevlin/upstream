@@ -34,6 +34,12 @@ static func save(main: Node) -> int:
 	var data := {"version": 1, "tiles": tiles, "pieces": pieces,
 		"tech": preload("res://scripts/tech.gd").levels, "lab_progress": preload("res://scenes/lab.gd").progress,
 		"player": [player.global_position.x, player.global_position.y]}
+	var dn := main.get_node_or_null("DayNight")
+	if dn:
+		data["clock"] = dn.clock
+	var fog := main.get_node_or_null("Fog")
+	if fog:
+		data["fog"] = Marshalls.raw_to_base64(fog._img.save_png_to_buffer())   # what's been explored
 	var f := FileAccess.open(PATH, FileAccess.WRITE)
 	if f == null:
 		return -1
@@ -107,6 +113,16 @@ static func load_into(main: Node) -> int:
 	lab.progress.clear()
 	for k in data.get("lab_progress", {}):
 		lab.progress[k] = int(data.lab_progress[k])
+	var dn := main.get_node_or_null("DayNight")
+	if dn and data.has("clock"):
+		dn.clock = float(data.clock)
+		dn.apply()
+	var fog := main.get_node_or_null("Fog")
+	if fog and data.has("fog"):
+		var img := Image.new()
+		if img.load_png_from_buffer(Marshalls.base64_to_raw(data.fog)) == OK:
+			fog._img = img
+			fog._tex.update(img)
 	var player: Node2D = main.get_node("Player")
 	player.global_position = Vector2(data.player[0], data.player[1])
 	if "velocity" in player:

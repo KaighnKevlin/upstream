@@ -104,6 +104,13 @@ func _snap_to_floor() -> void:
 	global_position = Vector2(global_position.x, tm.to_global(tm.map_to_local(cell)).y + 8)
 
 
+func _weight(b) -> float:
+	match b.get("enemy_type"):
+		0: return 6.0      # titan
+		1: return 0.6      # scuttler
+	return 2.0
+
+
 func _physics_process(delta: float) -> void:
 	if _plank == null:
 		return
@@ -111,6 +118,13 @@ func _physics_process(delta: float) -> void:
 		_cool[k] -= delta
 		if _cool[k] <= 0:
 			_cool.erase(k)
+	# whoever stands on the plank leans on it: a titan tips it, a scuttler barely
+	for b in get_tree().get_nodes_in_group("enemies") + get_tree().get_nodes_in_group("player"):
+		if not (b is CharacterBody2D) or not b.is_on_floor() or ("_dying" in b and b._dying):
+			continue
+		var local: Vector2 = _plank.to_local(b.global_position)
+		if absf(local.x) < HALF + 2.0 and local.y > -14.0 and local.y < 4.0:
+			_plank.apply_torque(local.x * _weight(b) * 900.0 * delta * 60.0)
 	var w := _plank.angular_velocity
 	if absf(w) < 2.0:
 		return

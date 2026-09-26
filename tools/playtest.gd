@@ -4187,3 +4187,20 @@ func geyser_rec() -> void:
 		if f in [120, 175, 195, 230]:
 			await shot("geyser_%03d" % f)
 	log_line("eruptions %d, ore spewed %d, thrown %d, soldier rose to %d px above the vent" % [g.eruptions, get_nodes_in_group("ore").size() - ore0, g.thrown, int(g.global_position.y - so_top)])
+
+
+func seesaw_walker() -> void:
+	# A soldier walks onto a level seesaw: the plank tips under it.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var ss: Node2D = preload("res://scenes/seesaw.tscn").instantiate()
+	ss.global_position = Vector2(1560, 60)
+	main.add_child(ss)
+	await wait(0.5)
+	log_line("empty plank: %.1f deg" % rad_to_deg(ss._plank.rotation))
+	var so = _spawn(2, Vector2(1640, 40))
+	var most := 0.0
+	for f in 240:
+		await physics_frame
+		most = maxf(most, absf(rad_to_deg(ss._plank.rotation)))
+	log_line("with a soldier walking over: tipped up to %.1f deg" % most)
