@@ -5,7 +5,8 @@ extends CharacterBody2D
 ## ladle on its crane arm, and every so often its back hatch opens and lets
 ## out a pair of scuttlers. Too big to climb or leap: it grinds its way
 ## through ditch walls and ledges in its path, leaving a ramp. Too heavy for
-## magnets and bumpers. It has a health bar at the top of the screen, and
+## magnets and bumpers, and fireproof (it is a furnace: flame turrets ignore
+## it). It has a health bar at the top of the screen, and
 ## when it finally blows it scatters a heap of scrap.
 ## Art: tools/art/gen_foundry.py (10 frames of 110x112: 6 walk, 4 fling).
 
@@ -17,8 +18,8 @@ const LightTextures = preload("res://scripts/light_textures.gd")
 
 const SPEED := 16.0
 const GRAVITY := 980.0
-const MAX_HP := 90
-const FLING_RANGE := 520.0       # starts flinging at the dome from this far
+const MAX_HP := 200
+const FLING_RANGE := 700.0       # starts flinging at the dome from this far (while it pushes through your defences)
 const STOP_RANGE := 300.0        # stops walking this far from the dome
 const FLING_EVERY := 4.0
 const HATCH_EVERY := 10.0

@@ -177,7 +177,7 @@ func _in_cone(p: Vector2, reach: float) -> bool:
 
 func _scorch(reach: float, delta: float) -> void:
 	for e in get_tree().get_nodes_in_group("enemies"):
-		if not is_instance_valid(e) or ("_dying" in e and e._dying) or e.get("buried"):
+		if not is_instance_valid(e) or ("_dying" in e and e._dying) or e.get("buried") or _fireproof(e):
 			continue
 		var at: Vector2 = e.hit_center() if e.has_method("hit_center") else e.global_position
 		if _in_cone(at, reach):
@@ -227,12 +227,17 @@ func _tick_burns(delta: float) -> void:
 			_heat.erase(o)
 
 
+## The Foundry Engine is a furnace: fire doesn't touch it.
+func _fireproof(e) -> bool:
+	return e.get_script() != null and e.get_script().resource_path.get_file() == "foundry.gd"
+
+
 func _nearest(reach: float):
 	var best = null
 	var best_d := reach
 	var from := to_global(PIVOT)
 	for e in get_tree().get_nodes_in_group("enemies"):
-		if not is_instance_valid(e) or ("_dying" in e and e._dying) or e.get("buried"):
+		if not is_instance_valid(e) or ("_dying" in e and e._dying) or e.get("buried") or _fireproof(e):
 			continue
 		var at: Vector2 = e.hit_center() if e.has_method("hit_center") else e.global_position
 		var d := from.distance_to(at)
