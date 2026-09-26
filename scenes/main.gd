@@ -335,6 +335,9 @@ func start_survival() -> void:
 	_wave_timer = 0.0
 	_waves_started = false
 	_wave_label.text = "Get an ingot into the dome to begin"
+	var goals := preload("res://scripts/goals.gd").new()   # the first steps, in the HUD
+	goals.name = "Goals"
+	add_child(goals)
 
 
 func _hud_label(text: String, size: int, color: Color) -> Label:

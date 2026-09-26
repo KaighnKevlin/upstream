@@ -4395,3 +4395,42 @@ func dome_repair_rec() -> void:
 	log_line("dome %d, stock %d" % [main.dome_hp, r.buffer])
 	await wait(10.0)
 	log_line("after 10 s: dome %d, stock %d, repaired %d" % [main.dome_hp, r.buffer, main.repaired])
+
+
+func goals_rec() -> void:
+	# Survival's goal chain: start survival, then satisfy each goal in turn.
+	await wait(0.3)
+	main.start_survival()
+	await wait(0.5)
+	var g = main.get_node("Goals")
+	log_line("goal 1: %s" % g._label.text)
+	await shot("goals_start")
+	var tm := tilemap()
+	var ore := Vector2i.ZERO
+	for c in tm.get_used_cells():
+		if tm.get_cell_atlas_coords(c).x in [2, 3]:
+			ore = c
+			break
+	main.get_node("Player").global_position = tm.to_global(tm.map_to_local(ore)) + Vector2(0, -24)
+	await wait(0.8)
+	log_line("after walking up to ore: step %d" % g.step)
+	var bs := get_root().get_node("BuildSystem")
+	var m: Node2D = preload("res://scenes/miner.tscn").instantiate()
+	m.global_position = tm.to_global(tm.map_to_local(ore))
+	main.add_child(m)
+	bs._placed_buildings.append(m)
+	await wait(0.8)
+	var ing: RigidBody2D = preload("res://scenes/ingot.tscn").instantiate()
+	ing.global_position = Vector2(1400, 40)
+	main.add_child(ing)
+	await wait(0.8)
+	var ing2: RigidBody2D = preload("res://scenes/ingot.tscn").instantiate()
+	ing2.global_position = Vector2(1200, 40)
+	main.add_child(ing2)
+	await wait(1.5)
+	var t: Node2D = preload("res://scenes/funnel_turret.tscn").instantiate()
+	t.global_position = Vector2(1500, 60)
+	main.add_child(t)
+	bs._placed_buildings.append(t)
+	await wait(0.8)
+	log_line("final step %d of %d, waves started %s, label '%s'" % [g.step, g.GOALS.size(), main._waves_started, g._label.text])
