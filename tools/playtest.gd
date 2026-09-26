@@ -4064,3 +4064,33 @@ func tube_rec() -> void:
 		if is_instance_valid(o) and o.global_position.x > 1600:
 			out += 1
 	log_line("tube sent %d; ore now past the outlet side %d/5" % [tb.sent, out])
+
+
+func ambience_rec() -> void:
+	# Cave life: the camera on a cavern for a few seconds.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.4, 2.4)
+	cam.global_position = Vector2(1480, 490)
+	await tap(KEY_L)
+	await wait(4.0)
+	var amb = main.get_node("Ambience")
+	log_line("moths %d, drips %d" % [amb._moths.size(), amb._drips.size()])
+	var v: Rect2 = amb._view()
+	var air := 0
+	var ceil := 0
+	for k in 400:
+		var p := Vector2(randf_range(v.position.x, v.end.x), randf_range(v.position.y, v.end.y))
+		var c := tilemap().local_to_map(p)
+		if tilemap().get_cell_source_id(c) == -1:
+			air += 1
+			for j in 12:
+				if tilemap().get_cell_source_id(c + Vector2i.UP) != -1:
+					ceil += 1
+					break
+				c += Vector2i.UP
+	log_line("view %s | of 400 points: air %d, found a ceiling above %d" % [v, air, ceil])
+	await shot("cave_life")

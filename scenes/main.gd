@@ -64,6 +64,9 @@ func _ready() -> void:
 	fog.name = "Fog"
 	add_child(fog)
 	preload("res://scenes/cache.gd").scatter(self, _tilemap)   # salvage caches in the caves
+	var amb := preload("res://scripts/ambience.gd").new()   # glowmoths and drips in the caves
+	amb.name = "Ambience"
+	add_child(amb)
 	_start_music()
 	_prebuild_sounds()
 	_setup_terrain_visuals()
