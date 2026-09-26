@@ -4256,3 +4256,36 @@ func quake_rec() -> void:
 			await shot("quake_%d" % s)
 	var q = main.quake
 	log_line("quake: ceiling falls %d, tiles gone %d, jolts %d" % [q.falls if is_instance_valid(q) else -1, cells0 - tm.get_used_cells().size(), q.jolts if is_instance_valid(q) else -1])
+
+
+func dreadnought_rec() -> void:
+	# The Dreadnought cruises in, parks short of the dome, bombs and launches
+	# ornithopters; then it's shot down and crashes.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var dn: Node2D = preload("res://scenes/dreadnought.tscn").instantiate()
+	dn.global_position = Vector2(1900, -120)
+	main.add_child(dn)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.2, 1.2)
+	Engine.time_scale = 2.0
+	for s in 24:
+		await wait(1.0)
+		cam.global_position = Vector2(dn.global_position.x, -20)
+		if s % 4 == 3:
+			await shot("dread_%02d" % s)
+	Engine.time_scale = 1.0
+	log_line("state %d at x %d | bombs %d, ornithopters launched %d, dome %d" % [dn._state, dn.global_position.x, dn.bombs, dn.launched, main.dome_hp])
+	dn.take_damage(999)
+	for s in 6:
+		await wait(0.6)
+		if is_instance_valid(dn):
+			cam.global_position = Vector2(dn.global_position.x, 0)
+		if s % 2 == 1:
+			await shot("dread_fall_%d" % s)
+	var scrap := 0
+	for o in get_nodes_in_group("ore"):
+		scrap += 1 if o.get("kind") == "scrap" else 0
+	log_line("crashed: %s, scrap %d" % [not is_instance_valid(dn), scrap])

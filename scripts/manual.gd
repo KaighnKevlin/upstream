@@ -51,6 +51,7 @@ const TABS := [
 		["", "Tinker", "fragile repair crew that welds its friends back up: kill it first"],
 		["", "Troop airship", "flies over everything and lowers soldiers behind your lines"],
 		["", "Foundry Engine", "boss every 5th wave: flings slag, spawns scuttlers, bulldozes ditches"],
+		["", "Dreadnought", "flying boss every 10th wave: parks over your works, bombs, launches fliers"],
 		["", "Gilded", "from wave 6: gold elites with double health and double loot"],
 	]],
 	["ITEMS AND EVENTS", [

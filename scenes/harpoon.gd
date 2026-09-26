@@ -110,7 +110,7 @@ func _is_flier(e) -> bool:
 	if e.get("enemy_type") == 4:     # ornithopter
 		return true
 	var s = e.get_script()
-	return s != null and s.resource_path.get_file() in ["airship.gd", "magpie.gd"]
+	return s != null and s.resource_path.get_file() in ["airship.gd", "magpie.gd", "dreadnought.gd"]
 
 
 func _center(e) -> Vector2:
@@ -185,8 +185,9 @@ func _fly(delta: float) -> void:
 			e.take_damage(4)
 			FX.burst(get_parent(), _shot_pos, Color(0.9, 0.85, 0.7), 6, 80.0, 0.3, 1.4)
 			SFX.play(self, SFX.sfx_ore_knock("metal"), -2.0, 0.7)
-			if not is_instance_valid(e) or ("_dying" in e and e._dying):
-				_target = null
+			if not is_instance_valid(e) or ("_dying" in e and e._dying) \
+					or e.get_script().resource_path.get_file() == "dreadnought.gd":
+				_target = null   # (the Dreadnought is far too big to winch down: the barb just bites)
 			return
 	if _shot_pos.distance_to(to_global(PIVOT)) > RANGE * 1.3 or _shot_pos.y > global_position.y + 40:
 		_flying = false     # a miss: the rope reels the harpoon back

@@ -116,7 +116,7 @@ func _physics_process(delta: float) -> void:
 func _too_heavy(e) -> bool:
 	if e.get("enemy_type") == 0:          # titan
 		return true
-	return e.get_script() != null and e.get_script().resource_path.get_file() in ["bridger.gd", "sapper.gd", "foundry.gd", "airship.gd"]
+	return e.get_script() != null and e.get_script().resource_path.get_file() in ["bridger.gd", "sapper.gd", "foundry.gd", "airship.gd", "dreadnought.gd"]
 
 
 func _switch(to_on: bool) -> void:
