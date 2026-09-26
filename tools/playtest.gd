@@ -4164,6 +4164,53 @@ func gremlin_rec() -> void:
 	log_line("gremlin now at x %.0f (heading %s)" % [gr.global_position.x, "to the dome" if gr.direction < 0 else "away"])
 
 
+func snare_rec() -> void:
+	# A soldier walks onto a snare and is held (its x barely moves for ~3 s),
+	# then tears free and walks on; the snare winds back open. A chunk of
+	# ore dropped on a second snare is flipped high.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var sn: Node2D = preload("res://scenes/snare.tscn").instantiate()
+	sn.global_position = Vector2(1680, 60)
+	main.add_child(sn)
+	var sn2: Node2D = preload("res://scenes/snare.tscn").instantiate()
+	sn2.global_position = Vector2(1560, 60)
+	main.add_child(sn2)
+	var so = _spawn(2, Vector2(1780, 40))
+	var hp0: int = so.hp
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.6, 2.6)
+	cam.global_position = Vector2(1650, 20)
+	var t_snap := -1.0
+	var xs := []
+	for t in 90:
+		await wait(0.1)
+		if t_snap < 0 and sn.snapped > 0:
+			t_snap = t * 0.1
+			await shot("snare_held")
+		if t_snap >= 0 and is_instance_valid(so):
+			xs.append(so.global_position.x)
+		if t_snap >= 0 and t * 0.1 > t_snap + 4.0:
+			break
+	log_line("snapped at t=%.1f, soldier hp %d -> %d" % [t_snap, hp0, so.hp if is_instance_valid(so) else -1])
+	if xs.size() > 32:
+		log_line("soldier x over the hold: %.0f .. %.0f (drift %.0f); 1 s after release %.0f" % [xs[0], xs[25], absf(xs[25] - xs[0]), xs[xs.size() - 1]])
+	var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+	o.kind = "copper"
+	o.global_position = sn2.global_position + Vector2(0, -40)
+	main.add_child(o)
+	var top := 9999.0
+	for t in 20:
+		await wait(0.05)
+		if is_instance_valid(o):
+			top = minf(top, o.global_position.y)
+	log_line("ore flipped %d; rose to %.0f px above the snare" % [sn2.flipped, sn2.global_position.y - top])
+	await wait(3.5)
+	log_line("snare 1 state %d (0 = set again), snapped %d, t %.2f, soldier x %.0f" % [sn._state, sn.snapped, sn._t, so.global_position.x if is_instance_valid(so) else -1.0])
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0
