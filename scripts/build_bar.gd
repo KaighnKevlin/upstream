@@ -135,6 +135,29 @@ func _gui_input(event: InputEvent) -> void:
 		accept_event()
 
 
+## Tab flips to the next tab; the mouse wheel steps through the current
+## tab's pieces (so every piece has a keyboard/mouse route, hotkey or not).
+func _unhandled_input(event: InputEvent) -> void:
+	var bs := get_node_or_null("/root/BuildSystem")
+	if bs == null:
+		return
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_TAB:
+		_cat = (_cat + 1) % CATS.size()
+		_hover = -1
+		_layout()
+		if _current != 0:
+			bs._set_build(_types()[0])
+		get_viewport().set_input_as_handled()
+	elif event is InputEventMouseButton and event.pressed \
+			and event.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
+		var types := _types()
+		var i := types.find(_current)
+		var step := 1 if event.button_index == MOUSE_BUTTON_WHEEL_DOWN else -1
+		i = 0 if i < 0 else posmod(i + step, types.size())
+		bs._set_build(types[i])
+		get_viewport().set_input_as_handled()
+
+
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_MOUSE_EXIT:
 		_hover = -1

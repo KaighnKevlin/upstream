@@ -1953,6 +1953,17 @@ func buildbar() -> void:
 	await wait(0.2)
 	log_line("pressed 7: tab %d (%s), build=%d" % [bar._cat, bar.CATS[bar._cat][0], bs.current_build])
 	await shot("bar_defence")
+	for k in 2:
+		var w := InputEventMouseButton.new()
+		w.button_index = MOUSE_BUTTON_WHEEL_DOWN
+		w.pressed = true
+		bar._unhandled_input(w)
+	log_line("wheel down twice from spikes: build=%d (22 = electromagnet)" % bs.current_build)
+	var tab := InputEventKey.new()
+	tab.keycode = KEY_TAB
+	tab.pressed = true
+	bar._unhandled_input(tab)
+	log_line("Tab: tab %d (%s), build=%d (1 = trampoline)" % [bar._cat, bar.CATS[bar._cat][0], bs.current_build])
 	await tap(KEY_Q)
 
 
