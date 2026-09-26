@@ -63,6 +63,7 @@ func _ready() -> void:
 	fog.name = "Fog"
 	add_child(fog)
 	preload("res://scenes/cache.gd").scatter(self, _tilemap)   # salvage caches in the caves
+	_start_music()
 	_setup_terrain_visuals()
 	if sandbox and showcase:
 		preload("res://scripts/sandbox_showcase.gd").build.call_deferred(self)
@@ -272,6 +273,31 @@ func _on_title_input(event: InputEvent) -> void:
 		cam.position = Vector2.ZERO
 		cam.zoom = _title_cam_zoom
 		get_tree().paused = false)
+
+
+# --- Music ------------------------------------------------------------------
+# "Clockwork Nocturne" (tools/audio/gen_music.py), looping; F8 mutes it.
+var _music: AudioStreamPlayer
+
+
+func _start_music() -> void:
+	var st := load("res://assets/audio/nocturne.wav") as AudioStream   # loops (set in its .import)
+	if st == null:
+		return
+	_music = AudioStreamPlayer.new()
+	_music.stream = st
+	_music.volume_db = -14.0
+	_music.process_mode = Node.PROCESS_MODE_ALWAYS   # plays under the title too
+	add_child(_music)
+	if OS.get_cmdline_user_args().is_empty():   # not in the test harness
+		_music.play()
+
+
+func toggle_music() -> void:
+	if _music == null:
+		return
+	_music.stream_paused = not _music.stream_paused
+	_show_banner("MUSIC OFF" if _music.stream_paused else "MUSIC ON", "F8 toggles it")
 
 
 ## Survival: the bare world and the wave game (no showcase, no god tools);
@@ -903,6 +929,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_spawn_wave()
 		if sandbox and not _game_over:
 			_god_key(event)
+		if event.keycode == KEY_F8 and not event.echo:
+			toggle_music()
 		# Cheat: L to toggle lighting (see underground)
 		if event.keycode == KEY_L:
 			if has_node("Fog"):

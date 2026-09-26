@@ -3839,3 +3839,15 @@ func title_modes() -> void:
 		await process_frame
 	await wait(0.5)
 	log_line("survival: sandbox %s, showcase pieces %d -> %d, god label %s, waves started %s, label '%s', paused %s" % [main.sandbox, built, get_nodes_in_group("showcase").size(), main._god_label != null, main._waves_started, main._wave_label.text, paused])
+
+
+func music_rec() -> void:
+	# The soundtrack loads, loops, plays, and F8 pauses it.
+	await wait(0.3)
+	var m: AudioStreamPlayer = main._music
+	var st := m.stream as AudioStreamWAV
+	m.play()
+	await wait(1.0)
+	log_line("music: %s, loop mode %d, length %.1f s, playing %s at %.2f s" % [st.resource_path.get_file(), st.loop_mode, st.get_length(), m.playing, m.get_playback_position()])
+	main.toggle_music()
+	log_line("after F8: paused %s" % m.stream_paused)
