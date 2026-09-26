@@ -4204,3 +4204,29 @@ func seesaw_walker() -> void:
 		await physics_frame
 		most = maxf(most, absf(rad_to_deg(ss._plank.rotation)))
 	log_line("with a soldier walking over: tipped up to %.1f deg" % most)
+
+
+func steam_jump_rec() -> void:
+	# Jump, then two steam bursts in the air: how high does the prospector get,
+	# and a third burst is refused until landing refills the boiler.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var p: CharacterBody2D = main.get_node("Player")
+	p.global_position = Vector2(1500, 70)
+	await wait(0.6)
+	var y0 := p.global_position.y
+	var top := y0
+	p.velocity.y = -p.jump_force
+	for f in 150:
+		await physics_frame
+		top = minf(top, p.global_position.y)
+		if f in [22, 44, 66]:
+			if p.steam >= p.STEAM_COST:
+				p.steam_jump()
+			else:
+				log_line("third burst refused: steam %.2f" % p.steam)
+		if f == 40:
+			await _grab(Rect2(p.global_position + Vector2(-80, -60), Vector2(160, 120)), "steam", -4)
+	log_line("plain jump peaks ~%d px; with two steam bursts it reached %d px above the ground (bursts %d)" % [int(p.jump_force * p.jump_force / (2 * 980.0)), int(y0 - top), p.steam_jumps])
+	await wait(1.0)
+	log_line("landed: steam refilled to %.2f" % p.steam)

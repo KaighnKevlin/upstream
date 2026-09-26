@@ -40,6 +40,11 @@ func _ready() -> void:
 	hp = max_hp
 	add_to_group("player")
 	add_child(preload("res://scenes/grapple.gd").new())   # Shift: the grappling hook
+	_gauge = Node2D.new()
+	_gauge.z_index = 6
+	_gauge.visible = false
+	_gauge.draw.connect(_draw_gauge)
+	add_child(_gauge)
 	var frames := PlayerSprite.create_prospector_frames()
 	if frames:
 		_anim.sprite_frames = frames
@@ -108,6 +113,11 @@ var _land_timer := 0.0
 var _was_on_floor := true
 var _fall_speed := 0.0
 var _dead := false
+const STEAM_COST := 0.5
+var steam := 1.0                 # boiler pressure for steam jumps (tests read it)
+var steam_jumps := 0
+var _w_was := false
+var _gauge: Node2D
 
 
 func _physics_process(delta: float) -> void:
@@ -171,6 +181,18 @@ func _physics_process(delta: float) -> void:
 	# Jump — W or Space (can jump on floor or inside a shaft)
 	if (Input.is_action_just_pressed("jump") or Input.is_action_just_pressed("ui_accept") or Input.is_physical_key_pressed(KEY_W)) and (is_on_floor() or in_shaft):
 		velocity.y = -jump_force
+	# Steam jump: in mid-air the backpack boiler kicks you up again (two
+	# bursts' worth of pressure, refilled on the ground)
+	var w_now := Input.is_physical_key_pressed(KEY_W)
+	var jump_edge := Input.is_action_just_pressed("jump") or Input.is_action_just_pressed("ui_accept") or (w_now and not _w_was)
+	_w_was = w_now
+	if is_on_floor() or in_shaft:
+		steam = minf(1.0, steam + delta * 1.6)
+	elif jump_edge and steam >= STEAM_COST and _launch_timer <= 0:
+		steam_jump()
+	if _gauge:
+		_gauge.visible = steam < 0.999
+		_gauge.queue_redraw()
 
 	var vy_before := velocity.y
 	move_and_slide()
@@ -365,6 +387,26 @@ func _check_enemy_contact() -> void:
 			velocity = knockback
 			_launch_timer = 1.0
 			break
+
+
+func steam_jump() -> void:
+	steam -= STEAM_COST
+	steam_jumps += 1
+	velocity.y = -jump_force * 0.8
+	var at := global_position + Vector2(0, 14)
+	FX.burst(get_parent(), at, Color(0.92, 0.92, 0.95, 0.8), 10, 90.0, 0.45, 2.4, 160.0)
+	FX.burst(get_parent(), global_position + Vector2(-5 if _facing_right else 5, -12), Color(0.85, 0.85, 0.9, 0.7), 4, 40.0, 0.5, 2.0, -40.0)
+	SFX.play_small(self, SFX.sfx_ore_knock("ore"), -10.0, 0.45)
+
+
+## The pressure gauge over the prospector's head while the boiler refills:
+## two pips, one per steam burst.
+func _draw_gauge() -> void:
+	for k in 2:
+		var full := clampf((steam - k * STEAM_COST) / STEAM_COST, 0.0, 1.0)
+		var r := Rect2(Vector2(-7 + k * 8, -40), Vector2(6, 3))
+		_gauge.draw_rect(r.grow(1), Color(0.1, 0.08, 0.07, 0.8))
+		_gauge.draw_rect(Rect2(r.position, Vector2(r.size.x * full, r.size.y)), Color(0.85, 0.9, 0.95) if full >= 1.0 else Color(0.6, 0.65, 0.7))
 
 
 func launch(launch_velocity: Vector2) -> void:

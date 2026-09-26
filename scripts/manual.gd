@@ -68,6 +68,7 @@ const TABS := [
 		["", "Meteor shower", "burning ore falls from the sky (F6 in sandbox)"],
 		["", "Thunderstorm", "lightning seeks tall metal and charges tesla coils (F7)"],
 		["Shift", "Grappling hook", "reel up walls, yank enemies, drag loot back"],
+		["W", "Steam jump", "jump again in mid-air: two boiler bursts, refilled on the ground"],
 		["", "Keys", "Tab/wheel: pick a piece  RMB: remove  L: light  F8: music"],
 	]],
 ]
