@@ -3646,3 +3646,34 @@ func tall_lift_rec() -> void:
 	ys.sort()
 	log_line("ore heights (top of lift at %d): %s" % [lift.top_y(), ys])
 	await shot("tall_lift")
+
+
+func lift_spill_rec() -> void:
+	# A two-segment lift set to spill right: ore tipped in at the bottom rides
+	# up and is tipped off the cap to the right, one at a time.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var lift: Node2D = preload("res://scenes/upstream_shaft.tscn").instantiate()
+	lift.global_position = Vector2(1500, 36)
+	lift.segments = 2
+	lift.spill = 1
+	main.add_child(lift)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.2, 2.2)
+	cam.global_position = Vector2(1540, -40)
+	for k in 5:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.global_position = Vector2(1500 + randf_range(-6, 6), 60)
+		main.add_child(o)
+		await wait(0.3)
+	for s in 6:
+		await wait(1.0)
+		if s == 2:
+			await shot("lift_spill")
+	var right := 0
+	for o in get_nodes_in_group("ore"):
+		if o.global_position.x > 1525:
+			right += 1
+	log_line("spilled %d, ore now right of the lift %d/5" % [lift.spilled, right])

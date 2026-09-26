@@ -17,6 +17,12 @@ const LightTextures = preload("res://scripts/light_textures.gd")
 @export var lift_speed: float = 100.0
 ## How many segments tall (each SEGMENT px)
 @export var segments := 1
+## What happens at the top: 0 holds the items there, -1 / 1 tips them off
+## the cap to the left / right one at a time (click the cap to cycle)
+@export var spill := 0
+const SPILL_EVERY := 0.4
+var spilled := 0            # tests
+var _spill_t := 0.0
 
 const SHAFT_WIDTH := 40.0
 const SEGMENT := 120.0
@@ -84,6 +90,32 @@ func _ready() -> void:
 	_rebuild()
 
 
+func _input(event: InputEvent) -> void:
+	if not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
+		return
+	if has_meta("ghost") or (has_node("/root/BuildSystem") and get_node("/root/BuildSystem").current_build != 0):
+		return
+	var m := get_global_mouse_position()
+	if absf(m.x - global_position.x) < 24.0 and absf(m.y - (top_y() + 8.0)) < 20.0:
+		spill = [0, 1, -1][([0, 1, -1].find(spill) + 1) % 3]   # hold -> right -> left -> hold
+		SFX.play(self, SFX.sfx_clink())
+		queue_redraw()
+		get_viewport().set_input_as_handled()
+
+
+func _draw() -> void:
+	if spill == 0 or has_meta("ghost"):
+		return
+	# a little brass arrow on the cap showing which way it tips
+	var y := top_y() - global_position.y - 6.0
+	var tip := Vector2(spill * 30.0, y)
+	var tail := Vector2(spill * 18.0, y)
+	draw_line(tail, tip, Color(0.16, 0.15, 0.12), 4.0)
+	draw_colored_polygon(PackedVector2Array([tip + Vector2(spill * 3, 0), tip + Vector2(-spill * 3, -4), tip + Vector2(-spill * 3, 4)]), Color(0.16, 0.15, 0.12))
+	draw_line(tail, tip, Color(0.85, 0.72, 0.45), 2.0)
+	draw_colored_polygon(PackedVector2Array([tip + Vector2(spill * 2, 0), tip + Vector2(-spill * 2, -3), tip + Vector2(-spill * 2, 3)]), Color(0.85, 0.72, 0.45))
+
+
 ## Another segment on top (a lift built on this one's top). False when it's
 ## already as tall as it goes.
 func extend() -> bool:
@@ -119,6 +151,7 @@ func _rebuild() -> void:
 	_spray.position = Vector2(0, top + 7)
 	_light.position = Vector2(0, SEGMENT * 0.5 - h * 0.5)
 	_light.texture_scale = 2.0 + 0.8 * (segments - 1)
+	queue_redraw()
 
 
 ## A horizontal band of the animated art (rows r0..r1), placed with its top at y.
@@ -182,12 +215,27 @@ func _physics_process(delta: float) -> void:
 		body.global_position.x = move_toward(body.global_position.x, target_x, 300 * delta)
 		body.global_position.y = move_toward(body.global_position.y, target_y, 300 * delta)
 
+	# tip the top item off the cap
+	_spill_t -= delta
+	if spill != 0 and _spill_t <= 0 and not _held_items.is_empty():
+		_spill_t = SPILL_EVERY
+		var b: RigidBody2D = _held_items.pop_front()
+		b.set_meta("spilled_at", Time.get_ticks_msec())
+		b.gravity_scale = 1
+		b.set_physics_process(true)
+		b.global_position = Vector2(global_position.x + spill * 26.0, shaft_top - 6.0)
+		b.linear_velocity = Vector2(spill * 150.0, -140.0)
+		spilled += 1
+		SFX.play_small(self, SFX.sfx_bounce(), -10.0, 1.3)
+
 	# Max items that fit: 2 columns, rows spaced 18px down the whole column
 	var max_items := int((height() - 20) / 18) * 2
 
 	# Handle bodies in the area that aren't held yet
 	for body in _area.get_overlapping_bodies():
 		if body is RigidBody2D:
+			if body.has_meta("spilled_at") and Time.get_ticks_msec() - int(body.get_meta("spilled_at")) < 900:
+				continue   # just tipped out: let it go
 			if body not in _held_items:
 				if _held_items.size() >= max_items:
 					# Full — reject, let it fall back out
