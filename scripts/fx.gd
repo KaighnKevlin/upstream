@@ -151,8 +151,13 @@ static func tile_break(parent: Node, tilemap: TileMapLayer, cell: Vector2i, sour
 ## A damage number popping off whatever was hit: rises and fades. Big hits
 ## are bigger and hotter.
 static var _dmg_font: Font
+## enemies hit recently -> the time of the last hit (scripts/health_bars.gd
+## draws a bar under each for a few seconds)
+static var recent_hits := {}
 
-static func damage_number(parent: Node, pos: Vector2, amount: int) -> void:
+static func damage_number(parent: Node, pos: Vector2, amount: int, target: Node = null) -> void:
+	if target:
+		recent_hits[target] = Time.get_ticks_msec()
 	if parent == null or amount <= 0:
 		return
 	if _dmg_font == null:

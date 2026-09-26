@@ -4460,7 +4460,13 @@ func dmg_numbers() -> void:
 	cam.zoom = Vector2(3.0, 3.0)
 	cam.global_position = Vector2(1600, 20)
 	await wait(0.6)
-	for a in [2, 4, 9]:
+	var s2 = _spawn(2, Vector2(1660, 60))
+	s2.speed = 0.0
+	await wait(0.3)
+	for a in [2, 4, 3]:
 		so.take_damage(a)
 		await wait(0.12)
+	s2.take_damage(5)
+	await wait(0.1)
+	log_line("bars node %s, recent hits %d" % [main.has_node("HealthBars"), preload("res://scripts/fx.gd").recent_hits.size()])
 	await shot("dmg_numbers")

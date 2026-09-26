@@ -486,7 +486,7 @@ func take_damage(amount: int) -> void:
 	if _dying:
 		return
 	hp -= amount
-	preload("res://scripts/fx.gd").damage_number(get_parent(), hit_center() if has_method("hit_center") else global_position, amount)
+	preload("res://scripts/fx.gd").damage_number(get_parent(), hit_center() if has_method("hit_center") else global_position, amount, self)
 	var at := global_position + Vector2(0, HIT_Y.get(enemy_type, -10.0))
 	FX.burst(get_parent(), at, Color(1, 0.9, 0.5), 4, 70.0, 0.25, 1.5)
 	if has_node("AnimatedSprite2D"):

@@ -65,6 +65,9 @@ func _ready() -> void:
 	add_child(fog)
 	preload("res://scenes/cache.gd").scatter(self, _tilemap)   # salvage caches in the caves
 	preload("res://scenes/geyser.gd").scatter(self, _tilemap)  # ore geysers on cave floors
+	var bars := preload("res://scripts/health_bars.gd").new()   # bars under wounded enemies
+	bars.name = "HealthBars"
+	add_child(bars)
 	var amb := preload("res://scripts/ambience.gd").new()   # glowmoths and drips in the caves
 	amb.name = "Ambience"
 	add_child(amb)

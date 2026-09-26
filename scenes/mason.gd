@@ -237,7 +237,7 @@ func take_damage(amount: int) -> void:
 	if _dying:
 		return
 	hp -= amount
-	preload("res://scripts/fx.gd").damage_number(get_parent(), hit_center() if has_method("hit_center") else global_position, amount)
+	preload("res://scripts/fx.gd").damage_number(get_parent(), hit_center() if has_method("hit_center") else global_position, amount, self)
 	FX.burst(get_parent(), hit_center(), Color(0.85, 0.72, 0.45), 5, 80.0, 0.3, 1.5)
 	_spr.modulate = Color(3, 3, 3)
 	create_tween().tween_property(_spr, "modulate", Color.WHITE, 0.15)
