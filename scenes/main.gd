@@ -211,13 +211,24 @@ func _show_title() -> void:
 	sub.size = Vector2(1280, 30)
 	sub.position = Vector2(0, 150 + sz.y + 18)
 	root.add_child(sub)
-	var prompt := _hud_label("press any key", 30, Color(0.55, 0.88, 0.92))
-	prompt.size = Vector2(1280, 40)
-	prompt.position = Vector2(0, 405)
-	root.add_child(prompt)
-	var blink := prompt.create_tween().set_loops()
-	blink.tween_property(prompt, "modulate:a", 0.25, 0.6)
-	blink.tween_property(prompt, "modulate:a", 1.0, 0.6)
+	# two ways in: the sandbox (showcase + god tools) or survival (waves)
+	for i in 2:
+		var spec: Array = [["1  SANDBOX", "a working showcase, god tools, no waves until you ask"],
+			["2  SURVIVAL", "a bare world: get an ingot into the dome and the waves begin"]][i]
+		var x := 250.0 + i * 420.0
+		var opt := _hud_label(spec[0], 30, Color(0.55, 0.88, 0.92))
+		opt.size = Vector2(360, 40)
+		opt.position = Vector2(x, 395)
+		root.add_child(opt)
+		var d := _hud_label(spec[1], 10, Color(0.85, 0.75, 0.55))
+		d.size = Vector2(360, 20)
+		d.position = Vector2(x, 437)
+		root.add_child(d)
+		_title_opts.append(Rect2(Vector2(x, 390), Vector2(360, 70)))
+		var blink := opt.create_tween().set_loops()
+		blink.tween_interval(i * 0.6)
+		blink.tween_property(opt, "modulate:a", 0.45, 0.6)
+		blink.tween_property(opt, "modulate:a", 1.0, 0.6)
 	# logo drops in
 	logo.position.y -= 40
 	logo.modulate.a = 0.0
@@ -234,6 +245,7 @@ func _show_title() -> void:
 
 var _title: Control
 var _title_cam_zoom := Vector2.ONE
+var _title_opts: Array[Rect2] = []
 
 
 func _on_title_input(event: InputEvent) -> void:
@@ -242,6 +254,11 @@ func _on_title_input(event: InputEvent) -> void:
 	var go: bool = (event is InputEventKey and event.pressed) or (event is InputEventMouseButton and event.pressed)
 	if not go:
 		return
+	# 2 or a click on SURVIVAL: the wave game; anything else: the sandbox
+	var survival: bool = (event is InputEventKey and event.keycode == KEY_2) \
+		or (event is InputEventMouseButton and _title_opts.size() > 1 and _title_opts[1].has_point(event.position))
+	if survival:
+		start_survival()
 	_title.accept_event()
 	var title := _title
 	_title = null
@@ -255,6 +272,20 @@ func _on_title_input(event: InputEvent) -> void:
 		cam.position = Vector2.ZERO
 		cam.zoom = _title_cam_zoom
 		get_tree().paused = false)
+
+
+## Survival: the bare world and the wave game (no showcase, no god tools);
+## the first ingot into the dome starts the waves.
+func start_survival() -> void:
+	sandbox = false
+	preload("res://scripts/sandbox_showcase.gd").clear(self)
+	if _god_label:
+		_god_label.queue_free()
+		_god_label = null
+	wave_number = 0
+	_wave_timer = 0.0
+	_waves_started = false
+	_wave_label.text = "Get an ingot into the dome to begin"
 
 
 func _hud_label(text: String, size: int, color: Color) -> Label:

@@ -3819,3 +3819,23 @@ func cache_rec() -> void:
 	await wait(1.2)
 	await shot("cache_haul")
 	log_line("opened %s, haul %d" % [c.opened, c.haul])
+
+
+func title_modes() -> void:
+	# The title screen's two ways in; then survival: showcase gone, god
+	# tools gone, waves waiting on the first ingot.
+	preload("res://scripts/sandbox_showcase.gd").build(main)
+	await wait(0.5)
+	var built := get_nodes_in_group("showcase").size()
+	main._show_title()
+	for k in 30:
+		await process_frame
+	root.get_viewport().get_texture().get_image().save_png(out_dir + "/title_modes.png")
+	var ev := InputEventKey.new()
+	ev.keycode = KEY_2
+	ev.pressed = true
+	main._on_title_input(ev)
+	for k in 40:
+		await process_frame
+	await wait(0.5)
+	log_line("survival: sandbox %s, showcase pieces %d -> %d, god label %s, waves started %s, label '%s', paused %s" % [main.sandbox, built, get_nodes_in_group("showcase").size(), main._god_label != null, main._waves_started, main._wave_label.text, paused])
