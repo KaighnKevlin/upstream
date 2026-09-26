@@ -83,12 +83,23 @@ func setup(type: EnemyType) -> void:
 	damage = stats[2]
 
 
+## Gilded: an elite. Gold-plated and glinting, twice the health, a quarter
+## more damage, and twice the scrap (and a gear) when it's destroyed. Waves
+## gild a growing share of their walkers from wave 6 (main.gd).
+var gilded := false
+const GILD_TINT := Color(1.3, 1.08, 0.62)
+
+
 func _ready() -> void:
 	var stats: Array = TYPE_STATS[enemy_type]
 	speed = stats[0]
 	hp = stats[1]
 	damage = stats[2]
 	var sprite_scale: float = stats[3]
+	if gilded:
+		hp *= 2
+		damage = int(damage * 1.25)
+		call_deferred("_gild")
 
 	if has_node("AnimatedSprite2D"):
 		var anim := $AnimatedSprite2D as AnimatedSprite2D
@@ -505,6 +516,30 @@ func _hit_react(amount: int, at: Vector2) -> void:
 			rock.tween_property(sprite, "rotation", 0.0, 0.2).set_trans(Tween.TRANS_SINE)
 
 
+func _gild() -> void:
+	var a := $AnimatedSprite2D as AnimatedSprite2D
+	a.self_modulate = GILD_TINT
+	var glint := CPUParticles2D.new()
+	glint.amount = 6
+	glint.lifetime = 0.8
+	glint.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	glint.emission_rect_extents = Vector2(10, 14) * (2.0 if enemy_type == EnemyType.TITAN else 1.0)
+	glint.position = Vector2(0, HIT_Y.get(enemy_type, -16.0))
+	glint.direction = Vector2.UP
+	glint.spread = 40.0
+	glint.initial_velocity_min = 6.0
+	glint.initial_velocity_max = 16.0
+	glint.gravity = Vector2.ZERO
+	glint.scale_amount_min = 1.0
+	glint.scale_amount_max = 1.5
+	var ramp := Gradient.new()
+	ramp.set_color(0, Color(1.0, 0.95, 0.6, 1.0))
+	ramp.set_color(1, Color(1.0, 0.8, 0.3, 0.0))
+	glint.color_ramp = ramp
+	glint.z_index = 1
+	add_child(glint)
+
+
 # scrap each type bursts into when destroyed
 const SCRAP := {
 	EnemyType.TITAN: 4, EnemyType.SCUTTLER: 1, EnemyType.SOLDIER: 2, EnemyType.CASTER: 2,
@@ -518,7 +553,13 @@ func _die() -> void:
 	remove_from_group("enemies")
 	set_physics_process(false)
 	$CollisionShape2D.set_deferred("disabled", true)
-	preload("res://scenes/ore.gd").spill(get_parent(), hit_center(), SCRAP.get(enemy_type, 1))
+	preload("res://scenes/ore.gd").spill(get_parent(), hit_center(), SCRAP.get(enemy_type, 1) * (2 if gilded else 1))
+	if gilded:   # a gilded one also gives up a gear from its works
+		var g: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		g.kind = "gear"
+		g.global_position = hit_center()
+		g.linear_velocity = Vector2(randf_range(-80, 80), -260)
+		get_parent().add_child.call_deferred(g)
 	if enemy_type == EnemyType.TITAN and $AnimatedSprite2D.sprite_frames.has_animation("death"):
 		_titan_die()
 		return

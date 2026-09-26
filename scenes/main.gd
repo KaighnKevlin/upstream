@@ -652,10 +652,12 @@ func _spawn_wave() -> void:
 	var boss := wave_number % 5 == 0   # the Foundry Engine every fifth wave
 	if boss:
 		kinds[10] = 1
+	var gild_chance := 0.0 if wave_number < 6 else minf(0.6, 0.15 + 0.05 * (wave_number - 6))
+	var gilded := 0
 	var parts := []
 	for t in kinds:
 		parts.append("%d %s%s" % [kinds[t], ENEMY_NAMES[t], "s" if kinds[t] > 1 else ""])
-	_show_banner("WAVE %d" % wave_number, "  ".join(parts))
+	_show_banner("WAVE %d" % wave_number, "  ".join(parts) + ("   (some gilded)" if gild_chance > 0 else ""))
 
 	var surface_y := 40  # spawn above ground, gravity drops them
 	var spawn_x := WorldGen.WORLD_WIDTH * WorldGen.TILE_SIZE - 30  # just inside right boundary
@@ -674,6 +676,8 @@ func _spawn_wave() -> void:
 			_: type = i % 4
 
 		enemy.setup(type)
+		enemy.gilded = randf() < gild_chance
+		gilded += 1 if enemy.gilded else 0
 		enemy.global_position = Vector2(spawn_x - i * 20, surface_y)
 		enemy.direction = -1.0
 		add_child(enemy)
@@ -682,6 +686,8 @@ func _spawn_wave() -> void:
 		var sb := _enemy_scene.instantiate()
 		sb.add_to_group("enemies")
 		sb.setup(5)  # SHIELDBEARER
+		sb.gilded = randf() < gild_chance
+		gilded += 1 if sb.gilded else 0
 		sb.global_position = Vector2(spawn_x - (count + k) * 20, surface_y)
 		sb.direction = -1.0
 		add_child(sb)

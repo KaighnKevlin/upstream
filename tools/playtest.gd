@@ -3994,3 +3994,40 @@ func sfx_cost() -> void:
 		var t1 := Time.get_ticks_usec()
 		fns[n].call()
 		log_line("%s: first %.1f ms, again %.2f ms" % [n, (t1 - t0) / 1000.0, (Time.get_ticks_usec() - t1) / 1000.0])
+
+
+func gilded_rec() -> void:
+	# A gilded titan and soldier next to a plain soldier: health, the look,
+	# and what they drop.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var mk := func(t: int, x: float, g: bool) -> Node:
+		var e = preload("res://scenes/enemy.tscn").instantiate()
+		e.add_to_group("enemies")
+		e.setup(t)
+		e.gilded = g
+		e.global_position = Vector2(x, 60)
+		e.direction = -1.0
+		main.add_child(e)
+		e.speed = 0.0
+		return e
+	var ti = mk.call(0, 1560.0, true)
+	var so = mk.call(2, 1640.0, true)
+	var plain = mk.call(2, 1690.0, false)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.6, 2.6)
+	cam.global_position = Vector2(1620, 20)
+	await wait(1.0)
+	await shot("gilded")
+	log_line("hp: gilded titan %d, gilded soldier %d, plain soldier %d" % [ti.hp, so.hp, plain.hp])
+	for e in [ti, so, plain]:
+		e.take_damage(999)
+	await wait(0.5)
+	var scrap := 0
+	var gears := 0
+	for o in get_nodes_in_group("ore"):
+		scrap += 1 if o.get("kind") == "scrap" else 0
+		gears += 1 if o.get("kind") == "gear" else 0
+	log_line("drops: scrap %d (expect 8 + 4 + 2 = 14), gears %d (expect 2)" % [scrap, gears])
