@@ -14,6 +14,12 @@ const LOOT := [["flask", 3], ["shell", 3], ["spring", 3], ["gear", 3], ["ingot:i
 
 var opened := false
 var haul := 0            # tests
+## A ruin's vault chest (scripts/ruins.gd): chained shut while its sentinel
+## lives, and a relic haul inside: more salvage and a free research level.
+var sealed := false
+var relic := false
+var granted := ""        # the tech a relic gave (tests)
+var _chains: Node2D
 var _spr: Sprite2D
 var _light: PointLight2D
 
@@ -47,6 +53,35 @@ func _ready() -> void:
 	area.add_child(cs)
 	add_child(area)
 	area.body_entered.connect(_on_touch, CONNECT_DEFERRED)
+	if sealed:
+		_chains = Node2D.new()
+		_chains.z_index = 2
+		_chains.draw.connect(_draw_chains)
+		add_child(_chains)
+
+
+func _draw_chains() -> void:
+	# two steel chains crossed over the lid and a padlock where they meet
+	for s in [-1.0, 1.0]:
+		var a := Vector2(-15 * s, -22)
+		var b := Vector2(15 * s, -4)
+		for k in 7:
+			var p := a.lerp(b, (k + 0.5) / 7.0)
+			_chains.draw_rect(Rect2(p - Vector2(1.5, 1), Vector2(3, 2)), Color(0.55, 0.6, 0.6) if k % 2 else Color(0.35, 0.4, 0.42))
+	_chains.draw_rect(Rect2(Vector2(-3, -16), Vector2(6, 5)), Color(0.72, 0.56, 0.3))
+	_chains.draw_arc(Vector2(0, -16), 2.2, PI, TAU, 6, Color(0.5, 0.55, 0.55), 1.0)
+
+
+## The sentinel is dead: the chains fall away.
+func unseal() -> void:
+	if not sealed:
+		return
+	sealed = false
+	if _chains:
+		_chains.queue_free()
+		_chains = null
+	FX.burst(get_parent(), global_position + Vector2(0, -12), Color(0.6, 0.65, 0.65), 12, 90.0, 0.4, 1.5)
+	SFX.play(self, SFX.sfx_clink(), 0.0, 0.6)
 
 
 func _process(_delta: float) -> void:
@@ -55,6 +90,9 @@ func _process(_delta: float) -> void:
 
 
 func _on_touch(_b) -> void:
+	if sealed:
+		SFX.play_small(self, SFX.sfx_clink(), -6.0, 0.5)   # rattles its chains
+		return
 	open()
 
 
@@ -70,7 +108,7 @@ func open() -> void:
 	var total := 0
 	for l in LOOT:
 		total += int(l[1])
-	var n := randi_range(6, 10)
+	var n := randi_range(12, 16) if relic else randi_range(6, 10)
 	for k in n:
 		var pick := randi() % total
 		var kind := ""
@@ -92,11 +130,31 @@ func open() -> void:
 		get_parent().add_child.call_deferred(b)
 		haul += 1
 	var main := get_tree().current_scene
+	if relic:
+		granted = _grant_research()
 	if main.has_method("_show_banner"):
-		main._show_banner("SALVAGE CACHE", "%d pieces of salvage" % n)
+		if relic:
+			var t: Dictionary = preload("res://scripts/tech.gd").info(granted)
+			main._show_banner("VAULT RELIC", ("blueprint: %s (%s)   +%d salvage" % [t.name, t.desc, n]) if granted != "" else "%d pieces of salvage" % n)
+		else:
+			main._show_banner("SALVAGE CACHE", "%d pieces of salvage" % n)
 	var t := create_tween()
 	t.tween_property(_light, "energy", 1.2, 0.1)
 	t.tween_property(_light, "energy", 0.0, 1.2)
+
+
+## A relic's blueprint: a free level of a random unfinished technology.
+func _grant_research() -> String:
+	var Tech := preload("res://scripts/tech.gd")
+	var open_ones := []
+	for t in Tech.TECHS:
+		if not Tech.maxed(t.id):
+			open_ones.append(t.id)
+	if open_ones.is_empty():
+		return ""
+	var id: String = open_ones.pick_random()
+	Tech.levels[id] = Tech.level(id) + 1
+	return id
 
 
 ## Scatters caches on cave floors across the world: open air above, rock

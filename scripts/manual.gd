@@ -72,6 +72,7 @@ const TABS := [
 		["", "Grit", "crushed ore: three light chips per ore; shell filling"],
 		["", "Scrap", "what's left of a wrecked automaton: melt it, grind it, fire it"],
 		["", "Salvage cache", "strongboxes hidden in caves: walk into one for loot"],
+		["", "Buried vault", "one per world, deep down behind ironstone: destroy its sentinel for a relic (free research)"],
 		["", "Ore geyser", "cave vents that erupt ore every 15-25 s; catch the spray"],
 		["", "Meteor shower", "burning ore falls from the sky (F6 in sandbox)"],
 		["", "Thunderstorm", "lightning seeks tall metal and charges tesla coils (F7)"],

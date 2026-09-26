@@ -32,8 +32,9 @@ func _run() -> void:
 		preload("res://scripts/world_gen.gd").generate(tilemap(), seed)
 		for c in main.get_node("TileShading").get_children():
 			c.queue_redraw()
-		for c in main.get_tree().get_nodes_in_group("caches") + main.get_tree().get_nodes_in_group("geysers") + main.get_tree().get_nodes_in_group("crawlers"):
-			c.free()   # placed on the old world
+		for c in main.get_tree().get_nodes_in_group("caches") + main.get_tree().get_nodes_in_group("geysers") + main.get_tree().get_nodes_in_group("crawlers") + main.get_tree().get_nodes_in_group("ruins"):
+			if is_instance_valid(c):
+				c.free()   # placed on the old world (a vault chest is in two of these groups)
 		# scenarios start clean: drop the sandbox showcase built on the old world
 		preload("res://scripts/sandbox_showcase.gd").clear(main)
 		var decor := main.get_node_or_null("CaveDecor")
@@ -4403,6 +4404,56 @@ func latch_rec() -> void:
 	await wait(0.5)
 	await shot("latch_fired")
 	log_line("plate pressed: tripped %d, wired thrown %s, cocked %s" % [pl.tripped, cat.last_thrown != null, cat.cocked])
+
+
+func ruins_rec() -> void:
+	# A ruin: the prospector walks in through a doorway, the sentinel wakes
+	# and shoots; it's destroyed, the chest unseals, the prospector opens it
+	# and gets a relic (a free research level).
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var ruin: Node2D = preload("res://scripts/ruins.gd").build(main, tilemap())
+	await wait(0.2)
+	var s = null
+	var chest = null
+	for n in get_nodes_in_group("ruins"):
+		if n.get_script() == null:
+			continue
+		match n.get_script().resource_path.get_file():
+			"sentinel.gd": s = n
+			"cache.gd": chest = n
+	log_line("ruin at %s | sentinel %s, chest sealed %s relic %s" % [ruin.room, s != null, chest.sealed, chest.relic])
+	var p: CharacterBody2D = main.get_node("Player")
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.4, 2.4)
+	cam.global_position = ruin.room.get_center()
+	await tap(KEY_L)
+	# stand in the left doorway
+	p.global_position = Vector2(ruin.room.position.x - 8, ruin.room.end.y - 4)
+	await wait(0.4)
+	await shot("ruin_doorway")
+	p.global_position = Vector2(ruin.room.position.x + 40, ruin.room.end.y - 4)
+	var hp0: int = p.hp
+	await wait(3.0)
+	await shot("ruin_sentinel")
+	log_line("sentinel awake %s, player hp %d -> %d" % [s.awake, hp0, p.hp])
+	p.global_position = chest.global_position + Vector2(0, -4)
+	await wait(0.3)
+	log_line("touched while sealed: opened %s" % chest.opened)
+	p.global_position = Vector2(ruin.room.position.x + 40, ruin.room.end.y - 4)
+	await wait(0.2)
+	var lv0 := {}
+	for t in preload("res://scripts/tech.gd").TECHS:
+		lv0[t.id] = preload("res://scripts/tech.gd").level(t.id)
+	s.take_damage(40)
+	await wait(0.6)
+	log_line("sentinel down: chest sealed %s" % chest.sealed)
+	p.global_position = chest.global_position + Vector2(0, -4)
+	await wait(0.6)
+	await shot("ruin_relic")
+	log_line("opened %s, haul %d, granted %s (level %d -> %d)" % [chest.opened, chest.haul, chest.granted, lv0.get(chest.granted, -1), preload("res://scripts/tech.gd").level(chest.granted) if chest.granted != "" else -1])
 
 
 func ambience_rec() -> void:

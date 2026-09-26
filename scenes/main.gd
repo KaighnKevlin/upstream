@@ -63,6 +63,7 @@ func _ready() -> void:
 	var fog := preload("res://scripts/fog.gd").new()   # fog of war underground
 	fog.name = "Fog"
 	add_child(fog)
+	preload("res://scripts/ruins.gd").build(self, _tilemap)     # a buried vault with a sentinel
 	preload("res://scenes/cache.gd").scatter(self, _tilemap)   # salvage caches in the caves
 	preload("res://scenes/geyser.gd").scatter(self, _tilemap)  # ore geysers on cave floors
 	preload("res://scenes/crawler.gd").scatter(self, _tilemap) # cave crawlers on cave ceilings
