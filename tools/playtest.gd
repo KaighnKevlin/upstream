@@ -4456,6 +4456,38 @@ func ruins_rec() -> void:
 	log_line("opened %s, haul %d, granted %s (level %d -> %d)" % [chest.opened, chest.haul, chest.granted, lv0.get(chest.granted, -1), preload("res://scripts/tech.gd").level(chest.granted) if chest.granted != "" else -1])
 
 
+func borer_rec() -> void:
+	# A steam borer set down east of the dome facing down sinks a shaft; it's
+	# turned to face right and tunnels. Tiles cut, ore out, where it ends up.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var b: Node2D = preload("res://scenes/borer.tscn").instantiate()
+	b.mode = 2   # DOWN
+	b.global_position = Vector2(1560, 60)
+	main.add_child(b)
+	await wait(0.2)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.6, 1.6)
+	cam.global_position = Vector2(1660, 180)
+	await tap(KEY_L)
+	var ore0 := get_nodes_in_group("ore").size()
+	for t in 60:
+		await wait(0.2)
+		if b.travelled >= 10:
+			break
+	log_line("down: travelled %d tiles, bored %d, at %s" % [b.travelled, b.bored, b.global_position])
+	await shot("borer_shaft")
+	b.turn(0)   # RIGHT
+	for t in 120:
+		await wait(0.2)
+		if b.travelled >= 14 or b.stopped:
+			break
+	await shot("borer_tunnel")
+	log_line("right: travelled %d, bored %d total, at %s | loose ore/grit now %d (was %d)" % [b.travelled, b.bored, b.global_position, get_nodes_in_group("ore").size(), ore0])
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0
