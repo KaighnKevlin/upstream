@@ -3534,3 +3534,79 @@ func storm_rec() -> void:
 			await physics_frame
 			await shot("storm_bolt_%02d" % s)
 	log_line("storm: strikes %d, tesla charged by lightning %d (charge now %d), ore smelted %d" % [st.strikes if is_instance_valid(st) else -1, st.charged if is_instance_valid(st) else -1, te.charge, st.smelted if is_instance_valid(st) else -1])
+
+
+func shell_rec() -> void:
+	# Blast shells: the assembler packs 1 iron ingot + 3 grit into 2 shells;
+	# a shell dropped on three soldiers; a shell dropped onto a row of four
+	# resting shells (chain reaction).
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.4, 2.4)
+	var a: Node2D = preload("res://scenes/assembler.tscn").instantiate()
+	a.global_position = Vector2(1450, 60)
+	a.recipe = 4
+	main.add_child(a)
+	cam.global_position = Vector2(1480, 20)
+	await wait(0.4)
+	var ing: RigidBody2D = preload("res://scenes/ingot.tscn").instantiate()
+	ing.kind = "iron"
+	ing.global_position = a.global_position + Vector2(0, -80)
+	main.add_child(ing)
+	for k in 3:
+		await wait(0.3)
+		var g: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		g.kind = "grit"
+		g.global_position = a.global_position + Vector2(0, -80)
+		main.add_child(g)
+	await wait(8.0)
+	var shells := 0
+	for o in get_nodes_in_group("ore"):
+		if o.get("kind") == "shell":
+			shells += 1
+	log_line("assembler (blast shell): made %d, shells loose %d (expect 2)" % [a.made, shells])
+	await _grab(Rect2(Vector2(1380, -30), Vector2(200, 110)), "shell_made", -4)
+	# onto soldiers
+	var es := [_spawn(2, Vector2(1640, 60)), _spawn(2, Vector2(1665, 60)), _spawn(2, Vector2(1690, 60))]
+	for e in es:
+		e.speed = 0.0
+	cam.global_position = Vector2(1665, 20)
+	await wait(1.0)
+	var s1: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+	s1.kind = "shell"
+	s1.global_position = Vector2(1665, -120)
+	main.add_child(s1)
+	for f in 50:
+		await physics_frame
+		if f % 5 == 0:
+			await _grab(Rect2(Vector2(1580, -60), Vector2(180, 120)), "shell_boom_%02d" % (f / 5), -4)
+	var hurt := []
+	for e in es:
+		hurt.append(("hp%d" % e.hp) if is_instance_valid(e) and not e._dying else "dead")
+	log_line("shell onto 3 soldiers (hp 8): %s" % ", ".join(hurt))
+	# chain reaction
+	var row := []
+	for k in 4:
+		var s: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		s.kind = "shell"
+		s.global_position = Vector2(1820 + k * 30, 70)
+		main.add_child(s)
+		row.append(s)
+	await wait(1.5)
+	var s2: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+	s2.kind = "shell"
+	s2.global_position = Vector2(1820, -120)
+	main.add_child(s2)
+	cam.global_position = Vector2(1860, 20)
+	for f in 60:
+		await physics_frame
+		if f % 6 == 0:
+			await _grab(Rect2(Vector2(1770, -60), Vector2(180, 120)), "shell_chain_%02d" % (f / 6), -4)
+	var left := 0
+	for s in row:
+		if is_instance_valid(s):
+			left += 1
+	log_line("chain: %d of 4 resting shells left (0 = all went up)" % left)

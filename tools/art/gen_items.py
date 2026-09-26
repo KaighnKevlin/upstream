@@ -131,6 +131,19 @@ def scrap(v):
     return fig.render(12, 12, (6, 6))
 
 
+def shell():
+    """Blast shell: a squat riveted iron canister packed with crushed grit,
+    a red warning band and a brass percussion cap."""
+    fig = Figure()
+    fig.ellipsoid((0, 0.5), (3.6, 4.0), STEEL, z=0, grit=0.04)
+    fig.box((-3.6, -0.6, 3.6, 1.2), [(80, 20, 18), (150, 40, 32), (200, 70, 50)], z=0.5, bevel=0.3)
+    fig.ellipsoid((0, -3.6), (1.8, 1.0), BRONZE, z=1)
+    fig.sphere((0, -4.3), 0.7, [(255, 200, 120)] * 2, z=1.1, emissive=True)
+    fig.sphere((-1.6, 2.6), 0.45, BRONZE, z=0.6)
+    fig.sphere((1.6, 2.6), 0.45, BRONZE, z=0.6)
+    return fig.render(10, 11, (5, 5))
+
+
 def gear():
     """A loose brass-and-steel gear: rolls like a wheel."""
     fig = Figure()
@@ -239,6 +252,7 @@ def main():
     write_png(SPR + 'gear_item.png', 16, 16, gear())
     write_png(SPR + 'flask.png', 12, 14, flask())
     write_png(SPR + 'spring_item.png', 12, 12, spring())
+    write_png(SPR + 'shell.png', 10, 11, shell())
     sc = [scrap(v) for v in range(4)]
     write_png(SPR + 'scrap.png', 48, 12, [sum((f[y] for f in sc), []) for y in range(12)])
     tr = trampoline(); write_png(SPR + 'trampoline.png', 44, 22, tr)

@@ -26,6 +26,10 @@ const KINDS := {
 	# scrap: what's left of a destroyed automaton. Bounces about, a magnet
 	# pulls it, a laser melts it to iron, a crusher grinds it, magpies want it.
 	"scrap": {"mass": 1.4, "bounce": 0.35, "friction": 0.6, "tex": "res://assets/sprites/scrap.png", "size": 12, "frames": 4, "radius": 5.0},
+	# blast shell: grit packed in an iron casing (an assembler makes them).
+	# Goes off on a hard impact (or hitting an enemy): area damage, a shove
+	# for everything loose nearby, and it sets off other shells close by.
+	"shell": {"mass": 2.0, "bounce": 0.2, "friction": 0.5, "tex": "res://assets/sprites/shell.png", "size": 10, "h": 11, "frames": 1, "radius": 4.5, "blast": 340.0},
 	"flask": {"mass": 0.6, "bounce": 0.15, "friction": 0.6, "tex": "res://assets/sprites/flask.png", "size": 12, "h": 14, "frames": 1, "radius": 5.0, "fragile": 300.0},
 }
 static var _shapes := {}
@@ -117,6 +121,9 @@ func _check_enemy_hit() -> void:
 			continue  # a ricocheting spring: each enemy once per pass
 		var c: Vector2 = e.hit_center()
 		if global_position.distance_to(c) < e.hit_radius() + 7.0:
+			if kind == "shell" and not has_meta("store_material"):
+				explode()
+				return
 			_hurt_cooldown = 0.35
 			if e.has_method("shield_blocks") and mass < 2.0:  # heavy ore punches through
 				var n: Vector2 = e.shield_blocks(global_position, linear_velocity)
@@ -145,6 +152,10 @@ func _check_enemy_hit() -> void:
 			return
 
 func _on_impact(other: Node) -> void:
+	var blast: float = KINDS.get(kind, {}).get("blast", 0.0)
+	if blast > 0.0 and _prev_speed > blast and not has_meta("store_material") and not has_meta("caught_by"):
+		explode()
+		return
 	var fragile: float = KINDS.get(kind, {}).get("fragile", 0.0)
 	if fragile > 0.0 and _prev_speed > fragile:
 		_shatter()
@@ -189,6 +200,55 @@ func _physics_process(delta: float) -> void:
 	# Despawn if fallen way below the map
 	if global_position.y > 1400:
 		queue_free()
+
+
+## A blast shell going off.
+const BLAST_RADIUS := 52.0
+const BLAST_DAMAGE := 7
+
+func explode() -> void:
+	if is_queued_for_deletion():
+		return
+	queue_free()
+	var at := global_position
+	var parent := get_parent()
+	FX.burst(parent, at, Color(1.0, 0.85, 0.45), 22, 220.0, 0.35, 2.2)
+	FX.burst(parent, at, Color(1.0, 0.5, 0.15), 14, 150.0, 0.5, 2.6)
+	FX.burst(parent, at, Color(0.3, 0.28, 0.3, 0.7), 10, 50.0, 1.3, 3.6, -40.0)
+	FX.shake(self, 4.0, 0.25)
+	var l := PointLight2D.new()
+	l.texture = preload("res://scripts/light_textures.gd").create_radial_light(128)
+	l.color = Color(1.0, 0.7, 0.35)
+	l.energy = 2.0
+	l.texture_scale = 1.6
+	l.global_position = at
+	parent.add_child(l)
+	var lt := l.create_tween()
+	lt.tween_property(l, "energy", 0.0, 0.3)
+	lt.tween_callback(l.queue_free)
+	SFX.play(get_tree().current_scene, SFX.sfx_mine_break(), 0.0, 0.8)
+	SFX.play(get_tree().current_scene, SFX.sfx_turret_fire(), -2.0, 0.6)
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if not is_instance_valid(e) or ("_dying" in e and e._dying) or not e.has_method("take_damage"):
+			continue
+		var c: Vector2 = e.hit_center() if e.has_method("hit_center") else e.global_position
+		var d := c.distance_to(at)
+		if d < BLAST_RADIUS + (e.hit_radius() if e.has_method("hit_radius") else 10.0) * 0.5:
+			e.take_damage(maxi(2, int(BLAST_DAMAGE * (1.0 - d / (BLAST_RADIUS * 1.5)))))
+			if is_instance_valid(e) and e.has_method("knock"):
+				e.knock((c - at).normalized() * 200.0 + Vector2(0, -180))
+	for o in get_tree().get_nodes_in_group("ore"):
+		if not is_instance_valid(o) or o == self or o.freeze or o.has_meta("store_material"):
+			continue
+		var d: float = o.global_position.distance_to(at)
+		if o.get("kind") == "shell" and d < BLAST_RADIUS * 0.8:
+			o.call_deferred("explode")   # sympathetic detonation
+		elif d < BLAST_RADIUS * 1.5:
+			o.sleeping = false
+			o.linear_velocity += (o.global_position - at).normalized() * 320.0 * (1.0 - d / (BLAST_RADIUS * 1.5)) + Vector2(0, -80)
+	var p := get_tree().current_scene.get_node_or_null("Player") as Node2D
+	if p and p.global_position.distance_to(at) < BLAST_RADIUS * 0.6 and p.has_method("take_damage"):
+		p.take_damage(8)
 
 
 ## Glass breaking: shards and a splash of tincture, a bright tinkle.
