@@ -40,7 +40,7 @@ var _arrow_count: Label
 var _arrow_t := 0.0
 var _game_over_panel: NinePatchRect
 
-const ENEMY_NAMES := ["titan", "scuttler", "soldier", "caster", "ornithopter", "shieldbearer", "magpie", "sapper", "bridger", "mason", "foundry", "airship", "tinker", "dreadnought", "gremlin"]
+const ENEMY_NAMES := ["titan", "scuttler", "soldier", "caster", "ornithopter", "shieldbearer", "magpie", "sapper", "bridger", "mason", "foundry", "airship", "tinker", "dreadnought", "gremlin", "mortar"]
 
 @onready var _receiver: Area2D = $Receiver
 @onready var _turret: Node2D = $Turret
@@ -726,6 +726,9 @@ func _spawn_wave() -> void:
 	var gremlins := (wave_number - 3) / 2 if wave_number >= 5 else 0   # saboteurs from wave 5
 	if gremlins > 0:
 		kinds[14] = gremlins
+	var mortars := (wave_number - 2) / 4 if wave_number >= 6 else 0   # artillery from wave 6
+	if mortars > 0:
+		kinds[15] = mortars
 	var sky_boss := wave_number % 10 == 0   # the Dreadnought every tenth wave
 	var boss := wave_number % 5 == 0 and not sky_boss   # the Foundry Engine on the other fifths
 	if boss:
@@ -786,6 +789,11 @@ func _spawn_wave() -> void:
 		var gr: Node2D = preload("res://scenes/gremlin.tscn").instantiate()
 		gr.global_position = Vector2(spawn_x + 10 + k * 25, 40)
 		add_child(gr)
+
+	for k in mortars:
+		var mo: Node2D = preload("res://scenes/mortar.tscn").instantiate()
+		mo.global_position = Vector2(spawn_x + 40 + k * 45, 40)   # at the back
+		add_child(mo)
 
 	for k in airships:
 		var ab: Node2D = preload("res://scenes/airship.tscn").instantiate()
@@ -994,7 +1002,7 @@ func _god_key(event: InputEventKey) -> void:
 		KEY_G:
 			if event.echo:
 				return
-			if ENEMY_NAMES[_god_type] in ["magpie", "sapper", "bridger", "mason", "foundry", "airship", "tinker", "dreadnought", "gremlin"]:
+			if ENEMY_NAMES[_god_type] in ["magpie", "sapper", "bridger", "mason", "foundry", "airship", "tinker", "dreadnought", "gremlin", "mortar"]:
 				var mp: Node2D = load("res://scenes/%s.tscn" % ENEMY_NAMES[_god_type]).instantiate()
 				mp.global_position = at
 				add_child(mp)

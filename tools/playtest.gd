@@ -4211,6 +4211,35 @@ func snare_rec() -> void:
 	log_line("snare 1 state %d (0 = set again), snapped %d, t %.2f, soldier x %.0f" % [sn._state, sn.snapped, sn._t, so.global_position.x if is_instance_valid(so) else -1.0])
 
 
+func mortar_rec() -> void:
+	# A mortar crab from the east marches to its range, plants and shells
+	# the dome over a ditch; then it's killed.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var mo: Node2D = preload("res://scenes/mortar.tscn").instantiate()
+	mo.global_position = Vector2(1950, 40)
+	main.add_child(mo)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.1, 1.1)
+	cam.global_position = Vector2(1450, -60)
+	var dome0: int = main.dome_hp
+	var shot_arc := false
+	for t in 300:
+		await wait(0.1)
+		if not shot_arc and mo.fired >= 1:
+			await wait(0.6)
+			shot_arc = true
+			await shot("mortar_arc")
+		if mo.fired >= 5:
+			break
+	await wait(3.0)
+	log_line("mortar planted at x %.0f (dome x %.0f), fired %d, dome %d -> %d" % [mo.global_position.x, main.get_node("DomeZone").global_position.x, mo.fired, dome0, main.dome_hp])
+	mo.take_damage(20)
+	log_line("killed: %s" % mo._dying)
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0

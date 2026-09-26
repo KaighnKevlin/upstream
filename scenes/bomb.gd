@@ -8,6 +8,7 @@ const GRAVITY := 520.0
 
 var velocity := Vector2.ZERO
 var damage := 6
+var gravity := GRAVITY          # mortar shells fly on a lighter arc
 var _spr: AnimatedSprite2D
 
 
@@ -30,8 +31,10 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	velocity.y += GRAVITY * delta
+	velocity.y += gravity * delta
 	global_position += velocity * delta
+	if gravity < GRAVITY and randf() < 0.5:   # a mortar shell: a smoke trail back to its crab
+		FX.burst(get_parent(), global_position, Color(0.75, 0.72, 0.68, 0.5), 1, 8.0, 0.9, 2.2)
 	_spr.rotation = lerpf(_spr.rotation, clampf(velocity.x * 0.004, -0.6, 0.6), 0.1)
 	var scene := get_tree().current_scene
 	var dome := scene.get_node_or_null("DomeZone") as Node2D
@@ -50,6 +53,12 @@ func _physics_process(delta: float) -> void:
 
 
 func _burst() -> void:
+	for kg in get_tree().get_nodes_in_group("kegs"):
+		if kg.center().distance_to(global_position) < 40.0:
+			kg.call_deferred("detonate")
+	var p := get_tree().current_scene.get_node_or_null("Player") as Node2D
+	if p and p.global_position.distance_to(global_position) < 30.0 and p.has_method("take_damage"):
+		p.take_damage(damage)
 	FX.burst(get_parent(), global_position, Color(1.0, 0.75, 0.35), 14, 140.0, 0.4, 2.0)
 	FX.burst(get_parent(), global_position, Color(0.8, 0.8, 0.78, 0.7), 6, 35.0, 0.9, 3.0, -50.0)
 	FX.shake(self, 2.5, 0.15)
