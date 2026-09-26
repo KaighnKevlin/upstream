@@ -59,6 +59,9 @@ func _ready() -> void:
 	# Generate the tilemap world
 	_tilemap.tile_set = TileSetBuilder.create_tileset()
 	WorldGen.generate(_tilemap)
+	var fog := preload("res://scripts/fog.gd").new()   # fog of war underground
+	fog.name = "Fog"
+	add_child(fog)
 	_setup_terrain_visuals()
 	if sandbox and showcase:
 		preload("res://scripts/sandbox_showcase.gd").build.call_deferred(self)
@@ -870,6 +873,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_god_key(event)
 		# Cheat: L to toggle lighting (see underground)
 		if event.keycode == KEY_L:
+			if has_node("Fog"):
+				$Fog.visible = _canvas_mod.color.r >= 0.5   # full bright also lifts the fog
 			if _canvas_mod.color.r < 0.5:
 				_canvas_mod.color = Color(1, 1, 1, 1)  # full bright
 			else:

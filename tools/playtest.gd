@@ -41,6 +41,9 @@ func _run() -> void:
 			decor._by_support.clear()
 			decor.setup(tilemap())
 		main.get_node("Player").global_position = Vector2(1200, 150)
+	# scenarios look underground: no fog unless it's what's being tested
+	if main.has_node("Fog") and not scenario.begins_with("fog"):
+		main.get_node("Fog").visible = false
 	log_line("scenario=%s  godot=%s" % [scenario, Engine.get_version_info().string])
 	await call(scenario)
 	log_line("done")
@@ -3677,3 +3680,33 @@ func lift_spill_rec() -> void:
 		if o.global_position.x > 1525:
 			right += 1
 	log_line("spilled %d, ore now right of the lift %d/5" % [lift.spilled, right])
+
+
+func fog_rec() -> void:
+	# Fog of war: the view from the dome shaft before and after the
+	# prospector walks down and around a dug tunnel.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var tm := tilemap()
+	var shading := main.get_node("TileShading")
+	for x in range(75, 96):
+		for y in range(14, 17):
+			tm.set_cell(Vector2i(x, y), -1)
+			shading.mark_dirty(Vector2i(x, y))
+	var p: CharacterBody2D = main.get_node("Player")
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.4, 1.4)
+	cam.global_position = Vector2(1350, 200)
+	await tap(KEY_L)   # full bright, so what is seen is the fog alone
+	main.get_node("Fog").visible = true
+	p.global_position = Vector2(1200, 150)
+	await wait(0.5)
+	await shot("fog_start")
+	for x in range(1200, 1540, 8):
+		p.global_position = Vector2(x, 250)
+		await physics_frame
+	await wait(0.5)
+	await shot("fog_explored")
+	log_line("revealed at the tunnel's end: %s, far east underground: %s" % [main.get_node("Fog").is_revealed(Vector2(1530, 250)), main.get_node("Fog").is_revealed(Vector2(2100, 400))])
