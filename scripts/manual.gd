@@ -48,6 +48,7 @@ const TABS := [
 		["", "Sapper", "tunnels under your defences to breach the dome; only lightning reaches it"],
 		["", "Bridge engine", "lays a bridge across a ditch for the pack; snap it with iron"],
 		["", "Mason", "bricks your ditches in with stone"],
+		["", "Cave crawler", "hangs from cave ceilings, drops on you when you walk beneath, bites"],
 		["", "Tinker", "fragile repair crew that welds its friends back up: kill it first"],
 		["", "Troop airship", "flies over everything and lowers soldiers behind your lines"],
 		["", "Foundry Engine", "boss every 5th wave: fireproof; flings slag, spawns scuttlers, bulldozes ditches"],

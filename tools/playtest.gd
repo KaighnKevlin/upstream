@@ -32,7 +32,7 @@ func _run() -> void:
 		preload("res://scripts/world_gen.gd").generate(tilemap(), seed)
 		for c in main.get_node("TileShading").get_children():
 			c.queue_redraw()
-		for c in main.get_tree().get_nodes_in_group("caches") + main.get_tree().get_nodes_in_group("geysers"):
+		for c in main.get_tree().get_nodes_in_group("caches") + main.get_tree().get_nodes_in_group("geysers") + main.get_tree().get_nodes_in_group("crawlers"):
 			c.free()   # placed on the old world
 		# scenarios start clean: drop the sandbox showcase built on the old world
 		preload("res://scripts/sandbox_showcase.gd").clear(main)
@@ -4470,3 +4470,38 @@ func dmg_numbers() -> void:
 	await wait(0.1)
 	log_line("bars node %s, recent hits %d" % [main.has_node("HealthBars"), preload("res://scripts/fx.gd").recent_hits.size()])
 	await shot("dmg_numbers")
+
+
+func crawler_rec() -> void:
+	# Cave crawlers: scattered on a fresh world; the player walks under one.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	preload("res://scenes/crawler.gd").scatter(main, tilemap())
+	await wait(0.2)
+	var cs := get_nodes_in_group("crawlers")
+	log_line("crawlers placed: %d" % cs.size())
+	var c: Node2D = cs[0]
+	var p: CharacterBody2D = main.get_node("Player")
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.6, 2.6)
+	cam.global_position = c.global_position + Vector2(0, 10)
+	await tap(KEY_L)
+	# stand the player on the floor below it
+	var tm := tilemap()
+	var cell := tm.local_to_map(c.global_position)
+	while tm.get_cell_source_id(cell + Vector2i.DOWN) == -1 and cell.y < 78:
+		cell.y += 1
+	p.global_position = tm.to_global(tm.map_to_local(cell)) + Vector2(30, 0)
+	await wait(0.5)
+	await shot("crawler_hanging")
+	var hp0: int = p.hp
+	p.global_position.x = c.global_position.x + 6
+	await physics_frame
+	log_line("player below the crawler by %d px" % int(p.global_position.y - c.global_position.y))
+	for f in 120:
+		await physics_frame
+		if f == 20:
+			await shot("crawler_drop")
+	log_line("crawler state %d, player hp %d -> %d" % [c._state if is_instance_valid(c) else -1, hp0, p.hp])
