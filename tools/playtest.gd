@@ -4289,3 +4289,37 @@ func dreadnought_rec() -> void:
 	for o in get_nodes_in_group("ore"):
 		scrap += 1 if o.get("kind") == "scrap" else 0
 	log_line("crashed: %s, scrap %d" % [not is_instance_valid(dn), scrap])
+
+
+func wave10_rec() -> void:
+	# Wave 10 (the Dreadnought plus the pack) against the showcase defences.
+	var sc := preload("res://scripts/sandbox_showcase.gd")
+	await wait(0.2)
+	sc.build(main)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(0.9, 0.9)
+	cam.global_position = Vector2(1500, -60)
+	await wait(4.0)
+	main.wave_number = 9
+	await tap(KEY_P)
+	Engine.time_scale = 2.0
+	var dn = null
+	for s in 45:
+		await wait(2.0)
+		if dn == null:
+			for n in get_nodes_in_group("enemies"):
+				if n.get_script().resource_path.get_file() == "dreadnought.gd":
+					dn = n
+		var near := []
+		for n in get_nodes_in_group("enemies"):
+			if absf(n.global_position.x - 1200) < 260:
+				near.append(n.get_script().resource_path.get_file().get_basename() + ":" + str(n.get("enemy_type")))
+		log_line("t=%3d | near dome %s" % [s * 2, near])
+		log_line("t=%3d | dreadnought %s | enemies %d | dome %d" % [s * 2, ("hp %d x %d state %d" % [dn.hp, dn.global_position.x, dn._state]) if is_instance_valid(dn) and not dn._dying else "down", get_nodes_in_group("enemies").size(), main.dome_hp])
+		if s % 8 == 4:
+			await shot("w10_%02d" % s)
+		if main.dome_hp <= 0 or (dn != null and not is_instance_valid(dn)):
+			break
+	Engine.time_scale = 1.0

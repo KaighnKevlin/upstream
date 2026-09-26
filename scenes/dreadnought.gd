@@ -19,8 +19,8 @@ const ALTITUDE := -120.0
 const SPEED := 45.0
 const HOLD_OFF := 150.0          # parks this far short of the dome
 const MAX_HP := 160
-const BOMB_EVERY := 1.6
-const HANGAR_EVERY := 12.0
+const BOMB_EVERY := 3.0
+const HANGAR_EVERY := 20.0
 const BAY := Vector2(10, 50)
 const HANGAR := Vector2(-30, 50)
 
@@ -154,7 +154,7 @@ func _drop_bomb() -> void:
 	var b: Node2D = preload("res://scenes/bomb.gd").new()
 	b.global_position = global_position + Vector2(BAY.x * direction, BAY.y)
 	b.velocity = Vector2(velocity.x, 40)
-	b.damage = 5
+	b.damage = 3
 	get_parent().add_child(b)
 	bombs += 1
 	SFX.play_small(self, SFX.sfx_clink(), -8.0, 0.6)
@@ -163,11 +163,11 @@ func _drop_bomb() -> void:
 func _launch() -> void:
 	var at := global_position + Vector2(HANGAR.x * direction, HANGAR.y + 10)
 	FX.burst(get_parent(), at, Color(0.8, 0.8, 0.78, 0.7), 8, 60.0, 0.6, 2.4)
-	for k in 2:
+	for k in 1:
 		var o: CharacterBody2D = preload("res://scenes/enemy.tscn").instantiate()
 		o.add_to_group("enemies")
 		o.setup(4)   # ORNITHOPTER
-		o.global_position = at + Vector2(k * 20 - 10, 10)
+		o.global_position = at + Vector2(0, 10)
 		o.direction = direction
 		get_parent().add_child.call_deferred(o)
 		launched += 1
