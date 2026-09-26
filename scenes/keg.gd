@@ -47,6 +47,7 @@ func _ready() -> void:
 	if has_meta("ghost"):
 		return
 	add_to_group("kegs")
+	add_to_group("triggerable")
 	# solid: ore bounces off it, walkers bump into it
 	var body := StaticBody2D.new()
 	body.collision_layer = 1
@@ -95,6 +96,11 @@ func _on_touch(b: Node) -> void:
 			detonate()
 	elif b.is_in_group("enemies"):
 		light()
+
+
+## A tripwire: straight up, no fuse.
+func trigger() -> void:
+	detonate()
 
 
 ## Light the fuse (no-op if it's already burning).

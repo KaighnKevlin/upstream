@@ -4240,6 +4240,41 @@ func mortar_rec() -> void:
 	log_line("killed: %s" % mo._dying)
 
 
+func tripwire_rec() -> void:
+	# A tripwire across the path east of the dome, a powder keg 100px behind
+	# it (out of the walkers' way, on a ledge) and a pendulum by the far
+	# stake. A soldier walks through the wire: the keg should go up and the
+	# pendulum swing. Then the wire restrings.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var tw: Node2D = preload("res://scenes/tripwire.tscn").instantiate()
+	tw.global_position = Vector2(1700, 70)
+	tw.end_offset = Vector2(60, 0)
+	main.add_child(tw)
+	var kg: Node2D = preload("res://scenes/keg.tscn").instantiate()
+	kg.global_position = Vector2(1735, 60)   # right under the wire
+	main.add_child(kg)
+	var pd: Node2D = preload("res://scenes/pendulum.tscn").instantiate()
+	pd.global_position = Vector2(1800, -40)
+	main.add_child(pd)
+	var so = _spawn(2, Vector2(1880, 40))
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.2, 2.2)
+	cam.global_position = Vector2(1730, 20)
+	await shot("tripwire_set")
+	for t in 80:
+		await wait(0.1)
+		if tw.tripped > 0:
+			break
+	log_line("tripped %d | keg blown %s | pendulum omega %.2f | soldier %s" % [tw.tripped, not is_instance_valid(kg), pd.omega, "dead" if not is_instance_valid(so) or so._dying else "hp %d" % so.hp])
+	await wait(0.1)
+	await shot("tripwire_snap")
+	await wait(3.5)
+	log_line("restrung: %s" % (tw._cut <= 0))
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0

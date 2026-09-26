@@ -55,6 +55,7 @@ func _ready() -> void:
 	if has_meta("ghost"):
 		_place_ball()
 		return
+	add_to_group("triggerable")
 	_ball = AnimatableBody2D.new()
 	_ball.collision_layer = ORE_ONLY
 	_ball.collision_mask = 0
@@ -102,6 +103,14 @@ func ball_pos() -> Vector2:
 
 func ball_velocity() -> Vector2:
 	return Vector2(cos(theta), -sin(theta)) * length * omega
+
+
+## A tripwire: a spring kicks the ball; it swings the way it's already
+## going (or right, from rest), hard.
+func trigger() -> void:
+	var s := signf(omega) if absf(omega) > 0.05 else 1.0
+	omega = clampf(omega + s * 5.5, -MAX_SPEED / length, MAX_SPEED / length)
+	SFX.play_small(self, SFX.sfx_clink(), -6.0, 0.8)
 
 
 func _place_ball() -> void:

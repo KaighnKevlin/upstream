@@ -58,6 +58,7 @@ func _ready() -> void:
 		_leaves.append(l)
 	if has_meta("ghost"):
 		return
+	add_to_group("triggerable")
 	add_to_group("trapdoors")
 	add_to_group("power_users")
 	_body = StaticBody2D.new()
@@ -115,6 +116,12 @@ func _physics_process(delta: float) -> void:
 			_arm = ARM
 			SFX.play_small(self, SFX.sfx_clink(), -8.0, 1.4)
 			return
+
+
+## A tripwire: drop now, whoever is (or isn't) on it.
+func trigger() -> void:
+	if not is_open and _body != null:
+		_open()
 
 
 func _someone_in_the_way() -> bool:

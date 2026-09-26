@@ -26,12 +26,12 @@ const PIECES := {
 	7: ["7", "Spikes"], 8: ["8", "Catapult"], 9: ["9", "Chute"], 10: ["0", "Splitter"],
 	11: ["B", "Bumper"], 12: ["C", "Conveyor belt"], 13: ["V", "Bellows fan"],
 	14: ["M", "Wrecking pendulum"], 15: ["N", "Gravity wheel"], 16: ["T", "Assembler"],
-	17: ["Y", "Research lab"], 18: ["U", "Tesla coil"], 19: ["I", "Flame turret"], 20: ["X", "Trapdoor"], 21: ["R", "Crusher"], 22: ["Z", "Electromagnet"], 23: ["", "Harpoon ballista (anti-air)"], 24: ["", "Seesaw"], 25: ["", "Pneumatic tube"], 26: ["", "Powder keg"], 27: ["", "Snare (bear trap)"],
+	17: ["Y", "Research lab"], 18: ["U", "Tesla coil"], 19: ["I", "Flame turret"], 20: ["X", "Trapdoor"], 21: ["R", "Crusher"], 22: ["Z", "Electromagnet"], 23: ["", "Harpoon ballista (anti-air)"], 24: ["", "Seesaw"], 25: ["", "Pneumatic tube"], 26: ["", "Powder keg"], 27: ["", "Snare (bear trap)"], 28: ["", "Tripwire (drag stake to stake)"],
 }
 const CATS := [
 	["Transport", [1, 9, 12, 25, 10, 8, 24, 4, 13]],
 	["Production", [2, 3, 15, 16, 21, 17]],
-	["Defence", [6, 18, 23, 19, 5, 7, 27, 20, 22, 26, 11, 14]],
+	["Defence", [6, 18, 23, 19, 5, 7, 27, 20, 22, 26, 28, 11, 14]],
 ]
 
 var font: Font
@@ -232,6 +232,13 @@ func _build_icon(slot: Node2D, t: int) -> void:
 			_part(art, S + "turret_barrel.png", Rect2(), Vector2(-5, 28))
 		7:
 			_part(art, S + "spikes.png", Rect2(), Vector2(-8, -8))
+		28:
+			var tw: Node2D = preload("res://scenes/tripwire.gd").new()
+			tw.set_meta("ghost", true)
+			tw.set_meta("icon", true)
+			tw.end_offset = Vector2(26, -6)
+			tw.position = Vector2(-13, 0)
+			art.add_child(tw)
 		27:
 			_part(art, S + "snare.png", Rect2(72, 0, 36, 20), Vector2(-18, -10))
 		26:
