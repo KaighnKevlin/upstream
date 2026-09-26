@@ -57,12 +57,20 @@ func _ready() -> void:
 
 
 func _linked() -> Array:
+	return linked_to(get_tree(), [global_position, global_position + end_offset])
+
+
+## Every triggerable machine within LINK of any of these points (tripwire
+## stakes, a pressure plate).
+static func linked_to(tree: SceneTree, points: Array) -> Array:
 	var out := []
-	var a := global_position
-	var b := global_position + end_offset
-	for n in get_tree().get_nodes_in_group("triggerable"):
-		if is_instance_valid(n) and (n.global_position.distance_to(a) < LINK or n.global_position.distance_to(b) < LINK):
-			out.append(n)
+	for n in tree.get_nodes_in_group("triggerable"):
+		if not is_instance_valid(n):
+			continue
+		for p in points:
+			if n.global_position.distance_to(p) < LINK:
+				out.append(n)
+				break
 	return out
 
 

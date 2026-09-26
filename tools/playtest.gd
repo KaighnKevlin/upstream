@@ -4275,6 +4275,59 @@ func tripwire_rec() -> void:
 	log_line("restrung: %s" % (tw._cut <= 0))
 
 
+func plate_rec() -> void:
+	# A pressure plate east of the dome wired to a charged tesla coil and a
+	# drop hopper full of ore. First a dropped ore chunk presses it (the
+	# hopper dumps); then three soldiers walk over it and the coil overloads.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var pl: Node2D = preload("res://scenes/plate.tscn").instantiate()
+	pl.global_position = Vector2(1720, 60)
+	main.add_child(pl)
+	var ts: Node2D = preload("res://scenes/tesla.tscn").instantiate()
+	ts.global_position = Vector2(1640, 60)
+	main.add_child(ts)
+	var hp: Node2D = preload("res://scenes/hopper.tscn").instantiate()
+	hp.global_position = Vector2(1790, -10)
+	main.add_child(hp)
+	await wait(0.3)
+	ts.charge = 10
+	for k in 4:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.kind = "copper"
+		o.global_position = hp.global_position + Vector2(randf_range(-6, 6), -50 - k * 14)
+		main.add_child(o)
+	await wait(2.0)
+	var stored0: int = hp.stored_count()
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.2, 2.2)
+	cam.global_position = Vector2(1720, 10)
+	var o2: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+	o2.kind = "iron"
+	o2.global_position = pl.global_position + Vector2(0, -30)
+	main.add_child(o2)
+	await wait(0.6)
+	log_line("ore on the plate: tripped %d, hopper stored %d -> %d" % [pl.tripped, stored0, hp.stored_count()])
+	if is_instance_valid(o2):
+		o2.queue_free()
+	await wait(0.8)
+	ts._cool = 999.0        # no zapping on its own now: only the overload
+	var z0: int = ts.zaps
+	var foes := []
+	for k in 3:
+		foes.append(_spawn(2, Vector2(1800 + k * 26, 40)))
+	var t0: int = pl.tripped
+	for t in 60:
+		await wait(0.1)
+		if pl.tripped > t0:
+			break
+	await wait(0.1)
+	await shot("plate_overload")
+	log_line("walkers on the plate: tripped %d, tesla overload zaps %d (charge now %d)" % [pl.tripped, ts.zaps - z0, ts.charge])
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0

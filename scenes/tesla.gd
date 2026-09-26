@@ -54,6 +54,7 @@ func _ready() -> void:
 	add_child(_spr)
 	if has_meta("ghost"):
 		return
+	add_to_group("triggerable")
 	add_to_group("power_users")
 	_light = PointLight2D.new()
 	_light.texture = LightTextures.create_radial_light(96)
@@ -132,6 +133,29 @@ func _physics_process(delta: float) -> void:
 		b[1] -= delta
 	_bolts = _bolts.filter(func(b): return b[1] > 0)
 	queue_redraw()
+
+
+## A tripwire or a pressure plate: overload. Everything in range gets a
+## bolt at once, one charge each (up to OVERLOAD), cooldown or not.
+const OVERLOAD := 5
+
+func trigger() -> void:
+	var from := to_global(ELECTRODE)
+	var n := 0
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if n >= OVERLOAD or charge <= 0:
+			break
+		if _valid(e) and from.distance_to(_center(e)) < RANGE * Tech.mult("barrels"):
+			charge -= 1
+			zaps += 1
+			n += 1
+			_bolts.append([_jagged(ELECTRODE, to_local(_center(e))), 0.25])
+			e.take_damage(DAMAGE[0])
+			FX.burst(get_parent(), _center(e), Color(0.75, 0.95, 1.0), 8, 110.0, 0.25, 1.4)
+	if n > 0:
+		_cool = COOLDOWN
+		_light.energy = 2.2
+		SFX.play(self, SFX.sfx_laser(), 2.0, 0.7)
 
 
 func _valid(e) -> bool:

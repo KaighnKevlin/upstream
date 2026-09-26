@@ -52,6 +52,7 @@ func _ready() -> void:
 	_leaf_r = _leaf(Vector2(BIN_HALF, BIN_BOTTOM + 1), true)
 	if has_meta("ghost"):
 		return
+	add_to_group("triggerable")
 	_build_legs()
 
 	# walls: terrain layer, so ore (and the player) collide with them
@@ -268,6 +269,11 @@ func _physics_process(delta: float) -> void:
 
 func stored_count() -> int:
 	return _store.get_overlapping_bodies().size() if _store else 0
+
+
+## A tripwire or a pressure plate: drop the pile.
+func trigger() -> void:
+	dump()
 
 
 ## Pressure plate calls this: open the trapdoor, let the pile fall, close.
