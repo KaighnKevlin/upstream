@@ -40,7 +40,7 @@ var _arrow_count: Label
 var _arrow_t := 0.0
 var _game_over_panel: NinePatchRect
 
-const ENEMY_NAMES := ["titan", "scuttler", "soldier", "caster", "ornithopter", "shieldbearer", "magpie", "sapper", "bridger", "mason", "foundry", "airship", "tinker", "dreadnought", "gremlin", "mortar", "grenadier", "colossus"]
+const ENEMY_NAMES := ["titan", "scuttler", "soldier", "caster", "ornithopter", "shieldbearer", "magpie", "sapper", "bridger", "mason", "foundry", "airship", "tinker", "dreadnought", "gremlin", "mortar", "grenadier", "colossus", "roller"]
 
 @onready var _receiver: Area2D = $Receiver
 @onready var _turret: Node2D = $Turret
@@ -734,6 +734,9 @@ func _spawn_wave() -> void:
 	var grenadiers := (wave_number - 1) / 3 if wave_number >= 4 else 0   # bombers from wave 4
 	if grenadiers > 0:
 		kinds[16] = grenadiers
+	var rollers := wave_number / 4 if wave_number >= 5 else 0   # rolling juggernauts from wave 5
+	if rollers > 0:
+		kinds[18] = rollers
 	var sky_boss := wave_number % 10 == 0   # the Dreadnought every tenth wave
 	var colossus := wave_number >= 15 and wave_number % 10 == 5   # the Colossus on 15, 25, ...
 	var boss := wave_number % 5 == 0 and not sky_boss and not colossus   # the Foundry Engine on the other fifths
@@ -797,6 +800,10 @@ func _spawn_wave() -> void:
 	for k in grenadiers:
 		var gn: Node2D = preload("res://scenes/grenadier.tscn").instantiate()
 		_march_in(gn, Vector2(spawn_x, 40), 4 + k * 3)
+
+	for k in rollers:
+		var ro: Node2D = preload("res://scenes/roller.tscn").instantiate()
+		_march_in(ro, Vector2(spawn_x, 60), 2 + k * 5)
 
 	for k in mortars:
 		var mo: Node2D = preload("res://scenes/mortar.tscn").instantiate()
@@ -1049,7 +1056,7 @@ func _god_key(event: InputEventKey) -> void:
 		KEY_G:
 			if event.echo:
 				return
-			if ENEMY_NAMES[_god_type] in ["magpie", "sapper", "bridger", "mason", "foundry", "airship", "tinker", "dreadnought", "gremlin", "mortar", "grenadier"]:
+			if ENEMY_NAMES[_god_type] in ["magpie", "sapper", "bridger", "mason", "foundry", "airship", "tinker", "dreadnought", "gremlin", "mortar", "grenadier", "roller"]:
 				var mp: Node2D = load("res://scenes/%s.tscn" % ENEMY_NAMES[_god_type]).instantiate()
 				mp.global_position = at
 				add_child(mp)

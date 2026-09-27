@@ -4726,6 +4726,54 @@ func lantern_rec() -> void:
 	log_line("lanterns: %s" % [lanterns.map(func(l): return "at %s pole %.0f" % [l.global_position.round(), l._pole])])
 
 
+func roller_rec() -> void:
+	# Rollers: one rolls at a narrow (2-wide) ditch and should jump it; a
+	# second meets a wide deep pit and should be trapped; a third is bumped.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var tm := tilemap()
+	for x in range(112, 114):          # narrow ditch, x ~1792..1824
+		for y in range(6, 9):
+			tm.set_cell(Vector2i(x, y), -1)
+	for x in range(96, 101):           # wide pit, x ~1536..1616, 4 deep
+		for y in range(6, 10):
+			tm.set_cell(Vector2i(x, y), -1)
+	preload("res://scripts/world_gen.gd").reframe_all(tm)
+	var r1: RigidBody2D = preload("res://scenes/roller.tscn").instantiate()
+	r1.global_position = Vector2(2100, 70)
+	main.add_child(r1)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.4, 1.4)
+	cam.global_position = Vector2(1760, 20)
+	var deepest := 0.0
+	var shot_jump := false
+	for t in 120:
+		await wait(0.1)
+		if r1.global_position.x < 1830:
+			deepest = maxf(deepest, r1.global_position.y)
+		if not shot_jump and r1.global_position.x < 1830:
+			shot_jump = true
+			await shot("roller_ditch")
+		if r1.global_position.x < 1700:
+			break
+	await wait(2.0)
+	log_line("roller in the ditch: plugged %s at %s (span %s)" % [r1.plugged, r1.global_position.round(), r1._span])
+	await shot("roller_plug")
+	# a soldier walks over the plug
+	var so = _spawn(2, Vector2(1900, 40))
+	for t in 100:
+		await wait(0.1)
+		if so.global_position.x < 1760:
+			break
+	log_line("soldier walking over: x %.0f, deepest y %.0f (ground ~83)" % [so.global_position.x, so.global_position.y])
+	await shot("roller_crossed")
+	r1.take_damage(30)
+	await wait(0.3)
+	log_line("plug destroyed: roller gone %s; ditch cell (112,6) empty %s" % [not is_instance_valid(r1), tm.get_cell_source_id(Vector2i(112, 6)) == -1])
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0

@@ -56,6 +56,7 @@ const TABS := [
 		["", "Mason", "bricks your ditches in with stone"],
 		["", "Cave crawler", "hangs from cave ceilings, drops on you when you walk beneath, bites"],
 		["", "The Colossus", "boss, waves 15, 25...: a titan twice the size; strides over ditches, ground-shaking stomp"],
+		["", "Roller", "an iron ball that rolls at the dome; stuck in a ditch it plugs it level for the pack: break the plug"],
 		["", "Grenadier", "lobs lit bombs that bounce: trampolines, bumpers and fans send them back"],
 		["", "Mortar crab", "plants out of reach and lobs shells over your defences at the dome"],
 		["", "Gremlin", "saboteur: ignores the dome, unscrews your machines one by one"],
