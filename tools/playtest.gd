@@ -5149,6 +5149,32 @@ func build_tabs_rec() -> void:
 	log_line("bar size %s, tabs %s" % [bar.size, bar.CATS.map(func(c): return "%s:%d" % [c[0], c[1].size()])])
 
 
+func poses_rec() -> void:
+	# The prospector's new action poses: firing the gun standing still, and
+	# holding a chunk of ore overhead.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var p: CharacterBody2D = main.get_node("Player")
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.zoom = Vector2(4, 4)
+	await wait(1.2)       # settled on the ground
+	var gun = p.get_node("Shotgun")
+	gun._fire(Vector2.RIGHT)
+	await wait(0.05)
+	var a: AnimatedSprite2D = p.get_node("AnimatedSprite2D")
+	log_line("after a shot: anim %s frame %d" % [a.animation, a.frame])
+	await shot("pose_shoot")
+	await wait(0.5)
+	var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+	o.global_position = p.global_position + Vector2(8, -6)
+	main.add_child(o)
+	await wait(0.3)
+	p._pick_up()
+	await wait(0.3)
+	log_line("carrying %s: anim %s" % [p._carried != null, a.animation])
+	await shot("pose_carry")
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0

@@ -107,6 +107,7 @@ const HOLD_OFFSET := Vector2(0, -28)
 const THROW_MIN := 120.0
 const THROW_MAX := 720.0
 var _carried: RigidBody2D
+var shoot_timer := 0.0           # the gun sets this: a moment in the shooting pose
 var _throw_arc: Node2D
 var _hurt_timer := 0.0
 var _land_timer := 0.0
@@ -222,11 +223,16 @@ func _physics_process(delta: float) -> void:
 			new_anim = "land"
 		elif abs(velocity.x) > 10:
 			new_anim = "walk"
+		elif shoot_timer > 0 and frames.has_animation("shoot"):
+			new_anim = "shoot"         # arms out to the gun, then the recoil
+		elif _carried and is_instance_valid(_carried) and frames.has_animation("carry"):
+			new_anim = "carry"         # holding it overhead
 		else:
 			new_anim = "idle"
 		if _anim.animation != new_anim:
 			_anim.play(new_anim)
 
+	shoot_timer = maxf(0.0, shoot_timer - delta)
 	# Mining cooldown
 	if _mine_timer > 0:
 		_mine_timer -= delta

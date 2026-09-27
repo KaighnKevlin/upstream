@@ -75,6 +75,12 @@ func _fire(dir: Vector2) -> void:
 	_timer = fire_cooldown
 	# turn the prospector to face the shot
 	var owner_body := get_parent()
+	if "shoot_timer" in owner_body:
+		owner_body.shoot_timer = 0.3
+		var body_anim := owner_body.get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
+		if body_anim and body_anim.sprite_frames.has_animation("shoot") and absf(owner_body.velocity.x) <= 10:
+			body_anim.play("shoot")      # from the top on every shot
+			body_anim.frame = 0
 	if absf(dir.x) > 0.1 and "_facing_right" in owner_body:
 		owner_body._facing_right = dir.x > 0
 		owner_body.get_node("AnimatedSprite2D").flip_h = dir.x < 0
