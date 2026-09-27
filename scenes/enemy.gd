@@ -88,6 +88,14 @@ func setup(type: EnemyType) -> void:
 ## gild a growing share of their walkers from wave 6 (main.gd).
 var gilded := false
 var max_hp := 1                  # full health (tinkers weld up to it)
+## The Colossus: a boss, a titan twice the size with a furnace-bright core
+## (waves 15, 25, ...). It strides over ditches, its
+## stomp shakes the ground for twice the distance and flings everything
+## loose, and it barely notices shoves. A health bar over the screen.
+var colossus := false
+const COLOSSUS_SCALE := 2.0
+const COLOSSUS_TINT := Color(0.62, 0.6, 0.66)
+var _boss_fill: ColorRect
 const GILD_TINT := Color(1.3, 1.08, 0.62)
 
 
@@ -101,6 +109,12 @@ func _ready() -> void:
 		hp *= 2
 		damage = int(damage * 1.25)
 		call_deferred("_gild")
+	if colossus:
+		hp = 320
+		damage = 60
+		speed = 14.0
+		sprite_scale = COLOSSUS_SCALE
+		_stomp_cooldown = 3.0
 	max_hp = hp
 
 	if has_node("AnimatedSprite2D"):
@@ -119,6 +133,14 @@ func _ready() -> void:
 				# enemies stand on real ground now (the old invisible platform sat
 				# 19px higher); shapes moved down so sprites keep their place
 				$CollisionShape2D.position.y = -19
+				if colossus:
+					# twice the size, feet on the same ground: a box wider than
+					# a ditch, so it strides straight over them
+					titan_shape.size = Vector2(88, 120)
+					$CollisionShape2D.position.y = -49
+					anim.position.y = -11
+					anim.self_modulate = COLOSSUS_TINT
+					call_deferred("_colossus_extras")
 			EnemyType.SCUTTLER:
 				anim.sprite_frames = _strip_frames("res://assets/sprites/scuttler_walk.png", 44, 36, 6, 14.0)
 				_add_strip_anim(anim.sprite_frames, "pounce", "res://assets/sprites/scuttler_pounce.png", 44, 36, 6, 12.0)
@@ -461,11 +483,71 @@ func shield_clang(at: Vector2) -> void:
 
 ## Body centre and radius for things that hit by proximity (ore, bullets).
 func hit_center() -> Vector2:
-	return global_position + Vector2(0, HIT_Y.get(enemy_type, -10.0))
+	return global_position + Vector2(0, HIT_Y.get(enemy_type, -10.0) * (COLOSSUS_SCALE if colossus else 1.0))
 
 
 func hit_radius() -> float:
-	return HIT_RADIUS.get(enemy_type, 12.0)
+	return HIT_RADIUS.get(enemy_type, 12.0) * (COLOSSUS_SCALE if colossus else 1.0)
+
+
+## The melee table for this walker (the Colossus's is scaled up).
+func _melee() -> Dictionary:
+	var m: Dictionary = MELEE[enemy_type]
+	if not colossus:
+		return m
+	m = m.duplicate(true)
+	m.reach_dome *= 1.6
+	m.reach_player *= 2.0
+	m.hit_x *= 2.0
+	m.damage *= 3
+	m.knock *= 1.5
+	m.vs_player.damage = int(m.vs_player.damage * 2)
+	m.vs_player.knock *= 1.5
+	return m
+
+
+## Its core, its boss bar.
+func _colossus_extras() -> void:
+	var core := PointLight2D.new()
+	core.texture = preload("res://scripts/light_textures.gd").create_radial_light(128)
+	core.color = Color(1.0, 0.55, 0.2)
+	core.energy = 1.1
+	core.texture_scale = 1.6
+	core.position = Vector2(0, -80)
+	add_child(core)
+	var ct := core.create_tween().set_loops()
+	ct.tween_property(core, "energy", 0.7, 0.6).set_trans(Tween.TRANS_SINE)
+	ct.tween_property(core, "energy", 1.2, 0.6).set_trans(Tween.TRANS_SINE)
+	var bar := CanvasLayer.new()
+	bar.layer = 5
+	var root := Control.new()
+	root.position = Vector2(440, 70)
+	bar.add_child(root)
+	var bg := ColorRect.new()
+	bg.color = Color(0.08, 0.07, 0.07, 0.85)
+	bg.size = Vector2(400, 26)
+	root.add_child(bg)
+	var edge := ColorRect.new()
+	edge.color = Color(0.55, 0.5, 0.45)
+	edge.position = Vector2(4, 16)
+	edge.size = Vector2(392, 7)
+	root.add_child(edge)
+	_boss_fill = ColorRect.new()
+	_boss_fill.color = Color(1.0, 0.5, 0.2)
+	_boss_fill.position = Vector2(5, 17)
+	_boss_fill.size = Vector2(390, 5)
+	root.add_child(_boss_fill)
+	var l := Label.new()
+	l.text = "THE COLOSSUS"
+	l.add_theme_font_override("font", preload("res://scripts/pixel_font.gd").get_font())
+	l.add_theme_font_size_override("font_size", 8)
+	l.add_theme_color_override("font_color", Color(1.0, 0.85, 0.7))
+	l.position = Vector2(0, 1)
+	l.size = Vector2(400, 14)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	root.add_child(l)
+	bar.name = "BossBar"
+	add_child(bar)
 
 
 var _knock_t := 0.0
@@ -478,7 +560,7 @@ const KNOCK_WEIGHT := {0: 0.55}   # titans are heavy
 func knock(v: Vector2) -> void:
 	if _dying or enemy_type == EnemyType.ORNITHOPTER:
 		return
-	velocity = v * KNOCK_WEIGHT.get(enemy_type, 1.0)
+	velocity = v * KNOCK_WEIGHT.get(enemy_type, 1.0) * (0.2 if colossus else 1.0)
 	_knock_t = 0.45
 
 
@@ -486,6 +568,8 @@ func take_damage(amount: int) -> void:
 	if _dying:
 		return
 	hp -= amount
+	if _boss_fill:
+		_boss_fill.size.x = 390.0 * maxf(0.0, float(hp) / max_hp)
 	preload("res://scripts/fx.gd").damage_number(get_parent(), hit_center() if has_method("hit_center") else global_position, amount, self)
 	var at := global_position + Vector2(0, HIT_Y.get(enemy_type, -10.0))
 	FX.burst(get_parent(), at, Color(1, 0.9, 0.5), 4, 70.0, 0.25, 1.5)
@@ -556,7 +640,14 @@ func _die() -> void:
 	remove_from_group("enemies")
 	set_physics_process(false)
 	$CollisionShape2D.set_deferred("disabled", true)
-	preload("res://scenes/ore.gd").spill(get_parent(), hit_center(), SCRAP.get(enemy_type, 1) * (2 if gilded else 1))
+	preload("res://scenes/ore.gd").spill(get_parent(), hit_center(), SCRAP.get(enemy_type, 1) * (2 if gilded else 1) * (5 if colossus else 1))
+	if colossus:
+		if has_node("BossBar"):
+			get_node("BossBar").queue_free()
+		FX.shake(self, 14.0, 0.8)
+		var scene := get_tree().current_scene
+		if scene.has_method("_show_banner"):
+			scene._show_banner("THE COLOSSUS FALLS", "a mountain of scrap")
 	if gilded:   # a gilded one also gives up a gear from its works
 		var g: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
 		g.kind = "gear"
@@ -774,7 +865,7 @@ func _melee_process(delta: float) -> void:
 	_chop_cooldown -= delta
 	_stomp_cooldown -= delta
 	var swinging := anim.animation == _attack_anim and anim.is_playing()
-	var m: Dictionary = MELEE[enemy_type]
+	var m: Dictionary = _melee()
 	var target := _melee_target(m)
 	var stomp_at := _stomp_target() if not swinging else null
 	if swinging:
@@ -816,7 +907,8 @@ func _stomp_target() -> Node2D:
 	if player == null or not player.is_on_floor():
 		return null
 	var dx := absf(player.global_position.x - global_position.x)
-	if dx > STOMP.min and dx < STOMP.range and absf(player.global_position.y - global_position.y) < 40:
+	var reach: float = STOMP.range * (2.0 if colossus else 1.0)
+	if dx > STOMP.min and dx < reach and absf(player.global_position.y - global_position.y) < 40:
 		return player
 	return null
 
@@ -847,17 +939,25 @@ func _on_stomp() -> void:
 		get_parent().add_child(w)
 		w.play()
 		var t := w.create_tween()
-		t.tween_property(w, "global_position:x", ground.x + dir * STOMP.range, 0.42)
+		t.tween_property(w, "global_position:x", ground.x + dir * STOMP.range * (2.0 if colossus else 1.0), 0.42 * (1.6 if colossus else 1.0))
 		t.parallel().tween_property(w, "modulate:a", 0.0, 0.42).set_delay(0.18)
 		t.tween_callback(w.queue_free)
 	# the wave catches anyone standing on the ground in range
 	var player := get_tree().current_scene.get_node_or_null("Player") as CharacterBody2D
+	var k := 2.0 if colossus else 1.0
 	if player and player.is_on_floor() \
-			and absf(player.global_position.x - global_position.x) < STOMP.range \
+			and absf(player.global_position.x - global_position.x) < STOMP.range * k \
 			and absf(player.global_position.y - global_position.y) < 40:
 		var away := signf(player.global_position.x - global_position.x)
-		player.take_damage(STOMP.damage)
-		player.launch(Vector2(away * STOMP.knock.x, STOMP.knock.y))
+		player.take_damage(int(STOMP.damage * (1.5 if colossus else 1.0)))
+		player.launch(Vector2(away * STOMP.knock.x, STOMP.knock.y) * (1.3 if colossus else 1.0))
+	if colossus:
+		# the whole ground jumps: everything loose nearby is thrown up
+		FX.shake(self, 12.0, 0.6)
+		for o in get_tree().get_nodes_in_group("ore"):
+			if is_instance_valid(o) and not o.freeze and absf(o.global_position.x - global_position.x) < STOMP.range * k:
+				o.sleeping = false
+				o.linear_velocity += Vector2(randf_range(-60, 60), -380)
 
 
 func _melee_target(m: Dictionary) -> Node2D:
@@ -878,7 +978,7 @@ func _on_melee_frame() -> void:
 		if not _dying and anim.animation == "stomp" and anim.frame == STOMP.impact:
 			_on_stomp()
 		return
-	var m: Dictionary = MELEE[enemy_type]
+	var m: Dictionary = _melee()
 	if _attack_anim != "attack":
 		m = m.merged(m.vs_player, true)  # the variant's impact frame, knockback, damage
 	if _dying or anim.animation != _attack_anim or anim.frame != m.impact:

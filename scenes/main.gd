@@ -40,7 +40,7 @@ var _arrow_count: Label
 var _arrow_t := 0.0
 var _game_over_panel: NinePatchRect
 
-const ENEMY_NAMES := ["titan", "scuttler", "soldier", "caster", "ornithopter", "shieldbearer", "magpie", "sapper", "bridger", "mason", "foundry", "airship", "tinker", "dreadnought", "gremlin", "mortar", "grenadier"]
+const ENEMY_NAMES := ["titan", "scuttler", "soldier", "caster", "ornithopter", "shieldbearer", "magpie", "sapper", "bridger", "mason", "foundry", "airship", "tinker", "dreadnought", "gremlin", "mortar", "grenadier", "colossus"]
 
 @onready var _receiver: Area2D = $Receiver
 @onready var _turret: Node2D = $Turret
@@ -735,9 +735,12 @@ func _spawn_wave() -> void:
 	if grenadiers > 0:
 		kinds[16] = grenadiers
 	var sky_boss := wave_number % 10 == 0   # the Dreadnought every tenth wave
-	var boss := wave_number % 5 == 0 and not sky_boss   # the Foundry Engine on the other fifths
+	var colossus := wave_number >= 15 and wave_number % 10 == 5   # the Colossus on 15, 25, ...
+	var boss := wave_number % 5 == 0 and not sky_boss and not colossus   # the Foundry Engine on the other fifths
 	if boss:
 		kinds[10] = 1
+	if colossus:
+		kinds[17] = 1
 	if sky_boss:
 		kinds[13] = 1
 	var gild_chance := 0.0 if wave_number < 6 else minf(0.6, 0.15 + 0.05 * (wave_number - 6))
@@ -808,6 +811,15 @@ func _spawn_wave() -> void:
 		var dn: Node2D = preload("res://scenes/dreadnought.tscn").instantiate()
 		dn.global_position = Vector2(spawn_x + 100, -120)
 		add_child(dn)
+
+	if colossus:
+		var co := _enemy_scene.instantiate()
+		co.add_to_group("enemies")
+		co.setup(0)
+		co.colossus = true
+		co.direction = -1.0
+		_march_in(co, Vector2(spawn_x, surface_y - 40), count + 2)
+		_show_banner("THE COLOSSUS", "it steps over your ditches")
 
 	if boss:
 		var fe: Node2D = preload("res://scenes/foundry.tscn").instantiate()
@@ -1043,7 +1055,11 @@ func _god_key(event: InputEventKey) -> void:
 				return
 			var e := _enemy_scene.instantiate()
 			e.add_to_group("enemies")
-			e.setup(_god_type)
+			if ENEMY_NAMES[_god_type] == "colossus":
+				e.setup(0)
+				e.colossus = true
+			else:
+				e.setup(_god_type)
 			e.global_position = at
 			e.direction = -1.0 if at.x > 1200 else 1.0  # toward the dome
 			add_child(e)

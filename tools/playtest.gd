@@ -4636,6 +4636,65 @@ func firedamp_rec() -> void:
 	log_line("shot in (at %s): first lit %s, second lit %s | soldier %s | tiles blown %d" % [gpos, not is_instance_valid(g) or g.lit, not is_instance_valid(g2) or g2.lit, "dead" if not is_instance_valid(so) or so._dying else "hp %d" % so.hp, before - solid.call()])
 
 
+func colossus_rec() -> void:
+	# The Colossus: walks at a 3-wide, 3-deep ditch east of the dome (it
+	# should stride over, not fall in), stomps at the prospector standing
+	# past it, then is brought down.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var tm := tilemap()
+	for x in range(104, 107):         # ditch at x ~1664..1712
+		for y in range(6, 9):
+			tm.set_cell(Vector2i(x, y), -1)
+	preload("res://scripts/world_gen.gd").reframe_all(tm)
+	var co = preload("res://scenes/enemy.tscn").instantiate()
+	co.add_to_group("enemies")
+	co.setup(0)
+	co.colossus = true
+	co.direction = -1.0
+	co.global_position = Vector2(1880, 0)
+	main.add_child(co)
+	var p: CharacterBody2D = main.get_node("Player")
+	p.global_position = Vector2(1480, 80)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.3, 1.3)
+	cam.global_position = Vector2(1640, -20)
+	for k in 6:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.global_position = Vector2(1520 + k * 14, 70)
+		main.add_child(o)
+	await wait(1.0)
+	await shot("colossus_walk")
+	var hp0: int = p.hp
+	var deepest := 0.0
+	var crossed_at := -1.0
+	var stomped := false
+	var hp_after := 0
+	for t in 300:
+		await wait(0.1)
+		deepest = maxf(deepest, co.global_position.y)
+		if crossed_at < 0 and co.global_position.x < 1650:
+			crossed_at = t * 0.1
+			await shot("colossus_crossed")
+		if p.hp < hp0 and not stomped:
+			stomped = true
+			await wait(0.15)
+			await shot("colossus_stomp")
+		if stomped:
+			p.global_position = Vector2(900, 80)   # then get well clear
+		else:
+			p.global_position.x = 1480.0   # stand your ground
+		if crossed_at >= 0 and t * 0.1 > crossed_at + 1.0:
+			break
+	log_line("colossus hp %d, stomped %s, crossed the ditch at t=%.1f, deepest y %.0f (ground ~96; ditch floor ~144) | player hp %d -> %d" % [co.hp, stomped, crossed_at, deepest, hp0, p.hp])
+	co.take_damage(400)
+	await wait(1.2)
+	await shot("colossus_down")
+	log_line("down: dying %s, scrap loose %d" % [co._dying, get_nodes_in_group("ore").filter(func(o): return o.get("kind") == "scrap").size()])
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0
