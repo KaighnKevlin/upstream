@@ -5662,6 +5662,58 @@ func galton_rec() -> void:
 		log_line("t=%d | dropped %d | bins %s (sum %d) | stray %d" % [(k + 1) * 5, g.dropped, g.bins, g.bins.reduce(func(a, b): return a + b, 0), stray.size()])
 
 
+func hoop_rec() -> void:
+	# Loop-the-loop: four marbles sent along the rail at rising speeds, one
+	# at a time. It needs v^2 >= 5gR (about 330 px/s) to make it round.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	await preload("res://scripts/marble_works.gd").carve(main, false)
+	var lp: Node2D = preload("res://scenes/loop.tscn").instantiate()
+	lp.global_position = Vector2(1300, 562)
+	main.add_child(lp)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(3, 3)
+	cam.global_position = Vector2(1300, 520)
+	for v in [250.0, 330.0, 380.0, 450.0]:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.global_position = Vector2(1250, 555)
+		main.add_child(o)
+		o.linear_velocity = Vector2(v, 0)
+		await wait(0.12)
+		if v == 380.0:
+			await shot("loop_%d" % int(v))
+		await wait(1.3)
+		log_line("sent at %d px/s: looped %d, fell %d" % [int(v), lp.looped, lp.fell])
+	await shot("loop_end")
+
+
+func coaster_rec() -> void:
+	# The Coaster world: loop / jump / bell counts every 5 s for 20 s.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await main.start_coaster_works()
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.4, 1.4)
+	cam.global_position = Vector2(1250, 340)
+	var find := func(file: String): return main.get_children().filter(func(c): return c.get_script() and c.get_script().resource_path.get_file() == file)[0]
+	var lp = find.call("loop.gd")
+	var jp = find.call("jump.gd")
+	var bl = find.call("bell.gd")
+	var beam = find.call("beam.gd")
+	for k in 4:
+		await wait(1.0 if k == 0 else 5.0)
+		if k % 2 == 1:
+			await shot("coaster_%02d" % k)
+		log_line("t=%d | loop round %d fell %d | jump landed %d short %d | bell %d | beam carried %d" % [(k + 1) * 5, lp.looped, lp.fell, jp.landed, jp.fell, bl.rings, beam.carried])
+		log_line("   loop entry speeds %s (needs ~300)" % [lp.entry_speeds])
+		log_line("   marbles at %s" % [get_nodes_in_group("ore").map(func(o): return Vector2i(o.global_position))])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.

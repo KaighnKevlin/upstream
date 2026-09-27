@@ -239,22 +239,23 @@ func _show_title() -> void:
 	sub.position = Vector2(0, 150 + sz.y + 18)
 	root.add_child(sub)
 	# two ways in: the sandbox (showcase + god tools) or survival (waves)
-	for i in 5:
+	for i in 6:
 		var spec: Array = [["1  SANDBOX", "a working showcase, god tools, no waves until you ask"],
 			["2  SURVIVAL", "a bare world: get an ingot into the dome and the waves begin"],
 			["3  MARBLE WORKS", "the Beam and a marble machine, under the dome"],
 			["4  COUNTER", "marbles counting in binary on six flip-flops"],
-			["5  GALTON", "a bell curve out of pegs and chance"]][i]
-		var x := 20.0 + i * 250.0
-		var opt := _hud_label(spec[0], 20, Color(0.55, 0.88, 0.92))
-		opt.size = Vector2(240, 40)
+			["5  GALTON", "a bell curve out of pegs and chance"],
+			["6  COASTER", "a drop, a loop-the-loop, a jump and a bell"]][i]
+		var x := 15.0 + i * 210.0
+		var opt := _hud_label(spec[0], 18, Color(0.55, 0.88, 0.92))
+		opt.size = Vector2(200, 40)
 		opt.position = Vector2(x, 395)
 		root.add_child(opt)
 		var d := _hud_label(spec[1], 10, Color(0.85, 0.75, 0.55))
-		d.size = Vector2(240, 20)
+		d.size = Vector2(200, 20)
 		d.position = Vector2(x, 437)
 		root.add_child(d)
-		_title_opts.append(Rect2(Vector2(x, 390), Vector2(240, 70)))
+		_title_opts.append(Rect2(Vector2(x, 390), Vector2(200, 70)))
 		var blink := opt.create_tween().set_loops()
 		blink.tween_interval(i * 0.6)
 		blink.tween_property(opt, "modulate:a", 0.45, 0.6)
@@ -294,6 +295,8 @@ func _on_title_input(event: InputEvent) -> void:
 		or (event is InputEventMouseButton and _title_opts.size() > 3 and _title_opts[3].has_point(event.position))
 	var galton: bool = (event is InputEventKey and event.keycode == KEY_5) \
 		or (event is InputEventMouseButton and _title_opts.size() > 4 and _title_opts[4].has_point(event.position))
+	var coaster: bool = (event is InputEventKey and event.keycode == KEY_6) \
+		or (event is InputEventMouseButton and _title_opts.size() > 5 and _title_opts[5].has_point(event.position))
 	if survival:
 		start_survival()
 	elif marble:
@@ -302,6 +305,8 @@ func _on_title_input(event: InputEvent) -> void:
 		start_counter_works()
 	elif galton:
 		start_galton_works()
+	elif coaster:
+		start_coaster_works()
 	_title.accept_event()
 	var title := _title
 	_title = null
@@ -383,6 +388,15 @@ func start_galton_works() -> void:
 	await preload("res://scripts/galton_works.gd").build(self)
 	_player.global_position = Vector2(1520, 540)
 	_show_banner("GALTON BOARD", "every peg a coin toss")
+
+
+## A fun run: screw, curved drop, loop-the-loop, jump, bell
+## (scripts/coaster_works.gd). Sandbox tools stay on.
+func start_coaster_works() -> void:
+	preload("res://scripts/sandbox_showcase.gd").clear(self)
+	await preload("res://scripts/coaster_works.gd").build(self)
+	_player.global_position = Vector2(1600, 540)
+	_show_banner("COASTER", "down, round, over and ding")
 
 
 func start_survival() -> void:
@@ -1146,6 +1160,7 @@ var _build_names := {
 	46: "Build: FERRIS LIFT (cups scoop marbles at the bottom, tip them at the top)",
 	47: "Build: JUMP (drag to set the landing: fast pieces fly the gap)",
 	48: "Build: BELL (a marble strikes it: rings, and fires traps in reach)",
+	49: "Build: LOOP-THE-LOOP (feed it off a steep drop: slow marbles fall off)",
 	44: "Build: ROBOTIC ARM (picks from one spot, drops at another)",
 	37: "Build: DOMINO ROW (drag start to end; click an end to reset)",
 	36: "Build: STEAM ENGINE (feed it ore: powers machines in reach)",
