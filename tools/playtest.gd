@@ -3963,18 +3963,21 @@ func hitch_rec() -> void:
 	var t_p := Time.get_ticks_usec()
 	await tap(KEY_P)
 	var last := Time.get_ticks_usec()
-	for f in 900:
-		if f == 450:
-			main.get_tree().call_group("enemies", "queue_free")
-			await tap(KEY_P)
-			log_line("second wave at %.2f s" % ((Time.get_ticks_usec() - t_p) / 1e6))
+	var added := {}
+	var on_add := func(n: Node):
+		var k: String = n.get_script().resource_path.get_file() if n.get_script() else n.get_class()
+		added[k] = added.get(k, 0) + 1
+	main.get_tree().node_added.connect(on_add)
+	while Time.get_ticks_usec() - t_p < 16_000_000:
 		await process_frame
 		var now := Time.get_ticks_usec()
 		if now - last > 40000:
-			log_line("hitch %.0f ms at %.2f s after P | physics %.1f ms, process %.1f ms | enemies %d" % [(now - last) / 1000.0, (now - t_p) / 1e6,
+			log_line("hitch %.0f ms at %.2f s after P | physics %.1f ms, process %.1f ms | enemies %d | added this frame: %s" % [(now - last) / 1000.0, (now - t_p) / 1e6,
 				Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0, Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0,
-				get_nodes_in_group("enemies").size()])
+				get_nodes_in_group("enemies").size(), added])
+		added.clear()
 		last = now
+	main.get_tree().node_added.disconnect(on_add)
 
 
 func sfx_cost() -> void:
