@@ -1131,6 +1131,7 @@ var _build_names := {
 	45: "Build: STAIR LIFT (bobbing steps climb marbles up)",
 	46: "Build: FERRIS LIFT (cups scoop marbles at the bottom, tip them at the top)",
 	47: "Build: JUMP (drag to set the landing: fast pieces fly the gap)",
+	48: "Build: BELL (a marble strikes it: rings, and fires traps in reach)",
 	44: "Build: ROBOTIC ARM (picks from one spot, drops at another)",
 	37: "Build: DOMINO ROW (drag start to end; click an end to reset)",
 	36: "Build: STEAM ENGINE (feed it ore: powers machines in reach)",

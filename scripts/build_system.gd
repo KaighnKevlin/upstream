@@ -1,6 +1,6 @@
 extends Node
 
-enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, TURRET, SPIKES, CATAPULT, CHUTE, SPLITTER, BUMPER, BELT, BELLOWS, PENDULUM, WHEEL, ASSEMBLER, LAB, TESLA, FLAMER, TRAPDOOR, CRUSHER, MAGNET, HARPOON, SEESAW, TUBE, KEG, SNARE, TRIPWIRE, PLATE, BORER, LANTERN, SENTRY, TIMER, DOCK, BARRICADE, ENGINE, DOMINOES, TAP, ROCKER, ESCAPEMENT, BUCKET, SIEVE, SCREW, ARM, STAIRS, FERRIS, JUMP }
+enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, TURRET, SPIKES, CATAPULT, CHUTE, SPLITTER, BUMPER, BELT, BELLOWS, PENDULUM, WHEEL, ASSEMBLER, LAB, TESLA, FLAMER, TRAPDOOR, CRUSHER, MAGNET, HARPOON, SEESAW, TUBE, KEG, SNARE, TRIPWIRE, PLATE, BORER, LANTERN, SENTRY, TIMER, DOCK, BARRICADE, ENGINE, DOMINOES, TAP, ROCKER, ESCAPEMENT, BUCKET, SIEVE, SCREW, ARM, STAIRS, FERRIS, JUMP, BELL }
 
 var current_build: BuildType = BuildType.NONE
 var _ghost: Node2D = null
@@ -55,6 +55,7 @@ var _scenes := {
 	BuildType.STAIRS: preload("res://scenes/stair_lift.tscn"),
 	BuildType.FERRIS: preload("res://scenes/ferris_lift.tscn"),
 	BuildType.JUMP: preload("res://scenes/jump.tscn"),
+	BuildType.BELL: preload("res://scenes/bell.tscn"),
 }
 
 var _ghost_colors := {
@@ -105,6 +106,7 @@ var _ghost_colors := {
 	BuildType.STAIRS: Color(1.0, 0.85, 0.5, 0.8),
 	BuildType.FERRIS: Color(1.0, 0.85, 0.5, 0.8),
 	BuildType.JUMP: Color(1.0, 0.85, 0.5, 0.8),
+	BuildType.BELL: Color(1.0, 0.85, 0.5, 0.8),
 }
 
 signal build_mode_changed(build_type: BuildType)

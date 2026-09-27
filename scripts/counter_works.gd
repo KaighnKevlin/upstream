@@ -9,7 +9,8 @@ extends RefCounted
 ##
 ## Under them a long gutter gathers every marble into an Archimedes screw,
 ## which lifts them back to a queue at the top; an escapement lets them in
-## one per beat. A readout over the cascade shows the bits and the count.
+## one per beat. A readout over the cascade shows the bits and the count,
+## and a bell under the eights bit chimes each time the count reaches 8, 24, 40...
 ## Built by main.gd start_counter_works() in the Marble Works cavern.
 
 const MarbleWorks = preload("res://scripts/marble_works.gd")
@@ -38,6 +39,8 @@ static func build(main: Node) -> void:
 			var carry := MarbleWorks._chute(main, at + Vector2(8, 16), at + Vector2(32, 24))
 			carry.has_lip = false
 			carry._rebuild()
+	# a bell under the eights' done drop: it rings each time the count reaches 8, 24, 40...
+	MarbleWorks._piece(main, "res://scenes/bell.tscn", BIT0 + STEP * 3 + Vector2(-30, 30))
 	# the gutter under it all, into the screw's mouth, and the screw back up to the queue
 	MarbleWorks._chute(main, Vector2(1470, 540), Vector2(984, 550))
 	MarbleWorks._piece(main, "res://scenes/screw.tscn", Vector2(980, 566), {"end_offset": Vector2(54, -380)})

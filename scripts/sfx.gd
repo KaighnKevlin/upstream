@@ -123,6 +123,15 @@ static func sfx_clink() -> AudioStreamWAV:
 		return _wav(b, 0.45))
 
 
+## A struck brass bell: a long bright ring over a low hum.
+static func sfx_bell() -> AudioStreamWAV:
+	return _sound("bell", func(r: RandomNumberGenerator):
+		var b := _buf(1.6)
+		_metal(b, r.randf_range(860, 900), 0.8, 0.9)
+		_tone(b, 440.0, 438.0, 0.25, 1.2, 0.0, 0.001)
+		return _wav(b, 0.5))
+
+
 ## Loose ore knocking into something. surface: "ground" (a dull thud with
 ## grit), "metal" (a machine's steel: a small tink), "ore" (stone on stone:
 ## a dry click, what a filling funnel sounds like).
@@ -286,5 +295,5 @@ static func all_builders() -> Array[Callable]:
 		func(): sfx_ammo_received(), func(): sfx_clink(), func(): sfx_turret_fire(), func(): sfx_mine_break(0),
 		func(): sfx_enemy_hit(), func(): sfx_ore_knock("ore"), func(): sfx_ore_knock("metal"),
 		func(): sfx_laser(), func(): sfx_bounce(), func(): sfx_ore_knock("ground"), func(): sfx_ore_knock("wood"),
-		func(): sfx_mine_hit(),
+		func(): sfx_mine_hit(), func(): sfx_bell(),
 	]

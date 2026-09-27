@@ -5639,7 +5639,8 @@ func counter_works_rec() -> void:
 		var stray := ore.filter(func(o): return o.global_position.y > 580 or o.global_position.x < 930 or o.global_position.x > 1650)
 		var bits: Array = ro.bits.map(func(b): return 1 if b.tilt > 0 else 0)
 		var sent: Array = ro.bits.map(func(b): return b.sent)
-		log_line("t=%d | count %d bits %s | released %d | screw lifted %d | marbles %d (stray %d) | per-bit sent L/R %s" % [(k + 1) * 5, ro.counted, bits, es.released, sc.lifted, ore.size(), stray.size(), sent])
+		var bell = main.get_children().filter(func(c): return c.get_script() and c.get_script().resource_path.get_file() == "bell.gd")
+		log_line("t=%d | count %d bits %s | bell rang %d | released %d | screw lifted %d | marbles %d (stray %d) | per-bit sent L/R %s" % [(k + 1) * 5, ro.counted, bits, bell[0].rings if bell.size() > 0 else -1, es.released, sc.lifted, ore.size(), stray.size(), sent])
 
 
 func marble_trace_rec() -> void:
