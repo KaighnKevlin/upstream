@@ -5345,6 +5345,27 @@ func personal_tech_rec() -> void:
 	T.levels.clear()
 
 
+func domino_timer_rec() -> void:
+	# A domino row with a 2 s clockwork timer by its first slab: it should
+	# fall, stand back up, fall again on its own.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var row: Node2D = preload("res://scenes/dominoes.tscn").instantiate()
+	row.end_offset = Vector2(120, 0)
+	row.global_position = Vector2(1560, 70)
+	main.add_child(row)
+	var tm: Node2D = preload("res://scenes/timer.tscn").instantiate()
+	tm.mode = 0
+	tm.global_position = Vector2(1530, 70)
+	main.add_child(tm)
+	var seen := []
+	for t in 90:
+		await wait(0.1)
+		if t % 5 == 0:
+			seen.append(row.fallen())
+	log_line("fallen count every 0.5 s: %s" % [seen])
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0

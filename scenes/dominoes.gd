@@ -4,7 +4,9 @@ extends Node2D
 ## the first one over (a thrown chunk, a bumper, a walker blundering in, a
 ## fan's gust) and they go down one after another, and the last can land
 ## on a pressure plate to trip whatever's wired to it. Click either end of
-## the row to stand them all back up.
+## the row to stand them all back up. Wired to a trigger (a timer, a
+## tripwire, a plate) it flicks its own first slab over when it's standing
+## and stands back up when it's down, so a timer keeps a row cycling.
 ## Art: tools/art/gen_domino.py (8x28).
 
 const SFX = preload("res://scripts/sfx.gd")
@@ -32,7 +34,22 @@ func _ready() -> void:
 	if has_meta("ghost"):
 		return
 	add_to_group("dominoes")
+	add_to_group("triggerable")
 	stand_up.call_deferred()
+
+
+## A trigger: flick the first slab over, or reset a row that's fallen.
+func trigger() -> void:
+	if slabs.is_empty():
+		return
+	if fallen() > slabs.size() / 2:
+		stand_up()
+		return
+	var first: RigidBody2D = slabs[0]
+	if is_instance_valid(first) and absf(first.rotation) < 0.3:
+		var dir := signf(end_offset.x) if end_offset.x != 0 else 1.0
+		first.apply_impulse(Vector2(dir * 40.0, 0), Vector2(0, -12))
+		SFX.play_small(first, SFX.sfx_clink(), -8.0, 1.6)
 
 
 func _ground_y(x: float, from_y: float) -> float:
