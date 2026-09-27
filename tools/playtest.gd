@@ -5403,6 +5403,55 @@ func sparrows_rec() -> void:
 	log_line("after a blast by the player: scattered %d" % sp.scattered)
 
 
+func save_new_pieces_rec() -> void:
+	# The newer pieces through F5 / F9: one of each, some with non-default
+	# settings; save, load, and compare what came back.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var bs = main.get_node("/root/BuildSystem")
+	var specs := [
+		["res://scenes/keg.tscn", Vector2(1500, 60), {}],
+		["res://scenes/snare.tscn", Vector2(1540, 60), {}],
+		["res://scenes/plate.tscn", Vector2(1580, 60), {}],
+		["res://scenes/timer.tscn", Vector2(1620, 60), {"mode": 2}],
+		["res://scenes/barricade.tscn", Vector2(1660, 60), {}],
+		["res://scenes/sentry.tscn", Vector2(1700, 60), {}],
+		["res://scenes/lantern.tscn", Vector2(1740, 40), {}],
+		["res://scenes/dock.tscn", Vector2(1800, 60), {}],
+		["res://scenes/steam_engine.tscn", Vector2(1880, 60), {"fuel": 40.0}],
+		["res://scenes/tesla.tscn", Vector2(1440, 60), {"charge": 18}],
+		["res://scenes/borer.tscn", Vector2(1960, 60), {"mode": 2}],
+		["res://scenes/tripwire.tscn", Vector2(2000, 72), {"end_offset": Vector2(50, 0)}],
+		["res://scenes/dominoes.tscn", Vector2(2080, 70), {"end_offset": Vector2(90, 0)}],
+	]
+	for sp in specs:
+		var n: Node2D = load(sp[0]).instantiate()
+		for k in sp[2]:
+			n.set(k, sp[2][k])
+		n.global_position = sp[1]
+		main.add_child(n)
+		bs._placed_buildings.append(n)
+	await wait(0.5)
+	var before := {}
+	for b in bs._placed_buildings:
+		if is_instance_valid(b):
+			var f: String = b.scene_file_path.get_file()
+			before[f] = [b.get("mode"), b.get("end_offset"), int(b.get("charge")) if b.get("charge") != null else null, b.get("fuel") != null and b.fuel > 20.0]
+	var saved: int = preload("res://scripts/sandbox_save.gd").save(main)
+	await preload("res://scripts/sandbox_save.gd").load_into(main)
+	await wait(1.0)
+	var after := {}
+	for b in bs._placed_buildings:
+		if is_instance_valid(b):
+			var f: String = b.scene_file_path.get_file()
+			after[f] = [b.get("mode"), b.get("end_offset"), int(b.get("charge")) if b.get("charge") != null else null, b.get("fuel") != null and b.fuel > 20.0]
+	var missing := before.keys().filter(func(k): return not after.has(k))
+	var changed := before.keys().filter(func(k): return after.has(k) and str(after[k]) != str(before[k]))
+	log_line("saved %s pieces | after load: %d kinds (before %d) | missing %s | settings changed %s" % [saved, after.size(), before.size(), missing, changed])
+	var dom = bs._placed_buildings.filter(func(b): return is_instance_valid(b) and b.scene_file_path.get_file() == "dominoes.tscn")
+	log_line("domino slabs standing after load: %d | slabs in the world: %d" % [dom[0].slabs.size() if dom.size() > 0 else -1, get_nodes_in_group("domino_slabs").size()])
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0
