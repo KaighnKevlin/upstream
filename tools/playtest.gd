@@ -5175,6 +5175,32 @@ func poses_rec() -> void:
 	await shot("pose_carry")
 
 
+func night_eyes_rec() -> void:
+	# A wave walking in at midnight, then the same at noon: eye lamps glow
+	# only in the dark.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var dn = main.get_node("DayNight")
+	dn.paused = true
+	dn.clock = 0.0
+	dn.apply()
+	for k in 6:
+		_spawn(k % 4 if k % 4 != 3 else 2, Vector2(1640 + k * 34, 40))
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.0, 2.0)
+	cam.global_position = Vector2(1700, 10)
+	await wait(0.8)
+	await shot("eyes_midnight")
+	log_line("midnight: night factor %.2f" % main.get_node("NightEyes")._night())
+	dn.clock = 0.5
+	dn.apply()
+	await wait(0.3)
+	await shot("eyes_noon")
+	log_line("noon: night factor %.2f" % main.get_node("NightEyes")._night())
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0
