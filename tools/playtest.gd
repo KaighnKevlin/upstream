@@ -4979,6 +4979,38 @@ func wyrm_rec() -> void:
 	preload("res://scripts/tech.gd").levels.clear()
 
 
+func cleared_rec() -> void:
+	# A wave on the showcase: when the last of it falls, a "cleared" banner
+	# and fireworks over the dome.
+	var sc := preload("res://scripts/sandbox_showcase.gd")
+	await wait(0.2)
+	sc.build(main)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.4, 1.4)
+	cam.global_position = Vector2(1250, -60)
+	await wait(2.0)
+	main.wave_number = 1
+	await tap(KEY_P)
+	for t in 400:
+		await wait(0.1)
+		if t > 60 and t % 50 == 0:
+			# hurry any stragglers along
+			for e in get_nodes_in_group("enemies"):
+				if e.has_method("take_damage") and not e.is_in_group("crawlers") and not e.is_in_group("cinderbats") and not e.is_in_group("wyrms"):
+					e.take_damage(99)
+		if main.waves_cleared > 0:
+			break
+	await wait(2.6)
+	await shot("cleared_fireworks")
+	var fw = null
+	for c in main.get_children():
+		if c.get_script() and c.get_script().resource_path.get_file() == "fireworks.gd":
+			fw = c
+	log_line("wave cleared %d | fireworks launched %d, burst %d" % [main.waves_cleared, fw.launched if fw else -1, fw.burst if fw else -1])
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0

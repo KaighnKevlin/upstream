@@ -432,6 +432,39 @@ func _process(delta: float) -> void:
 		_god_pour(delta)
 	_update_offscreen_marker(delta)
 	_repair_dome(delta)
+	_check_cleared(delta)
+
+
+## A wave is cleared when its whole column has marched in and none of its
+## walkers or fliers are left (the cave dwellers - crawlers, bats, the
+## wyrm, a vault's sentinel - don't count, nor do rollers that have
+## plugged a ditch): a banner and fireworks over the dome.
+var _wave_live := false
+var _marching := 0
+var _clear_t := 0.0
+var waves_cleared := 0          # tests
+const CAVE_GROUPS := ["crawlers", "cinderbats", "wyrms", "ruins"]
+
+func _check_cleared(delta: float) -> void:
+	if not _wave_live or _game_over or _marching > 0:
+		return
+	_clear_t -= delta
+	if _clear_t > 0:
+		return
+	_clear_t = 0.5
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if not is_instance_valid(e) or e.get("plugged"):
+			continue
+		var cave := false
+		for g in CAVE_GROUPS:
+			cave = cave or e.is_in_group(g)
+		if not cave:
+			return
+	_wave_live = false
+	waves_cleared += 1
+	_show_banner("WAVE %d CLEARED" % wave_number, "")
+	var dome := get_node_or_null("DomeZone") as Node2D
+	preload("res://scripts/fireworks.gd").volley(self, dome.global_position if dome else Vector2(1200, 90))
 
 
 # --- Dome repair ------------------------------------------------------------
@@ -697,6 +730,8 @@ func start_storm() -> void:
 
 
 func _spawn_wave() -> void:
+	_wave_live = true
+	_clear_t = 2.0
 	if wave_number >= 1 and randf() < SHOWER_CHANCE:
 		_shower_in = 12.0
 	elif wave_number >= 2 and randf() < STORM_CHANCE:
@@ -885,12 +920,14 @@ func _march_in(n: Node2D, at: Vector2, place: int) -> void:
 		add_child(n)
 		return
 	# a Timer of our own: it goes with this scene if we leave mid-column
+	_marching += 1
 	var t := Timer.new()
 	t.one_shot = true
 	t.wait_time = place * MARCH_GAP
 	add_child(t)
 	t.timeout.connect(func():
 		t.queue_free()
+		_marching -= 1
 		if _game_over:
 			n.free()
 		else:
