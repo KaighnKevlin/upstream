@@ -5485,6 +5485,107 @@ func gale_rec() -> void:
 	log_line("drop from x 1600: lands at x %.0f calm, %.0f in the gale (strength %.2f)" % [calm, windy, g.strength()])
 
 
+func marble_parts_rec() -> void:
+	# Each marble-machine element on its own, in the open air east of the
+	# dome.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var ore := func(kind: String, at: Vector2, v := Vector2.ZERO) -> RigidBody2D:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.kind = kind
+		o.lifetime = 120.0
+		o.global_position = at
+		o.linear_velocity = v
+		main.add_child(o)
+		return o
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	# 1. the beam + an iron tap
+	var bm: Node2D = preload("res://scenes/beam.tscn").instantiate()
+	bm.depth = 260.0
+	bm.spill = 1
+	bm.global_position = Vector2(1500, -200)
+	main.add_child(bm)
+	var tp: Node2D = preload("res://scenes/beam_tap.tscn").instantiate()
+	tp.mode = 1          # iron
+	tp.global_position = Vector2(1490, -60)
+	main.add_child(tp)
+	await wait(0.2)
+	var a = ore.call("copper", Vector2(1500, 40))
+	var b = ore.call("iron", Vector2(1500, 30))
+	cam.zoom = Vector2(1.6, 1.6)
+	cam.global_position = Vector2(1500, -90)
+	await wait(1.6)
+	await shot("beam")
+	await wait(1.0)
+	log_line("beam: flung %d from the crown | tap took out %d (iron) | copper at %s, iron at %s" % [bm.carried, tp.tapped, a.global_position.round(), b.global_position.round()])
+	# 2. flip-flop
+	var rk: Node2D = preload("res://scenes/rocker.tscn").instantiate()
+	rk.global_position = Vector2(1700, 40)
+	main.add_child(rk)
+	var rk_ores := []
+	for k in 6:
+		rk_ores.append(ore.call("copper", Vector2(1700, 0)))
+		await wait(0.7)
+	await wait(0.6)
+	log_line("flip-flop: sent left/right %s | ore x %s" % [rk.sent, rk_ores.map(func(o): return int(o.global_position.x) if is_instance_valid(o) else -1)])
+	# 3. tipping bucket
+	var tb: Node2D = preload("res://scenes/tipping_bucket.tscn").instantiate()
+	tb.global_position = Vector2(1850, 50)
+	main.add_child(tb)
+	cam.global_position = Vector2(1800, 0)
+	cam.zoom = Vector2(2.4, 2.4)
+	var c0: int = 0
+	for k in 7:
+		ore.call("copper", Vector2(1850, 0))
+		await wait(0.5)
+		if k == 4:
+			c0 = tb.count()
+			await shot("bucket_full")
+	await wait(0.4)
+	log_line("tipping bucket: held %d before, tipped %d times, poured %d" % [c0, tb.tipped, tb.poured])
+	# 4. sieve
+	var sv: Node2D = preload("res://scenes/sieve.tscn").instantiate()
+	sv.end_offset = Vector2(140, 45)
+	sv.global_position = Vector2(1300, -20)
+	main.add_child(sv)
+	var g = ore.call("grit", Vector2(1305, -34))
+	var cu = ore.call("copper", Vector2(1310, -34))
+	await wait(1.4)
+	log_line("sieve: grit at %s (fell through if y > %d), copper at %s (rolled to the end if x > 1420)" % [g.global_position.round(), -20, cu.global_position.round()])
+	# 5. escapement on a chute
+	var ch: Node2D = preload("res://scenes/chute.tscn").instantiate()
+	ch.end_offset = Vector2(120, 30)
+	ch.global_position = Vector2(1900, -120)
+	main.add_child(ch)
+	var es: Node2D = preload("res://scenes/escapement.tscn").instantiate()
+	es.global_position = Vector2(2020, -90)
+	es.mode = 1
+	main.add_child(es)
+	var queued := []
+	for k in 5:
+		queued.append(ore.call("copper", Vector2(1910 + k * 4, -140)))
+		await wait(0.1)
+	var past := func() -> int: return queued.filter(func(o): return o.global_position.y > -60).size()   # off the chute
+	await wait(2.0)
+	var p1: int = past.call()
+	await wait(4.0)
+	var p2: int = past.call()
+	log_line("escapement (1.2 s, ~1.6 s unpowered): through after 2 s %d, after 6 s %d (of 5)" % [p1, p2])
+	# 6. arm
+	var am: Node2D = preload("res://scenes/arm.tscn").instantiate()
+	am.global_position = Vector2(980, 90)
+	am.mode = 2    # iron
+	main.add_child(am)
+	var ir = ore.call("iron", am.global_position + am.pick + Vector2(0, -20))
+	var cp = ore.call("copper", am.global_position + am.pick + Vector2(6, -40))
+	cam.global_position = Vector2(980, 50)
+	await wait(2.2)
+	await shot("arm")
+	log_line("arm (iron): moved %d | iron at %s, copper at %s (pick %s, drop %s)" % [am.moved, ir.global_position.round(), cp.global_position.round(), am.global_position + am.pick, am.global_position + am.drop])
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0
