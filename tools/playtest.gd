@@ -5098,6 +5098,40 @@ func lift_shorten_rec() -> void:
 	log_line("colossus tint %s" % c)
 
 
+func barricade_rec() -> void:
+	# A barricade with a pressure plate 60px east of it: soldiers step on
+	# the plate, the wall springs up, they're held at it; then it sinks.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var br: Node2D = preload("res://scenes/barricade.tscn").instantiate()
+	br.global_position = Vector2(1600, 60)
+	main.add_child(br)
+	var pl: Node2D = preload("res://scenes/plate.tscn").instantiate()
+	pl.global_position = Vector2(1660, 60)
+	main.add_child(pl)
+	var foes := []
+	for k in 3:
+		foes.append(_spawn(2, Vector2(1760 + k * 30, 40)))
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.4, 2.4)
+	cam.global_position = Vector2(1640, 20)
+	var up_at := -1.0
+	var held_x := 99999.0
+	for t in 120:
+		await wait(0.1)
+		if up_at < 0 and br.raised > 0:
+			up_at = t * 0.1
+		if up_at >= 0 and t * 0.1 < up_at + 3.5:
+			for f in foes:
+				if is_instance_valid(f):
+					held_x = minf(held_x, f.global_position.x)
+		if up_at >= 0 and absf(t * 0.1 - (up_at + 1.5)) < 0.05:
+			await shot("barricade_up")
+	log_line("barricade raised %d at t=%.1f | while up, the pack got no further west than x %.0f (wall at 1600) | after it sank, lead soldier x %.0f" % [br.raised, up_at, held_x, foes.map(func(f): return f.global_position.x if is_instance_valid(f) else 0.0).min()])
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0
