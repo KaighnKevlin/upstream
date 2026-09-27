@@ -5714,6 +5714,31 @@ func coaster_rec() -> void:
 		log_line("   marbles at %s" % [get_nodes_in_group("ore").map(func(o): return Vector2i(o.global_position))])
 
 
+func puzzle_rec() -> void:
+	# The Marble Puzzle world: unsolved for 3 s (marbles pile on the floor),
+	# then two chutes over the wall, and the cup should fill.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await main.start_puzzle_works()
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.4, 1.4)
+	cam.global_position = Vector2(1260, 380)
+	var cup = get_nodes_in_group("goal_cups")[0]
+	await wait(3.0)
+	log_line("before: cup %d / %d" % [cup.count, cup.target])
+	var MW = preload("res://scripts/marble_works.gd")
+	MW._chute(main, Vector2(985, 225), Vector2(1296, 392))
+	MW._chute(main, Vector2(1302, 420), Vector2(1516, 548))
+	for k in 3:
+		await wait(4.0)
+		if k == 1:
+			await shot("puzzle_%d" % k)
+		log_line("t+%d: cup %d / %d done %s" % [(k + 1) * 4, cup.count, cup.target, cup.done])
+	await shot("puzzle_end")
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.
