@@ -5184,7 +5184,38 @@ func goals_rec() -> void:
 	main.add_child(t)
 	bs._placed_buildings.append(t)
 	await wait(0.8)
-	log_line("final step %d of %d, waves started %s, label '%s'" % [g.step, g.GOALS.size(), main._waves_started, g._label.text])
+	log_line("after the core loop: step %d of %d, waves started %s, label '%s'" % [g.step, g.GOALS.size(), main._waves_started, g._label.text])
+	main._wave_timer = -9999.0
+	# the later goals, each satisfied in turn
+	main.wave_number = 4
+	await wait(0.8)
+	log_line("wave 4: step %d, crates %d, next '%s'" % [g.step, g.crates, g._label.text])
+	await wait(2.6)
+	await shot("goals_crate")
+	preload("res://scripts/tech.gd").levels["lamps"] = 1
+	await wait(0.8)
+	var st: Node2D = preload("res://scenes/sentry.tscn").instantiate()
+	st.global_position = Vector2(1500, 60)
+	main.add_child(st)
+	bs._placed_buildings.append(st)
+	await wait(0.8)
+	log_line("research + sentry: step %d, crates %d, next '%s'" % [g.step, g.crates, g._label.text])
+	var ruin: Node2D = preload("res://scripts/ruins.gd").build(main, tm)
+	main.get_node("Player").global_position = ruin.room.get_center()
+	await wait(0.8)
+	log_line("found the vault: step %d, next '%s'" % [g.step, g._label.text])
+	for n in get_nodes_in_group("ruins"):
+		if n.get_script() and n.get_script().resource_path.get_file() == "sentinel.gd":
+			n.take_damage(99)
+	await wait(0.6)
+	for c in get_nodes_in_group("caches"):
+		if c.get("relic"):
+			c.open()
+	await wait(0.8)
+	main.wave_number = 6
+	await wait(0.8)
+	log_line("all done: step %d of %d, supply crates %d, label '%s'" % [g.step, g.GOALS.size(), g.crates, g._label.text])
+	preload("res://scripts/tech.gd").levels.clear()
 
 
 func starter_veins() -> void:
