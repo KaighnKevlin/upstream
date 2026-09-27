@@ -3822,6 +3822,27 @@ func cache_rec() -> void:
 	log_line("opened %s, haul %d" % [c.opened, c.haul])
 
 
+func title_live() -> void:
+	# Attract mode: the showcase at work behind the title, the camera
+	# drifting across it; two shots 5 s apart, then a key starts the game.
+	preload("res://scripts/sandbox_showcase.gd").build(main)
+	await wait(0.5)
+	main._show_title()
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	await wait(2.0)
+	var x0 := cam.global_position.x
+	await shot("title_live_a")
+	await wait(5.0)
+	await shot("title_live_b")
+	log_line("world running under the title: %s | camera x %.0f -> %.0f | ore in play %d" % [not paused, x0, cam.global_position.x, get_nodes_in_group("ore").size()])
+	var ev := InputEventKey.new()
+	ev.keycode = KEY_1
+	ev.pressed = true
+	main._on_title_input(ev)
+	await wait(0.8)
+	log_line("after the key: title gone %s, drift stopped %s, camera back on the player %s" % [main._title == null, main._title_drift == null, not cam.top_level])
+
+
 func title_modes() -> void:
 	# The title screen's two ways in; then survival: showcase gone, god
 	# tools gone, waves waiting on the first ingot.

@@ -189,7 +189,8 @@ func _style_hud() -> void:
 	_build_banner_and_markers()
 
 
-## Title card over the paused, dimmed world: brass logo, subtitle, prompt.
+## Title card over the live, lightly dimmed world (attract mode): brass
+## logo, subtitle, the two ways in.
 ## Any key or click fades it out and starts the game.
 ## Synthesise every sound effect now, one a frame (it happens under the
 ## title screen), instead of the first time each one plays mid-fight.
@@ -200,7 +201,8 @@ func _prebuild_sounds() -> void:
 
 
 func _show_title() -> void:
-	get_tree().paused = true
+	# attract mode: the world keeps running behind the title (the sandbox's
+	# showcase busy at work) while the camera drifts slowly across it
 	$CanvasLayer.visible = false
 	# frame the skyline with the dome at the bottom; restored on start, and
 	# camera smoothing glides it back down to the prospector
@@ -210,6 +212,9 @@ func _show_title() -> void:
 	cam.global_position = Vector2(1200, -40)
 	cam.zoom = Vector2(2, 2)
 	cam.reset_smoothing()
+	_title_drift = cam.create_tween().set_loops()
+	_title_drift.tween_property(cam, "global_position:x", 1750.0, 14.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_title_drift.tween_property(cam, "global_position:x", 950.0, 14.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	var layer := CanvasLayer.new()
 	layer.layer = 20
 	layer.process_mode = Node.PROCESS_MODE_ALWAYS
@@ -218,7 +223,7 @@ func _show_title() -> void:
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(root)
 	var dim := ColorRect.new()
-	dim.color = Color(0.03, 0.02, 0.06, 0.55)
+	dim.color = Color(0.03, 0.02, 0.06, 0.38)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.add_child(dim)
 	var logo := TextureRect.new()
@@ -258,7 +263,7 @@ func _show_title() -> void:
 	t.tween_property(logo, "position:y", logo.position.y + 40, 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	t.tween_property(logo, "modulate:a", 1.0, 0.35)
 	_title = root
-	# the world is paused, so input goes through the title's own control
+	# input goes through the title's own control (it swallows every key and click)
 	root.focus_mode = Control.FOCUS_ALL
 	root.mouse_filter = Control.MOUSE_FILTER_STOP
 	root.gui_input.connect(_on_title_input)
@@ -267,6 +272,7 @@ func _show_title() -> void:
 
 var _title: Control
 var _title_cam_zoom := Vector2.ONE
+var _title_drift: Tween
 var _title_opts: Array[Rect2] = []
 
 
@@ -284,6 +290,9 @@ func _on_title_input(event: InputEvent) -> void:
 	_title.accept_event()
 	var title := _title
 	_title = null
+	if _title_drift:
+		_title_drift.kill()
+		_title_drift = null
 	var t := title.create_tween()
 	t.tween_property(title, "modulate:a", 0.0, 0.35)
 	t.tween_callback(func():
