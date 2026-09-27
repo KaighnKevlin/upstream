@@ -744,6 +744,15 @@ func _spawn_wave() -> void:
 	wave_number += 1
 	var count := enemies_per_wave_base + wave_number
 	_wave_label.text = "WAVE %d!" % wave_number
+	# from wave 4 a wave may roll a trait (not the boss waves)
+	wave_trait = force_trait
+	if wave_trait == "" and wave_number >= 4 and wave_number % 5 != 0 and randf() < TRAIT_CHANCE:
+		wave_trait = TRAITS.keys().pick_random()
+	if wave_trait == "BLACKOUT":
+		var dn := get_node_or_null("DayNight")
+		if dn:
+			dn.clock = 0.0          # the sky goes dark as they come
+			dn.apply()
 	var kinds := {}
 	for i in count:
 		var t := i if i < 4 else i % 4
@@ -785,6 +794,10 @@ func _spawn_wave() -> void:
 	var rollers := wave_number / 4 if wave_number >= 5 else 0   # rolling juggernauts from wave 5
 	if rollers > 0:
 		kinds[18] = rollers
+	if wave_trait == "SIEGE":
+		mortars += 1
+		grenadiers += 1
+	var swarm := (4 + wave_number / 2) if wave_trait == "SWARM" else 0
 	var sky_boss := wave_number % 10 == 0   # the Dreadnought every tenth wave
 	var colossus := wave_number >= 15 and wave_number % 10 == 5   # the Colossus on 15, 25, ...
 	var boss := wave_number % 5 == 0 and not sky_boss and not colossus   # the Foundry Engine on the other fifths
@@ -799,7 +812,12 @@ func _spawn_wave() -> void:
 	var parts := []
 	for t in kinds:
 		parts.append("%d %s%s" % [kinds[t], ENEMY_NAMES[t], "s" if kinds[t] > 1 else ""])
-	_show_banner("WAVE %d" % wave_number, "  ".join(parts) + ("   (some gilded)" if gild_chance > 0 else ""))
+	if swarm > 0:
+		parts.append("+%d scuttlers" % swarm)
+	if wave_trait != "":
+		_show_banner("WAVE %d  -  %s" % [wave_number, wave_trait], TRAITS[wave_trait] + "     " + "  ".join(parts))
+	else:
+		_show_banner("WAVE %d" % wave_number, "  ".join(parts) + ("   (some gilded)" if gild_chance > 0 else ""))
 
 	var surface_y := 40  # spawn above ground, gravity drops them
 	var spawn_x := WorldGen.WORLD_WIDTH * WorldGen.TILE_SIZE - 30  # just inside right boundary
@@ -844,6 +862,13 @@ func _spawn_wave() -> void:
 	for k in gremlins:
 		var gr: Node2D = preload("res://scenes/gremlin.tscn").instantiate()
 		_march_in(gr, Vector2(spawn_x, 40), 1 + k * 2)
+
+	for k in swarm:
+		var sc := _enemy_scene.instantiate()
+		sc.add_to_group("enemies")
+		sc.setup(1)   # SCUTTLER
+		sc.direction = -1.0
+		_march_in(sc, Vector2(spawn_x, surface_y), 2 + k)
 
 	for k in grenadiers:
 		var gn: Node2D = preload("res://scenes/grenadier.tscn").instantiate()
@@ -917,8 +942,39 @@ func _on_enemy_reached_dome(body: Node2D) -> void:
 ## whatever the player built there.
 const MARCH_GAP := 0.35
 
+## Wave traits: a random twist on some waves from wave 4 (TRAIT_CHANCE),
+## named on the wave's banner. SWIFT and IRONCLAD are applied to each
+## walker as it arrives (after its own _ready has set its stats); SWARM
+## and SIEGE change what's in the wave; BLACKOUT turns the clock to night.
+const TRAITS := {
+	"SWIFT": "they come fast",
+	"IRONCLAD": "half again the armour",
+	"SWARM": "a flood of scuttlers",
+	"SIEGE": "artillery at the back",
+	"BLACKOUT": "they come in the dark",
+}
+const TRAIT_CHANCE := 0.45
+var wave_trait := ""
+var force_trait := ""           # tests: this trait every wave
+
+func _apply_trait(n: Node) -> void:
+	if not is_instance_valid(n):
+		return
+	match wave_trait:
+		"SWIFT":
+			if "speed" in n:
+				n.speed *= 1.4
+		"IRONCLAD":
+			if "hp" in n:
+				n.hp = int(ceil(n.hp * 1.5))
+				if "max_hp" in n:
+					n.max_hp = n.hp
+
+
 func _march_in(n: Node2D, at: Vector2, place: int) -> void:
 	n.global_position = at
+	if wave_trait in ["SWIFT", "IRONCLAD"]:
+		n.ready.connect(_apply_trait.bind(n), CONNECT_ONE_SHOT)
 	if place <= 0:
 		add_child(n)
 		return

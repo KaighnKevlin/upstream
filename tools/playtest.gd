@@ -5274,6 +5274,45 @@ func domino_rec() -> void:
 	log_line("after reset: fallen %d/%d" % [row.fallen(), row.slabs.size()])
 
 
+func traits_rec() -> void:
+	# Wave traits: an IRONCLAD wave 4 (soldiers should arrive with 12 hp
+	# not 8), then a SWARM wave 6 (extra scuttlers), then a BLACKOUT wave.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.2, 1.2)
+	cam.global_position = Vector2(1900, -40)
+	main.force_trait = "IRONCLAD"
+	main.wave_number = 3
+	await tap(KEY_P)
+	await wait(4.0)
+	var hps := []
+	for e in get_nodes_in_group("enemies"):
+		if e.get("enemy_type") == 2 and not e._dying:
+			hps.append(e.hp)
+	log_line("IRONCLAD wave %d: soldier hp %s (normally 8)" % [main.wave_number, hps])
+	await shot("trait_ironclad")
+	main.get_tree().call_group("enemies", "queue_free")
+	await wait(0.5)
+	main.force_trait = "SWARM"
+	main.wave_number = 5
+	await tap(KEY_P)
+	await wait(6.0)
+	var sc := get_nodes_in_group("enemies").filter(func(e): return e.get("enemy_type") == 1).size()
+	log_line("SWARM wave %d: scuttlers %d" % [main.wave_number, sc])
+	main.get_tree().call_group("enemies", "queue_free")
+	await wait(0.5)
+	main.force_trait = "BLACKOUT"
+	main.get_node("DayNight").clock = 0.5
+	main.wave_number = 6
+	await tap(KEY_P)
+	await wait(0.5)
+	log_line("BLACKOUT wave %d: clock %.2f (0 = midnight)" % [main.wave_number, main.get_node("DayNight").clock])
+	main.force_trait = ""
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0
