@@ -5132,6 +5132,23 @@ func barricade_rec() -> void:
 	log_line("barricade raised %d at t=%.1f | while up, the pack got no further west than x %.0f (wall at 1600) | after it sank, lead soldier x %.0f" % [br.raised, up_at, held_x, foes.map(func(f): return f.global_position.x if is_instance_valid(f) else 0.0).min()])
 
 
+func build_tabs_rec() -> void:
+	# The build bar's four tabs: a shot of each.
+	main._wave_timer = -9999.0
+	await wait(0.4)
+	var bar = null
+	for c in main.get_node("CanvasLayer").get_children():
+		if c.get_script() and c.get_script().resource_path.get_file() == "build_bar.gd":
+			bar = c
+	for k in bar.CATS.size():
+		bar._cat = k
+		bar._layout()
+		bar.queue_redraw()
+		await wait(0.2)
+		await shot("tab_%d" % k)
+	log_line("bar size %s, tabs %s" % [bar.size, bar.CATS.map(func(c): return "%s:%d" % [c[0], c[1].size()])])
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0
