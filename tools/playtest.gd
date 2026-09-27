@@ -5066,6 +5066,38 @@ func dock_rec() -> void:
 		log_line("  drone state %d at %s target %s carried %s" % [d._state, d.global_position.round(), d._target, d._carried])
 
 
+func lift_shorten_rec() -> void:
+	# A 3-segment lift: right-click its upper part twice (the removal path
+	# with the mouse there), then once more on the base: 3 -> 2 -> 1 -> gone.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var bs = main.get_node("/root/BuildSystem")
+	var lift: Node2D = preload("res://scenes/upstream_shaft.tscn").instantiate()
+	lift.segments = 3
+	lift.global_position = Vector2(1560, 36)
+	main.add_child(lift)
+	bs._placed_buildings.append(lift)
+	await wait(0.3)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.0, 1.0)
+	cam.global_position = Vector2(1560, -100)
+	await wait(0.2)
+	var seq := []
+	for k in 3:
+		var aim := Vector2(1560, lift.top_y() + 10) if lift.segments > 1 else lift.global_position
+		var screen: Vector2 = root.get_viewport().get_canvas_transform() * aim
+		root.get_viewport().warp_mouse(screen)
+		await process_frame
+		bs._remove_building_at_mouse()
+		await wait(0.2)
+		seq.append(lift.segments if is_instance_valid(lift) and not lift.is_queued_for_deletion() else 0)
+	log_line("right-clicks on a 3-segment lift: segments %s (expect [2, 1, 0])" % [seq])
+	var c := Color(0.62, 0.74, 1.0)
+	log_line("colossus tint %s" % c)
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0

@@ -299,6 +299,13 @@ func _remove_building_at_mouse() -> void:
 	var mouse_pos := _get_world_mouse_pos()
 	var closest: Node2D = null
 	var closest_dist := 50.0  # max removal distance
+	# a tall lift: right-clicking its upper part takes off the top segment
+	for building in _placed_buildings:
+		if is_instance_valid(building) and building.has_method("shorten") and building.segments > 1 \
+				and absf(mouse_pos.x - building.global_position.x) < 24.0 \
+				and mouse_pos.y < building.global_position.y - 40.0 and mouse_pos.y > building.top_y() - 20.0:
+			building.shorten()
+			return
 
 	for building in _placed_buildings:
 		if not is_instance_valid(building):

@@ -11,6 +11,7 @@ extends Node2D
 ## column and base are cut from it and the column is repeated.
 
 const SFX = preload("res://scripts/sfx.gd")
+const FX = preload("res://scripts/fx.gd")
 const LightTextures = preload("res://scripts/light_textures.gd")
 const Tech = preload("res://scripts/tech.gd")
 
@@ -125,6 +126,17 @@ func extend() -> bool:
 	segments += 1
 	_rebuild()
 	SFX.play(self, SFX.sfx_bounce(), -4.0, 0.7)
+	return true
+
+
+## Take the top segment off (right-click the upper part of a tall lift).
+func shorten() -> bool:
+	if segments <= 1:
+		return false
+	segments -= 1
+	_rebuild()
+	SFX.play(self, SFX.sfx_clink(), -2.0, 0.7)
+	FX.burst(get_parent(), Vector2(global_position.x, top_y()), Color(0.7, 0.62, 0.5), 8, 60.0, 0.4, 1.6)
 	return true
 
 

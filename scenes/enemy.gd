@@ -94,7 +94,7 @@ var max_hp := 1                  # full health (tinkers weld up to it)
 ## loose, and it barely notices shoves. A health bar over the screen.
 var colossus := false
 const COLOSSUS_SCALE := 2.0
-const COLOSSUS_TINT := Color(0.62, 0.6, 0.66)
+const COLOSSUS_TINT := Color(0.62, 0.74, 1.0)    # gunmetal: cooler than a titan's bronze
 var _boss_fill: ColorRect
 const GILD_TINT := Color(1.3, 1.08, 0.62)
 
