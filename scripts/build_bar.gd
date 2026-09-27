@@ -26,12 +26,12 @@ const PIECES := {
 	7: ["7", "Spikes"], 8: ["8", "Catapult"], 9: ["9", "Chute"], 10: ["0", "Splitter"],
 	11: ["B", "Bumper"], 12: ["C", "Conveyor belt"], 13: ["V", "Bellows fan"],
 	14: ["M", "Wrecking pendulum"], 15: ["N", "Gravity wheel"], 16: ["T", "Assembler"],
-	17: ["Y", "Research lab"], 18: ["U", "Tesla coil"], 19: ["I", "Flame turret"], 20: ["X", "Trapdoor"], 21: ["R", "Crusher"], 22: ["Z", "Electromagnet"], 23: ["", "Harpoon ballista (anti-air)"], 24: ["", "Seesaw"], 25: ["", "Pneumatic tube"], 26: ["", "Powder keg"], 27: ["", "Snare (bear trap)"], 28: ["", "Tripwire (drag stake to stake)"], 29: ["", "Pressure plate"], 30: ["", "Steam borer (click: turn)"], 31: ["", "Lantern"],
+	17: ["Y", "Research lab"], 18: ["U", "Tesla coil"], 19: ["I", "Flame turret"], 20: ["X", "Trapdoor"], 21: ["R", "Crusher"], 22: ["Z", "Electromagnet"], 23: ["", "Harpoon ballista (anti-air)"], 24: ["", "Seesaw"], 25: ["", "Pneumatic tube"], 26: ["", "Powder keg"], 27: ["", "Snare (bear trap)"], 28: ["", "Tripwire (drag stake to stake)"], 29: ["", "Pressure plate"], 30: ["", "Steam borer (click: turn)"], 31: ["", "Lantern"], 32: ["", "Brass sentry (feed it an ingot to rewind)"],
 }
 const CATS := [
 	["Transport", [1, 9, 12, 25, 10, 8, 24, 4, 13, 31]],
 	["Production", [2, 30, 3, 15, 16, 21, 17]],
-	["Defence", [6, 18, 23, 19, 5, 7, 27, 20, 22, 26, 28, 29, 11, 14]],
+	["Defence", [32, 6, 18, 23, 19, 5, 7, 27, 20, 22, 26, 28, 29, 11, 14]],
 ]
 
 var font: Font
@@ -232,6 +232,8 @@ func _build_icon(slot: Node2D, t: int) -> void:
 			_part(art, S + "turret_barrel.png", Rect2(), Vector2(-5, 28))
 		7:
 			_part(art, S + "spikes.png", Rect2(), Vector2(-8, -8))
+		32:
+			_part(art, S + "sentry.png", Rect2(0, 0, 40, 40), Vector2(-20, -20))
 		31:
 			_part(art, S + "lantern.png", Rect2(0, 0, 16, 22), Vector2(-8, -11))
 		30:

@@ -4774,6 +4774,48 @@ func roller_rec() -> void:
 	log_line("plug destroyed: roller gone %s; ditch cell (112,6) empty %s" % [not is_instance_valid(r1), tm.get_cell_source_id(Vector2i(112, 6)) == -1])
 
 
+func sentry_rec() -> void:
+	# A brass sentry set down east of the dome; three soldiers walk into its
+	# beat. Then it's worn down to nothing and an ingot winds it back up.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var st: CharacterBody2D = preload("res://scenes/sentry.tscn").instantiate()
+	st.global_position = Vector2(1600, 60)
+	main.add_child(st)
+	var foes := []
+	for k in 3:
+		foes.append(_spawn(2, Vector2(1820 + k * 40, 40)))
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.4, 2.4)
+	cam.global_position = Vector2(1640, 20)
+	var shot_fight := false
+	for t in 150:
+		await wait(0.1)
+		if not shot_fight and st.hits >= 2:
+			shot_fight = true
+			await shot("sentry_fight")
+		if foes.all(func(f): return not is_instance_valid(f) or f._dying):
+			break
+	log_line("sentry: hits %d, hp %d/%d, soldiers left %d/3, sentry x %.0f (home 1600)" % [st.hits, st.hp, st.MAX_HP, foes.filter(func(f): return is_instance_valid(f) and not f._dying).size(), st.global_position.x])
+	st.hp = 1
+	var so = _spawn(2, st.global_position + Vector2(10, -20))
+	so.speed = 0.0
+	for t in 30:
+		await wait(0.1)
+		if st.wound_down:
+			break
+	so.queue_free()
+	log_line("worn out: wound down %s" % st.wound_down)
+	await shot("sentry_down")
+	var ing: RigidBody2D = preload("res://scenes/ingot.tscn").instantiate()
+	ing.global_position = st.global_position + Vector2(0, -50)
+	main.add_child(ing)
+	await wait(1.0)
+	log_line("ingot dropped on it: wound down %s, hp %d" % [st.wound_down, st.hp])
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0
