@@ -1,6 +1,6 @@
 extends Node
 
-enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, TURRET, SPIKES, CATAPULT, CHUTE, SPLITTER, BUMPER, BELT, BELLOWS, PENDULUM, WHEEL, ASSEMBLER, LAB, TESLA, FLAMER, TRAPDOOR, CRUSHER, MAGNET, HARPOON, SEESAW, TUBE, KEG, SNARE, TRIPWIRE, PLATE, BORER, LANTERN, SENTRY, TIMER, DOCK, BARRICADE, ENGINE }
+enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, TURRET, SPIKES, CATAPULT, CHUTE, SPLITTER, BUMPER, BELT, BELLOWS, PENDULUM, WHEEL, ASSEMBLER, LAB, TESLA, FLAMER, TRAPDOOR, CRUSHER, MAGNET, HARPOON, SEESAW, TUBE, KEG, SNARE, TRIPWIRE, PLATE, BORER, LANTERN, SENTRY, TIMER, DOCK, BARRICADE, ENGINE, DOMINOES }
 
 var current_build: BuildType = BuildType.NONE
 var _ghost: Node2D = null
@@ -44,6 +44,7 @@ var _scenes := {
 	BuildType.DOCK: preload("res://scenes/dock.tscn"),
 	BuildType.BARRICADE: preload("res://scenes/barricade.tscn"),
 	BuildType.ENGINE: preload("res://scenes/steam_engine.tscn"),
+	BuildType.DOMINOES: preload("res://scenes/dominoes.tscn"),
 }
 
 var _ghost_colors := {
@@ -83,6 +84,7 @@ var _ghost_colors := {
 	BuildType.DOCK: Color(0.7, 0.95, 1.0, 0.6),
 	BuildType.BARRICADE: Color(1.0, 0.85, 0.5, 0.6),
 	BuildType.ENGINE: Color(1.0, 0.85, 0.5, 0.6),
+	BuildType.DOMINOES: Color(1.0, 0.85, 0.5, 0.8),
 }
 
 signal build_mode_changed(build_type: BuildType)
@@ -152,7 +154,7 @@ func _input(event: InputEvent) -> void:
 		for r in ui_rects:
 			if (r.call() as Rect2).has_point(event.position):
 				return  # the HUD handles it
-		if event.button_index == MOUSE_BUTTON_LEFT and current_build in [BuildType.CHUTE, BuildType.BELT, BuildType.TUBE, BuildType.TRIPWIRE]:
+		if event.button_index == MOUSE_BUTTON_LEFT and current_build in [BuildType.CHUTE, BuildType.BELT, BuildType.TUBE, BuildType.TRIPWIRE, BuildType.DOMINOES]:
 			var at := _get_world_mouse_pos()
 			if _can_place(at):
 				_drag_from = at

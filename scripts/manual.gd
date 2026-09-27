@@ -50,6 +50,7 @@ const TABS := [
 		["X", "Trapdoor", "turf over a pit: drops walkers in; bridgers and masons don't see it"],
 		["B", "Bumper", "kicks items and enemies away hard"],
 		["M", "Wrecking pendulum", "ore knocks it swinging; it smashes walkers"],
+		["", "Domino row", "drag out a row of slabs; knock the first and they fall in a chain (a plate at the end!)"],
 		["", "Tripwire", "drag stake to stake: a walker breaking it trips the machines near either stake"],
 		["", "Pressure plate", "ore, walkers or you pressing it trip the machines near it"],
 		["", "Clockwork timer", "trips the machines near it every 2/4/8 s (click to change)"],

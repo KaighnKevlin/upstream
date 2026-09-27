@@ -5235,6 +5235,45 @@ func engine_rec() -> void:
 	log_line("engine fuel %.1f s, power %.2f | belt rate cold %.2f -> lit %.2f" % [en.fuel, en.power(), cold, hot])
 
 
+func domino_rec() -> void:
+	# A row of dominoes ending at a pressure plate wired to a powder keg:
+	# a nudge to the first, the chain falls, the plate trips, the keg blows.
+	# Then the row is reset.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var row: Node2D = preload("res://scenes/dominoes.tscn").instantiate()
+	row.end_offset = Vector2(195, 0)
+	row.global_position = Vector2(1500, 70)
+	main.add_child(row)
+	var pl: Node2D = preload("res://scenes/plate.tscn").instantiate()
+	pl.global_position = Vector2(1712, 70)
+	main.add_child(pl)
+	var kg: Node2D = preload("res://scenes/keg.tscn").instantiate()
+	kg.global_position = Vector2(1790, 70)
+	main.add_child(kg)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.6, 2.6)
+	cam.global_position = Vector2(1640, 40)
+	await wait(1.0)
+	log_line("slabs %d standing" % row.slabs.size())
+	var first: RigidBody2D = row.slabs[0]
+	first.apply_impulse(Vector2(40, 0), Vector2(0, -12))
+	for t in 60:
+		await wait(0.1)
+		if t == 12:
+			await shot("domino_falling")
+		if pl.tripped > 0:
+			break
+	log_line("fallen %d/%d | plate tripped %d | keg blown %s" % [row.fallen(), row.slabs.size(), pl.tripped, not is_instance_valid(kg)])
+	await wait(0.3)
+	await shot("domino_boom")
+	row.stand_up()
+	await wait(1.0)
+	log_line("after reset: fallen %d/%d" % [row.fallen(), row.slabs.size()])
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0

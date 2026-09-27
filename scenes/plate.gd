@@ -42,7 +42,7 @@ func _ready() -> void:
 	add_to_group("plates")
 	_sense = Area2D.new()
 	_sense.collision_layer = 0
-	_sense.collision_mask = 2 | 8 | 32     # ore, walkers, the player
+	_sense.collision_mask = 2 | 8 | 32 | 256     # ore, walkers, the player, domino slabs
 	var cs := CollisionShape2D.new()
 	var r := RectangleShape2D.new()
 	r.size = Vector2(20, 6)
