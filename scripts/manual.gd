@@ -24,6 +24,7 @@ const TABS := [
 		["9", "Chute", "drag top to bottom: a sloped rail that ore slides down"],
 		["0", "Splitter", "alternates items left and right; click for left/right only"],
 		["C", "Conveyor belt", "drag out: carries items along; faster when powered"],
+		["", "Clockwork timer", "trips the machines near it every 2/4/8 s (click to change): a metronome for contraptions"],
 		["", "Pressure plate", "ore, walkers or you pressing it trip machines nearby (kegs, trapdoors, pendulums, hoppers, tesla overload, fan gusts)"],
 		["", "Tripwire", "drag stake to stake; a walker breaking it sets off kegs, trapdoors, pendulums, hoppers, tesla coils, fans (a gust) near either stake (catapults wait for it)"],
 		["", "Brass sentry", "your own clockwork guard: patrols, hammers walkers; winds down when worn out, an ingot rewinds it"],

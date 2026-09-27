@@ -4873,6 +4873,46 @@ func depths_rec() -> void:
 	log_line("bat: swooped %s, bites %d (player hp %d -> %d), back on its roost %s" % [swooped, bat.bites, hp1, p.hp, bat._state == 0])
 
 
+func timer_rec() -> void:
+	# A clockwork timer (2 s) wired to a pendulum and a latched catapult fed
+	# by hand: over ~7 s it should trip 3 times, keep the pendulum swinging,
+	# and fire the catapult each time it's loaded.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var tmr: Node2D = preload("res://scenes/timer.tscn").instantiate()
+	tmr.mode = 0
+	tmr.global_position = Vector2(1640, 60)
+	main.add_child(tmr)
+	var pd: Node2D = preload("res://scenes/pendulum.tscn").instantiate()
+	pd.global_position = Vector2(1690, -10)
+	main.add_child(pd)
+	var cat: Node2D = preload("res://scenes/catapult.tscn").instantiate()
+	cat.aim_angle = 40.0
+	cat.throw_speed = 380.0
+	cat.global_position = Vector2(1580, 80)
+	main.add_child(cat)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.2, 2.2)
+	cam.global_position = Vector2(1660, 10)
+	var thrown := 0
+	var max_swing := 0.0
+	for t in 70:
+		await wait(0.1)
+		max_swing = maxf(max_swing, absf(pd.theta))
+		if t % 20 == 5:
+			var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+			o.global_position = cat.to_global(cat._bucket_at(cat._arm.rotation)) + Vector2(0, -20)
+			main.add_child(o)
+		if cat.last_thrown != null:
+			thrown += 1
+			cat.last_thrown = null
+		if t == 45:
+			await shot("timer")
+	log_line("timer tripped %d | pendulum max swing %.0f deg | catapult throws %d" % [tmr.tripped, rad_to_deg(max_swing), thrown])
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0

@@ -1,6 +1,6 @@
 extends Node
 
-enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, TURRET, SPIKES, CATAPULT, CHUTE, SPLITTER, BUMPER, BELT, BELLOWS, PENDULUM, WHEEL, ASSEMBLER, LAB, TESLA, FLAMER, TRAPDOOR, CRUSHER, MAGNET, HARPOON, SEESAW, TUBE, KEG, SNARE, TRIPWIRE, PLATE, BORER, LANTERN, SENTRY }
+enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, TURRET, SPIKES, CATAPULT, CHUTE, SPLITTER, BUMPER, BELT, BELLOWS, PENDULUM, WHEEL, ASSEMBLER, LAB, TESLA, FLAMER, TRAPDOOR, CRUSHER, MAGNET, HARPOON, SEESAW, TUBE, KEG, SNARE, TRIPWIRE, PLATE, BORER, LANTERN, SENTRY, TIMER }
 
 var current_build: BuildType = BuildType.NONE
 var _ghost: Node2D = null
@@ -40,6 +40,7 @@ var _scenes := {
 	BuildType.BORER: preload("res://scenes/borer.tscn"),
 	BuildType.LANTERN: preload("res://scenes/lantern.tscn"),
 	BuildType.SENTRY: preload("res://scenes/sentry.tscn"),
+	BuildType.TIMER: preload("res://scenes/timer.tscn"),
 }
 
 var _ghost_colors := {
@@ -75,6 +76,7 @@ var _ghost_colors := {
 	BuildType.BORER: Color(1.0, 0.85, 0.5, 0.5),
 	BuildType.LANTERN: Color(1.0, 0.85, 0.5, 0.7),
 	BuildType.SENTRY: Color(0.7, 0.95, 1.0, 0.6),
+	BuildType.TIMER: Color(1.0, 0.85, 0.5, 0.6),
 }
 
 signal build_mode_changed(build_type: BuildType)
@@ -232,7 +234,7 @@ func _can_place(pos: Vector2) -> bool:
 			var tile_pos := tilemap.local_to_map(tilemap.to_local(pos))
 			if tilemap.get_cell_source_id(tile_pos) != -1 or tilemap.get_cell_source_id(tile_pos + Vector2i(0, 1)) != -1:
 				return false
-	elif current_build in [BuildType.SPIKES, BuildType.CATAPULT, BuildType.BUMPER, BuildType.ASSEMBLER, BuildType.LAB, BuildType.TESLA, BuildType.FLAMER, BuildType.CRUSHER, BuildType.HARPOON, BuildType.SEESAW, BuildType.KEG, BuildType.SNARE, BuildType.PLATE, BuildType.BORER, BuildType.SENTRY]:
+	elif current_build in [BuildType.SPIKES, BuildType.CATAPULT, BuildType.BUMPER, BuildType.ASSEMBLER, BuildType.LAB, BuildType.TESLA, BuildType.FLAMER, BuildType.CRUSHER, BuildType.HARPOON, BuildType.SEESAW, BuildType.KEG, BuildType.SNARE, BuildType.PLATE, BuildType.BORER, BuildType.SENTRY, BuildType.TIMER]:
 		# on a floor: empty cell with solid ground just below
 		if tilemap:
 			var tile_pos := tilemap.local_to_map(tilemap.to_local(pos))
