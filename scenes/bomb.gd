@@ -53,6 +53,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _burst() -> void:
+	preload("res://scenes/firedamp.gd").ignite_near(get_tree(), global_position, 30.0)
 	for kg in get_tree().get_nodes_in_group("kegs"):
 		if kg.center().distance_to(global_position) < 40.0:
 			kg.call_deferred("detonate")

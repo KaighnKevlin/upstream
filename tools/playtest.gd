@@ -32,7 +32,7 @@ func _run() -> void:
 		preload("res://scripts/world_gen.gd").generate(tilemap(), seed)
 		for c in main.get_node("TileShading").get_children():
 			c.queue_redraw()
-		for c in main.get_tree().get_nodes_in_group("caches") + main.get_tree().get_nodes_in_group("geysers") + main.get_tree().get_nodes_in_group("crawlers") + main.get_tree().get_nodes_in_group("ruins"):
+		for c in main.get_tree().get_nodes_in_group("caches") + main.get_tree().get_nodes_in_group("geysers") + main.get_tree().get_nodes_in_group("crawlers") + main.get_tree().get_nodes_in_group("ruins") + main.get_tree().get_nodes_in_group("firedamp"):
 			if is_instance_valid(c):
 				c.free()   # placed on the old world (a vault chest is in two of these groups)
 		# scenarios start clean: drop the sandbox showcase built on the old world
@@ -4585,6 +4585,55 @@ func gust_rec() -> void:
 	await shot("gust")
 	await wait(0.8)
 	log_line("plate tripped %d, gust %.2f | soldier x %.0f -> %.0f" % [pl.tripped, bw._gust, x0, so.global_position.x])
+
+
+func firedamp_rec() -> void:
+	# Mine gas: scattered in the deep caves. The prospector stands in one
+	# (choking); a second pocket is placed next to it; a soldier waits inside;
+	# then a shot is fired into the first: both should go up.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	preload("res://scenes/firedamp.gd").scatter(main, tilemap())
+	await wait(0.2)
+	var gs := get_nodes_in_group("firedamp")
+	log_line("pockets placed: %d" % gs.size())
+	var g: Node2D = gs[0]
+	var g2: Node2D = preload("res://scenes/firedamp.tscn").instantiate()
+	g2.global_position = g.global_position + Vector2(90, 0)
+	main.add_child(g2)
+	var p: CharacterBody2D = main.get_node("Player")
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.0, 2.0)
+	cam.global_position = g.global_position + Vector2(45, 0)
+	await tap(KEY_L)
+	p.global_position = g.global_position
+	var hp0: int = p.hp
+	await wait(3.0)
+	log_line("choking: player hp %d -> %d in 3 s" % [hp0, p.hp])
+	await shot("firedamp_haze")
+	p.global_position = g.global_position + Vector2(-260, 0)   # well clear
+	var so = _spawn(2, g.global_position + Vector2(10, 0))
+	so.speed = 0.0
+	await wait(0.2)
+	var c0 := tilemap().local_to_map(g.global_position)
+	var gpos := g.global_position
+	var solid := func() -> int:
+		var n := 0
+		for dy in range(-6, 7):
+			for dx in range(-6, 14):
+				n += 1 if tilemap().get_cell_source_id(c0 + Vector2i(dx, dy)) != -1 else 0
+		return n
+	var before: int = solid.call()
+	var b: Area2D = preload("res://scenes/bullet.tscn").instantiate()
+	b.global_position = g.global_position + Vector2(-60, 0)
+	b.velocity = Vector2(500, 0)
+	main.add_child(b)
+	await wait(0.25)
+	await shot("firedamp_fireball")
+	await wait(0.6)
+	log_line("shot in (at %s): first lit %s, second lit %s | soldier %s | tiles blown %d" % [gpos, not is_instance_valid(g) or g.lit, not is_instance_valid(g2) or g2.lit, "dead" if not is_instance_valid(so) or so._dying else "hp %d" % so.hp, before - solid.call()])
 
 
 func ambience_rec() -> void:

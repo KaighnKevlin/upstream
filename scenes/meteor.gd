@@ -88,6 +88,7 @@ func _impact(tm: TileMapLayer) -> void:
 		if is_instance_valid(o) and not o.freeze and o.global_position.distance_to(at) < SPLASH * 1.4:
 			o.sleeping = false
 			o.linear_velocity += (o.global_position - at).normalized() * 200.0 + Vector2(0, -150)
+	preload("res://scenes/firedamp.gd").ignite_near(get_tree(), at, SPLASH * size)
 	for kg in get_tree().get_nodes_in_group("kegs"):
 		if kg.center().distance_to(at) < SPLASH * size * 1.2:
 			kg.call_deferred("detonate")

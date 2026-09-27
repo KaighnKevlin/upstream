@@ -193,6 +193,7 @@ func _zap(first) -> void:
 		_bolts.append([_jagged(to_local(from), to_local(to)), 0.16])
 		hit.append(target)
 		target.take_damage(DAMAGE[k])
+		preload("res://scenes/firedamp.gd").ignite_near(get_tree(), to, 0.0)
 		FX.burst(get_parent(), to, Color(0.75, 0.95, 1.0), 6, 90.0, 0.2, 1.2)
 		from = to
 		target = _nearest(from, CHAIN, hit)

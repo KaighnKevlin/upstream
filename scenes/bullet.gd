@@ -52,6 +52,9 @@ func _physics_process(delta: float) -> void:
 		queue_free()
 		return
 
+	if preload("res://scenes/firedamp.gd").shot_hits(get_tree(), global_position):
+		queue_free()
+		return
 	if preload("res://scenes/keg.gd").shot_hits(get_tree(), global_position):
 		queue_free()
 		return

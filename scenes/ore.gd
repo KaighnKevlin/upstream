@@ -292,6 +292,7 @@ func explode() -> void:
 		elif d < radius * 1.5:
 			o.sleeping = false
 			o.linear_velocity += (o.global_position - at).normalized() * 320.0 * (1.0 - d / (radius * 1.5)) + Vector2(0, -80)
+	preload("res://scenes/firedamp.gd").ignite_near(get_tree(), at, radius)
 	for kg in get_tree().get_nodes_in_group("kegs"):
 		if kg.center().distance_to(at) < radius * 1.3:
 			kg.call_deferred("detonate")

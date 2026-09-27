@@ -159,6 +159,7 @@ func detonate() -> void:
 	SFX.play(scene, SFX.sfx_mine_break(), 4.0, 0.5)
 	SFX.play(scene, SFX.sfx_turret_fire(), 2.0, 0.4)
 	_crater(at)
+	preload("res://scenes/firedamp.gd").ignite_near(get_tree(), at, RADIUS)
 	for e in get_tree().get_nodes_in_group("enemies"):
 		if not is_instance_valid(e) or ("_dying" in e and e._dying) or not e.has_method("take_damage"):
 			continue
