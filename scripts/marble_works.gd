@@ -14,6 +14,8 @@ extends RefCounted
 ##           through an escapement (one per beat) onto a second wheel
 ##   right   down a chute onto a shelf, where a robotic arm lifts each
 ##           piece off and drops it past the shelf
+##   stairs  what the arm lets go of lands on a stair lift and climbs it
+##           one hop at a time, tipping off the top
 ##   screw   what rolls off the sieve drops into an Archimedes screw that
 ##           lifts it back up and tips it out in mid-air
 ##   return  everything lands on two long floor chutes that run back down
@@ -72,9 +74,9 @@ static func build(main: Node) -> void:
 	_piece(main, "res://scenes/beam.tscn", Vector2(BEAM_X, CROWN_Y), {"depth": FLOOR_Y - CROWN_Y - 4.0})
 	# the iron tap and its line: chute -> tipping bucket -> wheel
 	_piece(main, "res://scenes/beam_tap.tscn", Vector2(BEAM_X + 6, 330), {"mode": 1})
-	_chute(main, Vector2(1232, 338), Vector2(1518, 452))
-	_piece(main, "res://scenes/tipping_bucket.tscn", Vector2(1545, 490), {"side": -1.0})
-	_piece(main, "res://scenes/gravity_wheel.tscn", Vector2(1482, 520))
+	_chute(main, Vector2(1215, 342), Vector2(1506, 454))   # starts under the spout: its stop-lip behind the iron, not in its way
+	_piece(main, "res://scenes/tipping_bucket.tscn", Vector2(1512, 490), {"side": 1.0})   # right under where iron drops off
+	_piece(main, "res://scenes/gravity_wheel.tscn", Vector2(1532, 520))
 	# crown left: chute -> flip-flop
 	_chute(main, Vector2(1160, 196), Vector2(1062, 234))
 	_piece(main, "res://scenes/rocker.tscn", Vector2(1046, 262))
@@ -92,6 +94,8 @@ static func build(main: Node) -> void:
 	var arm := _piece(main, "res://scenes/arm.tscn", Vector2(1412, 326), {"mode": 0})
 	arm.pick = Vector2(1369, 290) - arm.global_position
 	arm.drop = Vector2(1446, 300) - arm.global_position
+	# what the arm drops lands on a stair lift and climbs it, hop by hop
+	_piece(main, "res://scenes/stair_lift.tscn", Vector2(1446, 540), {"steps": 6, "side": -1.0})
 	# an Archimedes screw lifts what comes off the sieve back up into the air
 	_piece(main, "res://scenes/screw.tscn", Vector2(944, 528), {"end_offset": Vector2(70, -120)})
 	# the return: two long floor chutes into the Beam's foot

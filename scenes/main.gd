@@ -1114,6 +1114,7 @@ var _build_names := {
 	41: "Build: TIPPING BUCKET (collects, then pours a batch)",
 	42: "Build: SIEVE RAIL (drag; grit drops through)",
 	43: "Build: ARCHIMEDES SCREW (drag bottom to top)",
+	45: "Build: STAIR LIFT (bobbing steps climb marbles up)",
 	44: "Build: ROBOTIC ARM (picks from one spot, drops at another)",
 	37: "Build: DOMINO ROW (drag start to end; click an end to reset)",
 	36: "Build: STEAM ENGINE (feed it ore: powers machines in reach)",

@@ -5610,8 +5610,9 @@ func marble_works_rec() -> void:
 		var am = find.call("arm.gd")[0]
 		var wh = find.call("gravity_wheel.gd")
 		var sc = find.call("screw.gd")
-		log_line("t=%d | beam flung %d | iron tapped %d | flip-flop %s | bucket tipped %d | escapement %d | arm moved %d | screw lifted %d | wheels power %s | ore %d" % [(k + 1) * 5,
-			bm.carried, tp.tapped, rk.sent, tb.tipped, es.released, am.moved, sc[0].lifted if sc.size() > 0 else -1, wh.map(func(w): return snappedf(w.power(), 0.01)), get_nodes_in_group("ore").size()])
+		var st = find.call("stair_lift.gd")
+		log_line("t=%d | beam flung %d | iron tapped %d | flip-flop %s | bucket tipped %d | escapement %d | arm moved %d | screw lifted %d | stair strokes %d | wheels power %s | ore %d" % [(k + 1) * 5,
+			bm.carried, tp.tapped, rk.sent, tb.tipped, es.released, am.moved, sc[0].lifted if sc.size() > 0 else -1, st[0].strokes if st.size() > 0 else -1, wh.map(func(w): return snappedf(w.power(), 0.01)), get_nodes_in_group("ore").size()])
 
 
 func marble_trace_rec() -> void:
@@ -5638,6 +5639,52 @@ func marble_trace_rec() -> void:
 	log_line("iron passing y 440-520 (bucket at 1530, cup 1515-1545): x %s" % [iron_x.slice(0, 40)])
 	log_line("drops near wheel 2 (intake ~1130,513): x %s" % [esc_x.slice(0, 40)])
 	log_line("slow pieces around the shelf: %s" % [shelf.slice(0, 30)])
+
+
+func marble_bucket_rec() -> void:
+	# The iron line into the tipping bucket, traced: the bucket's fill and
+	# where the iron near it is, every 2 s.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await main.start_marble_works()
+	var tb = main.get_children().filter(func(c): return c.get_script() and c.get_script().resource_path.get_file() == "tipping_bucket.gd")[0]
+	for t in 16:
+		await wait(2.0)
+		var near := []
+		for o in get_nodes_in_group("ore"):
+			if is_instance_valid(o) and o.get("kind") == "iron" and o.global_position.distance_to(tb.global_position) < 90:
+				near.append("%s v%d%s" % [Vector2i(o.global_position), int(o.linear_velocity.length()), " z" if o.sleeping else ""])
+		log_line("t=%d bucket at %s count %d tipped %d | iron near: %s" % [(t + 1) * 2, tb.global_position, tb.count(), tb.tipped, near])
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(3, 3)
+	cam.global_position = tb.global_position + Vector2(-20, -20)
+	await wait(0.2)
+	await shot("bucket_close")
+
+
+func marble_tap_rec() -> void:
+	# Iron just after the tap: where does it go?
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await main.start_marble_works()
+	var tp = main.get_children().filter(func(c): return c.get_script() and c.get_script().resource_path.get_file() == "beam_tap.gd")[0]
+	var seen := {}
+	for t in 300:
+		await wait(0.1)
+		for o in get_nodes_in_group("ore"):
+			if is_instance_valid(o) and o.get("kind") == "iron" and o.global_position.y < 470 and o.global_position.x > 1150:
+				var id: int = o.get_instance_id()
+				if not seen.has(id):
+					seen[id] = []
+				if seen[id].size() < 12:
+					seen[id].append("%s%s" % [Vector2i(o.global_position), "B" if o.has_meta("in_beam") else ""])
+		if seen.size() >= 3 and t > 150:
+			break
+	log_line("tap at %s tapped %d" % [tp.global_position, tp.tapped])
+	for id in seen:
+		log_line("  iron: %s" % [seen[id]])
 
 
 func ambience_rec() -> void:
