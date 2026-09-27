@@ -5011,6 +5011,61 @@ func cleared_rec() -> void:
 	log_line("wave cleared %d | fireworks launched %d, burst %d" % [main.waves_cleared, fw.launched if fw else -1, fw.burst if fw else -1])
 
 
+func dock_rec() -> void:
+	# A drone dock with a funnel turret nearby; loose copper and ingots
+	# scattered about. The drones should carry ore to the turret and ingots
+	# to the dome.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var bs = main.get_node("/root/BuildSystem")
+	var dk: Node2D = preload("res://scenes/dock.tscn").instantiate()
+	dk.global_position = Vector2(1480, 60)
+	main.add_child(dk)
+	bs._placed_buildings.append(dk)
+	var tu: Node2D = preload("res://scenes/funnel_turret.tscn").instantiate()
+	tu.global_position = Vector2(1640, 40)
+	main.add_child(tu)
+	bs._placed_buildings.append(tu)
+	var pieces := []
+	for k in 4:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.kind = "copper"
+		o.lifetime = 120.0
+		o.global_position = Vector2(1360 + k * 60, 60)
+		main.add_child(o)
+		pieces.append(o)
+	for k in 2:
+		var ing: RigidBody2D = preload("res://scenes/ingot.tscn").instantiate()
+		ing.global_position = Vector2(1400 + k * 90, 60)
+		main.add_child(ing)
+		pieces.append(ing)
+	var buf0: int = main._receiver.buffer
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.8, 1.8)
+	cam.global_position = Vector2(1440, 0)
+	for t in 300:
+		await wait(0.1)
+		if t == 40:
+			await shot("dock_busy")
+		if dk.delivered() >= 6:
+			break
+	await wait(1.5)
+	var in_turret := 0
+	for o in get_nodes_in_group("ore"):
+		if is_instance_valid(o) and o.has_meta("store_material"):
+			in_turret += 1
+	log_line("drones delivered %d | ore in the turret magazine %d | dome stock %d -> %d" % [dk.delivered(), in_turret, buf0, main._receiver.buffer])
+	for o in pieces:
+		if not is_instance_valid(o):
+			log_line("  piece: gone")
+		else:
+			log_line("  piece %s at %s v %.0f freeze %s metas %s" % [o.get("kind"), o.global_position.round(), o.linear_velocity.length(), o.freeze, o.get_meta_list()])
+	for d in dk._drones:
+		log_line("  drone state %d at %s target %s carried %s" % [d._state, d.global_position.round(), d._target, d._carried])
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0

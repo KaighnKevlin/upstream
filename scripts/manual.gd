@@ -13,6 +13,7 @@ const TABS := [
 	["BUILDINGS", [
 		["1", "Trampoline", "bounces anything that lands on it; drag its handle to set angle and force"],
 		["2", "Vein tapper", "on a dug-out ore block: flings copper or iron ore; drag to aim"],
+		["", "Drone dock", "two porter drones tidy loose pieces nearby: ingots to the dome, ore to the nearest funnel turret"],
 		["", "Steam borer", "tunnels on its own (click: right, left, down); spits out ore it cuts, even through ironstone"],
 		["", "Lantern", "light for the caves: hangs under a ceiling or stands on a pole; clears the fog around it"],
 		["3", "Laser smelter", "ore flying through the beam melts into an ingot"],
