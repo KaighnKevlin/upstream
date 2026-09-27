@@ -32,7 +32,7 @@ func _run() -> void:
 		preload("res://scripts/world_gen.gd").generate(tilemap(), seed)
 		for c in main.get_node("TileShading").get_children():
 			c.queue_redraw()
-		for c in main.get_tree().get_nodes_in_group("caches") + main.get_tree().get_nodes_in_group("geysers") + main.get_tree().get_nodes_in_group("crawlers") + main.get_tree().get_nodes_in_group("ruins") + main.get_tree().get_nodes_in_group("firedamp") + main.get_tree().get_nodes_in_group("magma") + main.get_tree().get_nodes_in_group("depths"):
+		for c in main.get_tree().get_nodes_in_group("caches") + main.get_tree().get_nodes_in_group("geysers") + main.get_tree().get_nodes_in_group("crawlers") + main.get_tree().get_nodes_in_group("ruins") + main.get_tree().get_nodes_in_group("firedamp") + main.get_tree().get_nodes_in_group("magma") + main.get_tree().get_nodes_in_group("depths") + main.get_tree().get_nodes_in_group("cinderbats"):
 			if is_instance_valid(c):
 				c.free()   # placed on the old world (a vault chest is in two of these groups)
 		# scenarios start clean: drop the sandbox showcase built on the old world
@@ -4849,6 +4849,28 @@ func depths_rec() -> void:
 	await wait(1.2)
 	log_line("standing in it: hp %d -> %d" % [hp0, p.hp])
 	await shot("depths_burn")
+	# the bats: stand under one; it swoops, bites, goes back to its roost
+	var bats := get_nodes_in_group("cinderbats")
+	log_line("cinder bats: %d" % bats.size())
+	if bats.is_empty():
+		return
+	var bat: Node2D = bats[0]
+	var roost: Vector2 = bat.global_position
+	p.global_position = roost + Vector2(40, 60)
+	cam.global_position = roost + Vector2(20, 30)
+	var hp1: int = p.hp
+	var swooped := false
+	for t in 40:
+		await wait(0.1)
+		if not swooped and bat._state == 1:
+			swooped = true
+			await wait(0.2)
+			await shot("depths_bat")
+		if bat.bites > 0:
+			break
+	p.global_position = roost + Vector2(-500, 0)     # out of its reach
+	await wait(2.5)
+	log_line("bat: swooped %s, bites %d (player hp %d -> %d), back on its roost %s" % [swooped, bat.bites, hp1, p.hp, bat._state == 0])
 
 
 func ambience_rec() -> void:

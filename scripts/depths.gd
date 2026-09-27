@@ -11,6 +11,8 @@ const DEPTH := 14               # rows above the bottom that run hot
 const POOLS := 6
 
 var _tm: TileMapLayer
+var _rooms := []                # hot chambers: [centre cell, rx, ry]
+const BATS_PER := 3
 
 
 static func build(main: Node, tm: TileMapLayer) -> Node2D:
@@ -26,7 +28,27 @@ static func build(main: Node, tm: TileMapLayer) -> Node2D:
 	main.add_child(d)
 	d._chambers()
 	d._pools(main)
+	d._bats(main)
 	return d
+
+
+## Cinder bats roosting on each hot chamber's ceiling.
+func _bats(main: Node) -> void:
+	for room in _rooms:
+		var c: Vector2i = room[0]
+		var rx: int = room[1]
+		for k in BATS_PER:
+			var x := c.x + randi_range(-rx + 2, rx - 2)
+			var cell := Vector2i(x, c.y)
+			for i in 8:
+				if _tm.get_cell_source_id(cell + Vector2i.UP) != -1:
+					break
+				cell.y -= 1
+			if _tm.get_cell_source_id(cell + Vector2i.UP) == -1:
+				continue
+			var b: Node2D = load("res://scenes/cinderbat.tscn").instantiate()
+			b.global_position = _tm.to_global(_tm.map_to_local(cell)) + Vector2(0, -2)
+			main.add_child(b)
 
 
 ## A few wide hot chambers carved near the bottom, so every world has
@@ -48,6 +70,7 @@ func _chambers() -> void:
 		var cy := WorldGen.WORLD_HEIGHT - rng.randi_range(6, 8)
 		var rx := rng.randi_range(8, 11)
 		var ry := rng.randi_range(3, 4)
+		_rooms.append([Vector2i(cx, cy), rx, ry])
 		for y in range(cy - ry, cy + ry + 1):
 			for x in range(cx - rx, cx + rx + 1):
 				var dx := float(x - cx) / rx
