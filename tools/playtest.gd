@@ -5366,6 +5366,43 @@ func domino_timer_rec() -> void:
 	log_line("fallen count every 0.5 s: %s" % [seen])
 
 
+func sparrows_rec() -> void:
+	# The flock lands on the grass over time; the prospector walks into a
+	# landed bird and it takes off; a blast scatters the rest.
+	main._wave_timer = -9999.0
+	var dn = main.get_node("DayNight")
+	dn.paused = true
+	dn.clock = 0.5
+	dn.apply()
+	var sp = main.get_node("Sparrows")
+	for b in sp._birds:
+		b[3] = randf_range(0.2, 1.5)      # come in sooner for the test
+	for t in 60:
+		await wait(0.25)
+		if sp.grounded() >= 5:
+			break
+	log_line("birds on the ground: %d" % sp.grounded())
+	var landed = null
+	for b in sp._birds:
+		if b[1] == 0:
+			landed = b
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(3.0, 3.0)
+	cam.global_position = landed[0].global_position + Vector2(0, -20)
+	await wait(0.3)
+	await shot("sparrows_ground")
+	var p: Node2D = main.get_node("Player")
+	p.global_position = landed[0].global_position + Vector2(30, -10)
+	await wait(0.4)
+	await shot("sparrows_flee")
+	log_line("walked up to one: scattered %d, grounded now %d" % [sp.scattered, sp.grounded()])
+	preload("res://scripts/fx.gd").shake(p, 8.0, 0.2)
+	await wait(0.2)
+	log_line("after a blast by the player: scattered %d" % sp.scattered)
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0

@@ -583,6 +583,9 @@ func _setup_terrain_visuals() -> void:
 	var dn := preload("res://scripts/daynight.gd").new()   # day and night
 	dn.name = "DayNight"
 	add_child(dn)
+	var birds := preload("res://scripts/sparrows.gd").new()    # clockwork sparrows on the grass
+	birds.name = "Sparrows"
+	add_child(birds)
 	var eyes := preload("res://scripts/night_eyes.gd").new()   # enemy eye lamps glow after dark
 	eyes.name = "NightEyes"
 	add_child(eyes)

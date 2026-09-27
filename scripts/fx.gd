@@ -41,6 +41,8 @@ static func burst(parent: Node, pos: Vector2, color: Color, amount := 10,
 
 ## Decaying random offset on the active camera.
 static func shake(node: Node, strength := 4.0, duration := 0.25) -> void:
+	if strength >= 3.0 and node is Node2D and node.is_inside_tree():
+		node.get_tree().call_group("sparrows", "scare", (node as Node2D).global_position, 50.0 * strength)   # loud: the birds take off
 	var cam := node.get_viewport().get_camera_2d()
 	if cam == null:
 		return
