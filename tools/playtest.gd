@@ -4488,6 +4488,73 @@ func borer_rec() -> void:
 	log_line("right: travelled %d, bored %d total, at %s | loose ore/grit now %d (was %d)" % [b.travelled, b.bored, b.global_position, get_nodes_in_group("ore").size(), ore0])
 
 
+func grenadier_rec() -> void:
+	# A grenadier walks toward the dome and lobs bombs at it. First with
+	# nothing in the way; then with a trampoline in the bombs' path, angled
+	# back east, and two soldiers walking behind the grenadier.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.5, 1.5)
+	cam.global_position = Vector2(1400, 0)
+	var g: Node2D = preload("res://scenes/grenadier.tscn").instantiate()
+	g.global_position = Vector2(1700, 40)
+	main.add_child(g)
+	var dome0: int = main.dome_hp
+	for t in 100:
+		await wait(0.1)
+		if g.thrown >= 1:
+			break
+	var bomb = null
+	for o in get_nodes_in_group("ore"):
+		if o.get("kind") == "bomb":
+			bomb = o
+	for k in 14:
+		if not is_instance_valid(bomb):
+			log_line("  bomb gone at step %d" % k)
+			break
+		log_line("  bomb at %s fuse %.2f queued %s" % [bomb.global_position, bomb.fuse, bomb.is_queued_for_deletion()])
+		if k == 2:
+			await shot("grenadier_bomb")
+		await wait(0.25)
+	await wait(0.5)
+	log_line("grenadier at x %.0f threw %d, dome %d -> %d" % [g.global_position.x, g.thrown, dome0, main.dome_hp])
+	await wait(4.0)
+	log_line("after 2 more throws window: thrown %d, dome now %d" % [g.thrown, main.dome_hp])
+	# the return: a lit bomb dropped on a trampoline angled east, into a
+	# pair of soldiers walking in
+	g.queue_free()
+	var t: Node2D = preload("res://scenes/trampoline.tscn").instantiate()
+	t.bounce_angle = 40.0
+	t.bounce_force = 330.0
+	t.global_position = Vector2(1480, 40)
+	main.add_child(t)
+	t._update_visuals()
+	var foes := [_spawn(2, Vector2(1640, 40)), _spawn(2, Vector2(1670, 40))]
+	for f in foes:
+		f.speed = 0.0
+	cam.global_position = Vector2(1560, 0)
+	await wait(0.3)
+	var hp0: Array = foes.map(func(f): return f.hp)
+	var b2: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+	b2.kind = "bomb"
+	b2.global_position = t.global_position + Vector2(0, -90)
+	main.add_child(b2)
+	for k in 14:
+		await wait(0.2)
+		if not is_instance_valid(b2):
+			log_line("  (return) bomb gone at %d" % k)
+			break
+		log_line("  (return) bomb at %s v %s fuse %.2f" % [b2.global_position.round(), b2.linear_velocity.round(), b2.fuse])
+		if k == 5:
+			await shot("grenadier_return")
+	await wait(0.3)
+	await shot("grenadier_boom")
+	log_line("bomb off a trampoline into the pack: soldier hp %s -> %s" % [hp0, foes.map(func(f): return f.hp if is_instance_valid(f) and not f._dying else 0)])
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0

@@ -48,6 +48,9 @@ func _on_body_entered(body: Node2D) -> void:
 	if not body is RigidBody2D:
 		return
 	if body.is_in_group("ore"):
+		if body.get("kind") == "bomb":
+			body.call_deferred("explode")   # a lit bomb down the intake goes off in the dome's face
+			return
 		body.queue_free()  # raw ore is destroyed, not accepted
 		return
 

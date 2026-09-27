@@ -54,6 +54,7 @@ const TABS := [
 		["", "Bridge engine", "lays a bridge across a ditch for the pack; snap it with iron"],
 		["", "Mason", "bricks your ditches in with stone"],
 		["", "Cave crawler", "hangs from cave ceilings, drops on you when you walk beneath, bites"],
+		["", "Grenadier", "lobs lit bombs that bounce: trampolines, bumpers and fans send them back"],
 		["", "Mortar crab", "plants out of reach and lobs shells over your defences at the dome"],
 		["", "Gremlin", "saboteur: ignores the dome, unscrews your machines one by one"],
 		["", "Tinker", "fragile repair crew that welds its friends back up: kill it first"],

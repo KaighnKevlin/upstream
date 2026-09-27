@@ -30,6 +30,11 @@ const KINDS := {
 	# Goes off on a hard impact (or hitting an enemy): area damage, a shove
 	# for everything loose nearby, and it sets off other shells close by.
 	"shell": {"mass": 2.0, "bounce": 0.2, "friction": 0.5, "tex": "res://assets/sprites/shell.png", "size": 10, "h": 11, "frames": 1, "radius": 4.5, "blast": 340.0},
+	# a grenadier's bomb (scenes/grenadier.gd): lit when thrown, it bounces
+	# around (trampolines, bumpers and fans send it back) and goes off when
+	# its fuse runs out or, once armed, when it touches a walker; it hurts
+	# everyone near, the dome too.
+	"bomb": {"mass": 1.6, "bounce": 0.55, "friction": 0.35, "tex": "res://assets/sprites/bomb.png", "size": 10, "h": 12, "frames": 1, "radius": 4.5, "fuse": 2.6},
 	"flask": {"mass": 0.6, "bounce": 0.15, "friction": 0.6, "tex": "res://assets/sprites/flask.png", "size": 12, "h": 14, "frames": 1, "radius": 5.0, "fragile": 300.0},
 }
 static var _shapes := {}
@@ -110,6 +115,9 @@ var _last_hit: Node = null
 ## from a hopper, fired from a funnel turret, a stray bounce) hurts it,
 ## scaled by speed, and knocks the ore back off it.
 func _check_enemy_hit() -> void:
+	if kind == "bomb":
+		_bomb_contact()
+		return
 	if _hurt_cooldown > 0 or _prev_speed < 160.0:
 		return
 	for e in get_tree().get_nodes_in_group("enemies"):
@@ -193,6 +201,8 @@ func _physics_process(delta: float) -> void:
 	_puff_cooldown -= delta
 	_hurt_cooldown -= delta
 	_prev_speed = linear_velocity.length()
+	if kind == "bomb":
+		_burn_fuse(delta)
 	_check_enemy_hit()
 	_timer += delta
 	if _timer >= lifetime:
@@ -200,6 +210,40 @@ func _physics_process(delta: float) -> void:
 	# Despawn if fallen way below the map
 	if global_position.y > 1400:
 		queue_free()
+
+
+## A lit bomb: sparks from the fuse, a faster flicker near the end, then
+## the same blast as a shell (plus the dome, if it's close).
+var fuse := -1.0
+var _spark := 0.0
+
+func _burn_fuse(delta: float) -> void:
+	if fuse < 0:
+		fuse = KINDS.bomb.fuse
+	fuse -= delta
+	_spark -= delta
+	if _spark <= 0:
+		_spark = 0.05
+		FX.burst(get_parent(), global_position + Vector2(0, -5).rotated(rotation), Color(1.0, 0.8, 0.35), 1, 40.0, 0.2, 1.0, -40.0)
+	modulate = Color(1.8, 1.2, 1.0) if fuse < 0.8 and int(fuse * 12) % 2 == 0 else Color.WHITE
+	if fuse <= 0:
+		explode()
+
+
+## An armed bomb (ARM seconds after it was lit, so it doesn't catch its
+## own thrower's pack) goes off the moment it touches a walker: bat one
+## back and it blows up in their faces rather than rolling through.
+const BOMB_ARM := 0.8
+
+func _bomb_contact() -> void:
+	if fuse < 0 or fuse > KINDS.bomb.fuse - BOMB_ARM or has_meta("store_material") or has_meta("caught_by"):
+		return
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if not e.has_method("hit_center") or ("_dying" in e and e._dying) or ("buried" in e and e.buried):
+			continue
+		if global_position.distance_to(e.hit_center()) < e.hit_radius() + 6.0:
+			explode()
+			return
 
 
 ## A blast shell going off.
@@ -251,6 +295,10 @@ func explode() -> void:
 	for kg in get_tree().get_nodes_in_group("kegs"):
 		if kg.center().distance_to(at) < radius * 1.3:
 			kg.call_deferred("detonate")
+	if kind == "bomb":
+		var dome := get_tree().current_scene.get_node_or_null("DomeZone") as Node2D
+		if dome and dome.global_position.distance_to(at) < radius + 60.0 and get_tree().current_scene.has_method("damage_dome"):
+			get_tree().current_scene.damage_dome(4)
 	var p := get_tree().current_scene.get_node_or_null("Player") as Node2D
 	if p and p.global_position.distance_to(at) < radius * 0.6 and p.has_method("take_damage"):
 		p.take_damage(8)
