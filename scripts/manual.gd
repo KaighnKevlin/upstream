@@ -79,6 +79,7 @@ const TABS := [
 		["", "Grit", "crushed ore: three light chips per ore; shell filling"],
 		["", "Scrap", "what's left of a wrecked automaton: melt it, grind it, fire it"],
 		["", "Salvage cache", "strongboxes hidden in caves: walk into one for loot"],
+		["", "Magma Wyrm", "mini-boss of the depths: sleeps in a magma pool, burrows through rock after you; hit its head; drops a relic"],
 		["", "Cinder bat", "roosts in the hot depths; swoops down to bite, flaps back up to roost"],
 		["", "The depths", "the bottom of the world runs hot: magma pools burn, and melt dropped iron/copper ore into ingots"],
 		["", "Firedamp", "glowing mine gas in deep caves: chokes you; any spark (shot, blast, bolt) sets off a fireball that chains"],

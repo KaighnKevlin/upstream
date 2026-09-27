@@ -29,7 +29,21 @@ static func build(main: Node, tm: TileMapLayer) -> Node2D:
 	d._chambers()
 	d._pools(main)
 	d._bats(main)
+	d._wyrm(main)
 	return d
+
+
+## One Magma Wyrm per world, asleep in the widest pool.
+func _wyrm(main: Node) -> void:
+	var best: Node2D = null
+	for q in get_tree().get_nodes_in_group("magma"):
+		if best == null or q.width > best.width:
+			best = q
+	if best == null:
+		return
+	var w: Node2D = load("res://scenes/wyrm.tscn").instantiate()
+	w.global_position = best.global_position + Vector2(best.width * 0.5, 4)
+	main.add_child(w)
 
 
 ## Cinder bats roosting on each hot chamber's ceiling.

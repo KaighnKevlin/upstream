@@ -32,7 +32,7 @@ func _run() -> void:
 		preload("res://scripts/world_gen.gd").generate(tilemap(), seed)
 		for c in main.get_node("TileShading").get_children():
 			c.queue_redraw()
-		for c in main.get_tree().get_nodes_in_group("caches") + main.get_tree().get_nodes_in_group("geysers") + main.get_tree().get_nodes_in_group("crawlers") + main.get_tree().get_nodes_in_group("ruins") + main.get_tree().get_nodes_in_group("firedamp") + main.get_tree().get_nodes_in_group("magma") + main.get_tree().get_nodes_in_group("depths") + main.get_tree().get_nodes_in_group("cinderbats"):
+		for c in main.get_tree().get_nodes_in_group("caches") + main.get_tree().get_nodes_in_group("geysers") + main.get_tree().get_nodes_in_group("crawlers") + main.get_tree().get_nodes_in_group("ruins") + main.get_tree().get_nodes_in_group("firedamp") + main.get_tree().get_nodes_in_group("magma") + main.get_tree().get_nodes_in_group("depths") + main.get_tree().get_nodes_in_group("cinderbats") + main.get_tree().get_nodes_in_group("wyrms"):
 			if is_instance_valid(c):
 				c.free()   # placed on the old world (a vault chest is in two of these groups)
 		# scenarios start clean: drop the sandbox showcase built on the old world
@@ -4911,6 +4911,48 @@ func timer_rec() -> void:
 		if t == 45:
 			await shot("timer")
 	log_line("timer tripped %d | pendulum max swing %.0f deg | catapult throws %d" % [tmr.tripped, rad_to_deg(max_swing), thrown])
+
+
+func wyrm_rec() -> void:
+	# The Magma Wyrm: build the depths, walk up to its pool, let it hunt
+	# for a while, then bring it down.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	preload("res://scripts/depths.gd").build(main, tilemap())
+	await wait(0.3)
+	var ws := get_nodes_in_group("wyrms")
+	log_line("wyrms: %d" % ws.size())
+	if ws.is_empty():
+		return
+	for b in get_nodes_in_group("cinderbats"):
+		b.queue_free()       # just the wyrm for this one
+	var w: Node2D = ws[0]
+	var p: CharacterBody2D = main.get_node("Player")
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.6, 1.6)
+	cam.global_position = w.global_position + Vector2(0, -60)
+	await tap(KEY_L)
+	p.global_position = w.global_position + Vector2(-150, -30)
+	var hp0: int = p.hp
+	for t in 60:
+		await wait(0.1)
+		if w._state == 1 and t > 12 and t % 20 == 0:
+			await shot("wyrm_%d" % t)
+		p.global_position.x = w._home.x - 150    # stand your ground
+	log_line("wyrm state %d, bites %d, player hp %d -> %d, head at %s (home %s)" % [w._state, w.bites, hp0, p.hp, w.global_position.round(), w._home.round()])
+	var lv := 0
+	for t in preload("res://scripts/tech.gd").TECHS:
+		lv += preload("res://scripts/tech.gd").level(t.id)
+	w.take_damage(100)
+	await wait(1.6)
+	await shot("wyrm_dead")
+	var lv2 := 0
+	for t in preload("res://scripts/tech.gd").TECHS:
+		lv2 += preload("res://scripts/tech.gd").level(t.id)
+	log_line("dead: gone %s, research levels %d -> %d" % [not is_instance_valid(w), lv, lv2])
+	preload("res://scripts/tech.gd").levels.clear()
 
 
 func ambience_rec() -> void:
