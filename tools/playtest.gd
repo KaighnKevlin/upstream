@@ -32,7 +32,7 @@ func _run() -> void:
 		preload("res://scripts/world_gen.gd").generate(tilemap(), seed)
 		for c in main.get_node("TileShading").get_children():
 			c.queue_redraw()
-		for c in main.get_tree().get_nodes_in_group("caches") + main.get_tree().get_nodes_in_group("geysers") + main.get_tree().get_nodes_in_group("crawlers") + main.get_tree().get_nodes_in_group("ruins") + main.get_tree().get_nodes_in_group("firedamp"):
+		for c in main.get_tree().get_nodes_in_group("caches") + main.get_tree().get_nodes_in_group("geysers") + main.get_tree().get_nodes_in_group("crawlers") + main.get_tree().get_nodes_in_group("ruins") + main.get_tree().get_nodes_in_group("firedamp") + main.get_tree().get_nodes_in_group("magma") + main.get_tree().get_nodes_in_group("depths"):
 			if is_instance_valid(c):
 				c.free()   # placed on the old world (a vault chest is in two of these groups)
 		# scenarios start clean: drop the sandbox showcase built on the old world
@@ -4814,6 +4814,41 @@ func sentry_rec() -> void:
 	main.add_child(ing)
 	await wait(1.0)
 	log_line("ingot dropped on it: wound down %s, hp %d" % [st.wound_down, st.hp])
+
+
+func depths_rec() -> void:
+	# The depths on a fresh world: seams and pools. Stand by a pool with the
+	# lamp off; drop copper ore in (should come back up as an ingot); step in.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var d: Node2D = preload("res://scripts/depths.gd").build(main, tilemap())
+	await wait(0.3)
+	var pools := get_nodes_in_group("magma")
+	log_line("magma pools: %d, widths %s" % [pools.size(), pools.map(func(q): return q.width)])
+	if pools.is_empty():
+		return
+	var pool: Node2D = pools[0]
+	var p: CharacterBody2D = main.get_node("Player")
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.4, 2.4)
+	cam.global_position = pool.global_position + Vector2(pool.width * 0.5, -30)
+	p.global_position = pool.global_position + Vector2(-60, -40)
+	await wait(0.6)
+	await shot("depths_pool")
+	var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+	o.kind = "copper"
+	o.global_position = pool.global_position + Vector2(pool.width * 0.5, -40)
+	main.add_child(o)
+	await wait(1.2)
+	var ingots := get_nodes_in_group("ingots").filter(func(i): return i.global_position.distance_to(pool.global_position) < 160)
+	log_line("copper dropped in: melted %d, ingots nearby %d" % [pool.melted, ingots.size()])
+	var hp0: int = p.hp
+	p.global_position = pool.global_position + Vector2(pool.width * 0.5, -2)
+	await wait(1.2)
+	log_line("standing in it: hp %d -> %d" % [hp0, p.hp])
+	await shot("depths_burn")
 
 
 func ambience_rec() -> void:

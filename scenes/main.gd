@@ -68,6 +68,7 @@ func _ready() -> void:
 	preload("res://scenes/geyser.gd").scatter(self, _tilemap)  # ore geysers on cave floors
 	preload("res://scenes/crawler.gd").scatter(self, _tilemap) # cave crawlers on cave ceilings
 	preload("res://scenes/firedamp.gd").scatter(self, _tilemap) # mine gas in the deep caves
+	preload("res://scripts/depths.gd").build(self, _tilemap)     # the hot bottom of the world: seams, magma pools
 	var bars := preload("res://scripts/health_bars.gd").new()   # bars under wounded enemies
 	bars.name = "HealthBars"
 	add_child(bars)

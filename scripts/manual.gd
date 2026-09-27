@@ -78,6 +78,7 @@ const TABS := [
 		["", "Grit", "crushed ore: three light chips per ore; shell filling"],
 		["", "Scrap", "what's left of a wrecked automaton: melt it, grind it, fire it"],
 		["", "Salvage cache", "strongboxes hidden in caves: walk into one for loot"],
+		["", "The depths", "the bottom of the world runs hot: magma pools burn, and melt dropped iron/copper ore into ingots"],
 		["", "Firedamp", "glowing mine gas in deep caves: chokes you; any spark (shot, blast, bolt) sets off a fireball that chains"],
 		["", "Buried vault", "one per world, deep down behind ironstone: destroy its sentinel for a relic (free research)"],
 		["", "Ore geyser", "cave vents that erupt ore every 15-25 s; catch the spray"],
