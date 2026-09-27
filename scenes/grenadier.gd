@@ -29,7 +29,7 @@ var _dying := false
 var _knock_t := 0.0
 var _throw_t := 1.0
 var _winding := -1.0
-var _target := Vector2.ZERO
+var _aim_at := Vector2.ZERO
 var _spr: AnimatedSprite2D
 
 
@@ -123,7 +123,7 @@ func _physics_process(delta: float) -> void:
 		_throw_t -= delta
 		if _throw_t <= 0 and is_on_floor():
 			_throw_t = THROW_EVERY
-			_target = tgt
+			_aim_at = tgt
 			_winding = WIND_UP
 			_spr.play("windup")
 			SFX.play_small(self, SFX.sfx_clink(), -10.0, 1.8)   # striking the fuse
@@ -146,15 +146,15 @@ func _physics_process(delta: float) -> void:
 func _throw() -> void:
 	_spr.play("throw")
 	var from := global_position + Vector2(HAND.x * direction, HAND.y)
-	var dx := absf(_target.x - from.x)
-	var h := from.y - _target.y
+	var dx := absf(_aim_at.x - from.x)
+	var h := from.y - _aim_at.y
 	var denom := 2.0 * pow(cos(LOB), 2) * (dx * tan(LOB) - h)
 	var v := sqrt(GRAVITY * dx * dx / denom) if denom > 0 else 260.0
 	v = clampf(v * randf_range(0.93, 1.07), 150.0, 520.0)
 	var b: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
 	b.kind = "bomb"
 	b.global_position = from
-	b.linear_velocity = Vector2(cos(LOB) * v * signf(_target.x - from.x), -sin(LOB) * v)
+	b.linear_velocity = Vector2(cos(LOB) * v * signf(_aim_at.x - from.x), -sin(LOB) * v)
 	b.angular_velocity = randf_range(-8, 8)
 	get_parent().add_child(b)
 	thrown += 1

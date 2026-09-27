@@ -5065,6 +5065,7 @@ func wave5_rec() -> void:
 		if main.dome_hp <= 0 or (dn != null and not is_instance_valid(dn)):
 			break
 	Engine.time_scale = 1.0
+	log_line("left at the end: %s" % [get_nodes_in_group("enemies").map(func(n): return "%s@%s%s" % [n.get_script().resource_path.get_file().get_basename(), n.global_position.round(), " plugged" if n.get("plugged") else ""])])
 
 
 func reclaim_rec() -> void:
