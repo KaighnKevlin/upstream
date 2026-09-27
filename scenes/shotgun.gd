@@ -88,15 +88,17 @@ func _fire(dir: Vector2) -> void:
 	var base_angle := dir.angle()
 	var spread_rad := deg_to_rad(spread_angle)
 
-	for i in pellet_count:
-		var offset := remap(i, 0, pellet_count - 1, -spread_rad / 2, spread_rad / 2)
-		if pellet_count == 1:
+	var Tech := preload("res://scripts/tech.gd")
+	var pellets := pellet_count + Tech.level("gunsmith")
+	for i in pellets:
+		var offset := remap(i, 0, pellets - 1, -spread_rad / 2, spread_rad / 2)
+		if pellets == 1:
 			offset = 0.0
 		var pellet_dir := Vector2.from_angle(base_angle + offset)
 
 		var bullet := _bullet_scene.instantiate()
 		bullet.global_position = global_position + dir * _muzzle
-		bullet.velocity = pellet_dir * pellet_speed
+		bullet.velocity = pellet_dir * pellet_speed * Tech.mult("gunsmith")
 		bullet.damage = pellet_damage
 		bullet.lifetime = 0.8
 		get_tree().current_scene.add_child(bullet)

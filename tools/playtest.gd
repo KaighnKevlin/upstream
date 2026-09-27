@@ -5313,6 +5313,38 @@ func traits_rec() -> void:
 	main.force_trait = ""
 
 
+func personal_tech_rec() -> void:
+	# Gunsmith 2: a shot throws 7 pellets (5 + 2), faster. Boilers 1: three
+	# steam jumps in the air instead of two.
+	main._wave_timer = -9999.0
+	await wait(1.2)
+	var T := preload("res://scripts/tech.gd")
+	var p: CharacterBody2D = main.get_node("Player")
+	var count := func() -> int: return get_nodes_in_group("bullets").size() if false else main.get_children().filter(func(c): return c.get_script() and c.get_script().resource_path.get_file() == "bullet.gd").size()
+	p.get_node("Shotgun")._fire(Vector2.RIGHT)
+	await physics_frame
+	var base: int = count.call()
+	await wait(1.0)
+	T.levels["gunsmith"] = 2
+	p.get_node("Shotgun")._timer = 0.0
+	p.get_node("Shotgun")._fire(Vector2.RIGHT)
+	await physics_frame
+	var up: int = count.call()
+	log_line("pellets per shot: %d, with Gunsmith 2: %d" % [base, up])
+	T.levels["boilers"] = 1
+	await wait(1.0)
+	log_line("steam max %.1f (steam now %.1f)" % [p.steam_max(), p.steam])
+	var n0: int = p.steam_jumps
+	p.velocity.y = -300
+	await wait(0.15)
+	for k in 4:
+		if p.steam >= p.STEAM_COST:
+			p.steam_jump()
+		await wait(0.12)
+	log_line("steam jumps in one flight: %d (expect 3)" % (p.steam_jumps - n0))
+	T.levels.clear()
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0

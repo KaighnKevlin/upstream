@@ -115,6 +115,7 @@ var _was_on_floor := true
 var _fall_speed := 0.0
 var _dead := false
 const STEAM_COST := 0.5
+const Tech = preload("res://scripts/tech.gd")
 var steam := 1.0                 # boiler pressure for steam jumps (tests read it)
 var steam_jumps := 0
 var _w_was := false
@@ -188,11 +189,11 @@ func _physics_process(delta: float) -> void:
 	var jump_edge := Input.is_action_just_pressed("jump") or Input.is_action_just_pressed("ui_accept") or (w_now and not _w_was)
 	_w_was = w_now
 	if is_on_floor() or in_shaft:
-		steam = minf(1.0, steam + delta * 1.6)
+		steam = minf(steam_max(), steam + delta * 1.6)
 	elif jump_edge and steam >= STEAM_COST and _launch_timer <= 0:
 		steam_jump()
 	if _gauge:
-		_gauge.visible = steam < 0.999
+		_gauge.visible = steam < steam_max() - 0.001
 		_gauge.queue_redraw()
 
 	var vy_before := velocity.y
@@ -408,11 +409,17 @@ func steam_jump() -> void:
 ## The pressure gauge over the prospector's head while the boiler refills:
 ## two pips, one per steam burst.
 func _draw_gauge() -> void:
-	for k in 2:
+	var pips := int(round(steam_max() / STEAM_COST))
+	for k in pips:
 		var full := clampf((steam - k * STEAM_COST) / STEAM_COST, 0.0, 1.0)
-		var r := Rect2(Vector2(-7 + k * 8, -40), Vector2(6, 3))
+		var r := Rect2(Vector2(-pips * 4 + 1 + k * 8, -40), Vector2(6, 3))
 		_gauge.draw_rect(r.grow(1), Color(0.1, 0.08, 0.07, 0.8))
 		_gauge.draw_rect(Rect2(r.position, Vector2(r.size.x * full, r.size.y)), Color(0.85, 0.9, 0.95) if full >= 1.0 else Color(0.6, 0.65, 0.7))
+
+
+## Boiler capacity: two bursts, one more per level of High-pressure boiler.
+func steam_max() -> float:
+	return 1.0 + 0.5 * Tech.level("boilers")
 
 
 func launch(launch_velocity: Vector2) -> void:

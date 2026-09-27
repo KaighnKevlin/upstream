@@ -16,6 +16,8 @@ const TECHS := [
 	{"id": "grinders", "name": "Hardened rollers", "desc": "crushers chew +50% harder", "per": 0.5, "max": 2, "cost": 4},
 	{"id": "harpoons", "name": "Barbed harpoons", "desc": "harpoon winches +50% faster", "per": 0.5, "max": 2, "cost": 4},
 	{"id": "charges", "name": "Packed charges", "desc": "blast shells +25% radius and damage", "per": 0.25, "max": 2, "cost": 5},
+	{"id": "gunsmith", "name": "Gunsmith", "desc": "your gun: +1 pellet, +15% reach", "per": 0.15, "max": 3, "cost": 3},
+	{"id": "boilers", "name": "High-pressure boiler", "desc": "one more steam jump in the air", "per": 0.5, "max": 2, "cost": 3},
 ]
 
 static var levels := {}
