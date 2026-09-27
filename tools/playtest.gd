@@ -5452,6 +5452,39 @@ func save_new_pieces_rec() -> void:
 	log_line("domino slabs standing after load: %d | slabs in the world: %d" % [dom[0].slabs.size() if dom.size() > 0 else -1, get_nodes_in_group("domino_slabs").size()])
 
 
+func gale_rec() -> void:
+	# A chunk dropped from a height with no wind, then the same drop in a
+	# gale: it should land well downwind.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var land := func() -> float:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.global_position = Vector2(1600, -200)
+		main.add_child(o)
+		for t in 40:
+			await wait(0.05)
+			if o.global_position.y > 60:
+				break
+		var x := o.global_position.x
+		o.queue_free()
+		return x
+	var calm: float = await land.call()
+	main.start_gale()
+	await wait(3.0)       # let the banner go
+	var g = main.gale
+	g.direction = 1.0
+	g._t = 8.0          # well into it
+	await wait(0.1)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.4, 1.4)
+	cam.global_position = Vector2(1650, -60)
+	var windy: float = await land.call()
+	await shot("gale")
+	log_line("drop from x 1600: lands at x %.0f calm, %.0f in the gale (strength %.2f)" % [calm, windy, g.strength()])
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0

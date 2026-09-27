@@ -102,6 +102,8 @@ func _process(delta: float) -> void:
 				if night:
 					_flee(b, s.global_position + Vector2(randf_range(-1, 1), 0))
 					continue
+				if is_instance_valid(scene.get("gale")) if scene else false:
+					continue          # hunkered down in the grass while it blows
 				if p and p.global_position.distance_to(s.global_position) < SCARE_PLAYER:
 					_flee(b, p.global_position)
 					continue

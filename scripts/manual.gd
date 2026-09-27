@@ -98,6 +98,7 @@ const TABS := [
 		["", "Ore geyser", "cave vents that erupt ore every 15-25 s; catch the spray"],
 		["", "Meteor shower", "burning ore falls from the sky (F6 in sandbox)"],
 		["", "Thunderstorm", "lightning seeks tall metal and charges tesla coils (F7)"],
+		["", "Gale", "a strong wind: everything in the air drifts downwind; covered runs don't care (F3)"],
 		["", "Earthquake", "loose items jump, enemies stumble, cave roofs fall in (F4)"],
 		["Shift", "Grappling hook", "reel up walls, yank enemies, drag loot back"],
 		["W", "Steam jump", "jump again in mid-air: two boiler bursts, refilled on the ground"],

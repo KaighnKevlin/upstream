@@ -688,6 +688,10 @@ func _tick_meteors(delta: float) -> void:
 		_storm_in -= delta
 		if _storm_in <= 0:
 			start_storm()
+	if _gale_in > 0:
+		_gale_in -= delta
+		if _gale_in <= 0:
+			start_gale()
 	if _shower_in > 0:
 		_shower_in -= delta
 		if _shower_in <= 0:
@@ -713,6 +717,19 @@ const STORM_CHANCE := 0.25
 var _storm_in := -1.0
 var _quake_in := -1.0
 var storm: Node2D = null   # the current thunderstorm (scripts/storm.gd)
+
+
+const GALE_CHANCE := 0.2
+var _gale_in := -1.0
+var gale: Node2D = null    # the current gale (scripts/gale.gd)
+
+
+func start_gale() -> void:
+	if is_instance_valid(gale):
+		return
+	gale = preload("res://scripts/gale.gd").new()
+	add_child(gale)
+	_show_banner("GALE", "a wind from the %s: anything in the air drifts" % ("west" if gale.direction > 0 else "east"))
 
 
 const QUAKE_CHANCE := 0.15
@@ -744,6 +761,8 @@ func _spawn_wave() -> void:
 		_storm_in = 8.0
 	elif wave_number >= 3 and randf() < QUAKE_CHANCE:
 		_quake_in = 10.0
+	elif wave_number >= 2 and randf() < GALE_CHANCE:
+		_gale_in = 6.0
 	wave_number += 1
 	var count := enemies_per_wave_base + wave_number
 	_wave_label.text = "WAVE %d!" % wave_number
@@ -1139,7 +1158,7 @@ func _make_god_label() -> void:
 
 func _update_god_label() -> void:
 	if _god_label:
-		_god_label.text = "P wave   G spawn %s   H change\nO pour ore   K clear enemies\nF4 quake  F5 save  F6 meteors  F7 storm  F9 load" % ENEMY_NAMES[_god_type].to_upper()
+		_god_label.text = "P wave   G spawn %s   H change\nO pour ore   K clear enemies\nF3 gale  F4 quake  F5 save  F6 meteors  F7 storm  F9 load" % ENEMY_NAMES[_god_type].to_upper()
 
 
 var _pour_t := 0.0
@@ -1200,6 +1219,9 @@ func _god_key(event: InputEventKey) -> void:
 		KEY_F7:
 			if not event.echo:
 				start_storm()
+		KEY_F3:
+			if not event.echo:
+				start_gale()
 		KEY_F4:
 			if not event.echo:
 				start_quake()
