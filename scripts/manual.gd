@@ -1,6 +1,6 @@
 extends CanvasLayer
 ## The field manual (F1): what every building, enemy, item and event does,
-## one line each, in three tabs. F1, Esc or a click outside closes it.
+## one line each, in tabs (buildings grouped like the build bar's tabs). F1, Esc or a click outside closes it.
 
 const PixelFont = preload("res://scripts/pixel_font.gd")
 const SFX = preload("res://scripts/sfx.gd")
@@ -10,42 +10,49 @@ const DIM := Color(0.72, 0.66, 0.52)
 const KEYC := Color(0.55, 0.88, 0.92)
 
 const TABS := [
-	["BUILDINGS", [
+	["TRANSPORT + PRODUCTION", [
+		["#", "TRANSPORT", ""],
 		["1", "Trampoline", "bounces anything that lands on it; drag its handle to set angle and force"],
-		["2", "Vein tapper", "on a dug-out ore block: flings copper or iron ore; drag to aim"],
-		["", "Drone dock", "two porter drones tidy loose pieces nearby: ingots to the dome, ore to the nearest funnel turret"],
-		["", "Steam borer", "tunnels on its own (click: right, left, down); spits out ore it cuts, even through ironstone"],
-		["", "Lantern", "light for the caves: hangs under a ceiling or stands on a pole; clears the fog around it"],
-		["3", "Laser smelter", "ore flying through the beam melts into an ingot"],
-		["4", "Upstream lift", "carries items up; build on its top to extend; click the cap to spill"],
-		["5", "Drop hopper", "holds ore and dumps it on enemies walking underneath"],
-		["6", "Funnel turret", "fires whatever ore you feed it at enemies in range"],
-		["7", "Spikes", "hurt anything that falls or walks onto them"],
-		["8", "Catapult", "catches items in its bucket and lobs them; drag to aim; wired to a plate or tripwire it holds its shot until tripped"],
 		["9", "Chute", "drag top to bottom: a sloped rail that ore slides down"],
-		["0", "Splitter", "alternates items left and right; click for left/right only"],
 		["C", "Conveyor belt", "drag out: carries items along; faster when powered"],
-		["", "Pop-up barricade", "hidden in the ground; a trigger nearby makes it spring up 3 tiles for 4 s, then it sinks"],
-		["", "Clockwork timer", "trips the machines near it every 2/4/8 s (click to change): a metronome for contraptions"],
-		["", "Pressure plate", "ore, walkers or you pressing it trip machines nearby (kegs, trapdoors, pendulums, hoppers, tesla overload, fan gusts), barricades"],
-		["", "Tripwire", "drag stake to stake; a walker breaking it sets off kegs, trapdoors, pendulums, hoppers, tesla coils, fans (a gust) near either stake (catapults wait for it), barricades"],
-		["", "Brass sentry", "your own clockwork guard: patrols, hammers walkers; winds down when worn out, an ingot rewinds it"],
-		["", "Snare", "bear trap: holds a walker for 3 s (titans 1.5 s); flips ore that lands on it"],
-		["", "Powder keg", "big blast + crater: shoot it, hit it with fast ore, chain it; walkers light its fuse"],
 		["", "Pneumatic tube", "drag funnel to nozzle: sucks items in and shoots them out, any way"],
+		["0", "Splitter", "alternates items left and right; click for left/right only"],
+		["8", "Catapult", "catches items in its bucket and lobs them; drag to aim; wired to a plate or tripwire it holds its shot until tripped"],
 		["", "Seesaw", "drop something heavy on one end to fling what sits on the other"],
+		["4", "Upstream lift", "carries items up; build on its top to extend; click the cap to spill"],
 		["V", "Bellows fan", "an aimed air stream that carries light items and buffets fliers"],
-		["B", "Bumper", "kicks items and enemies away hard"],
-		["M", "Wrecking pendulum", "ore knocks it swinging; it smashes walkers"],
+		["", "Lantern", "light for the caves: hangs under a ceiling or stands on a pole; clears the fog around it"],
+		["#", "PRODUCTION", ""],
+		["2", "Vein tapper", "on a dug-out ore block: flings copper or iron ore; drag to aim"],
+		["", "Steam borer", "tunnels on its own (click: right, left, down); spits out ore it cuts, even through ironstone"],
+		["3", "Laser smelter", "ore flying through the beam melts into an ingot"],
 		["N", "Gravity wheel", "falling ore turns it; powers machines nearby"],
 		["T", "Assembler", "ingots into shot, gears, flasks, springs, shells; 3 scrap into a flask; click: recipe"],
 		["R", "Crusher", "grinds ore to grit; chews anything standing on its rollers"],
 		["Y", "Research lab", "feed it science flasks; click it for the research screen"],
+		["", "Drone dock", "two porter drones tidy loose pieces nearby: ingots to the dome, ore to the nearest funnel turret"],
+	]],
+	["DEFENCE + TRAPS", [
+		["#", "DEFENCE", ""],
+		["", "Brass sentry", "your own clockwork guard: patrols, hammers walkers; winds down when worn out, an ingot rewinds it"],
+		["6", "Funnel turret", "fires whatever ore you feed it at enemies in range"],
 		["U", "Tesla coil", "fed ingots: chain lightning, reaches through rock"],
-		["I", "Flame turret", "burns ore as fuel; sets packs alight and smelts ore in flight"],
 		["", "Harpoon ballista", "anti-air, fed scrap or iron ingots: hooks fliers and drags them down"],
-		["X", "Trapdoor", "turf over a pit: drops walkers in; bridgers and masons don't see it"],
+		["I", "Flame turret", "burns ore as fuel; sets packs alight and smelts ore in flight"],
+		["5", "Drop hopper", "holds ore and dumps it on enemies walking underneath"],
 		["Z", "Electromagnet", "pulses: lifts iron and light walkers, then slams them down"],
+		["", "Powder keg", "big blast + crater: shoot it, hit it with fast ore, chain it; walkers light its fuse"],
+		["#", "TRAPS AND TRIGGERS", ""],
+		["", "(triggers trip)", "kegs, trapdoors, pendulums, hoppers, tesla coils, fans, latched catapults, barricades"],
+		["7", "Spikes", "hurt anything that falls or walks onto them"],
+		["", "Snare", "bear trap: holds a walker for 3 s (titans 1.5 s); flips ore that lands on it"],
+		["X", "Trapdoor", "turf over a pit: drops walkers in; bridgers and masons don't see it"],
+		["B", "Bumper", "kicks items and enemies away hard"],
+		["M", "Wrecking pendulum", "ore knocks it swinging; it smashes walkers"],
+		["", "Tripwire", "drag stake to stake: a walker breaking it trips the machines near either stake"],
+		["", "Pressure plate", "ore, walkers or you pressing it trip the machines near it"],
+		["", "Clockwork timer", "trips the machines near it every 2/4/8 s (click to change)"],
+		["", "Pop-up barricade", "hidden in the ground; a trigger nearby makes it spring up 3 tiles for 4 s, then it sinks"],
 	]],
 	["ENEMIES", [
 		["", "Titan", "slow, tough axe-wielder; leaps out of ditches; stomps"],
@@ -69,6 +76,8 @@ const TABS := [
 		["", "Foundry Engine", "boss every 5th wave: fireproof; flings slag, spawns scuttlers, bulldozes ditches"],
 		["", "Dreadnought", "flying boss every 10th wave: parks over your works, bombs, launches fliers"],
 		["", "Gilded", "from wave 6: gold elites with double health and double loot"],
+		["", "Magma Wyrm", "mini-boss of the depths: sleeps in a magma pool, burrows through rock after you; hit its head; drops a relic"],
+		["", "Cinder bat", "roosts in the hot depths; swoops down to bite, flaps back up to roost"],
 	]],
 	["ITEMS AND EVENTS", [
 		["", "Copper ore", "light and bouncy: the basic ammo and ingot"],
@@ -81,8 +90,6 @@ const TABS := [
 		["", "Grit", "crushed ore: three light chips per ore; shell filling"],
 		["", "Scrap", "what's left of a wrecked automaton: melt it, grind it, fire it"],
 		["", "Salvage cache", "strongboxes hidden in caves: walk into one for loot"],
-		["", "Magma Wyrm", "mini-boss of the depths: sleeps in a magma pool, burrows through rock after you; hit its head; drops a relic"],
-		["", "Cinder bat", "roosts in the hot depths; swoops down to bite, flaps back up to roost"],
 		["", "The depths", "the bottom of the world runs hot: magma pools burn, and melt dropped iron/copper ore into ingots"],
 		["", "Firedamp", "glowing mine gas in deep caves: chokes you; any spark (shot, blast, bolt) sets off a fireball that chains"],
 		["", "Buried vault", "one per world, deep down behind ironstone: destroy its sentinel for a relic (free research)"],
@@ -164,13 +171,37 @@ func _build() -> void:
 		_root.add_child(bg)
 		_label(TABS[i][0], r.position + Vector2(10, 7), 10, TEXT, r.size.x - 12)
 	var entries: Array = TABS[_tab][1]
+	# two columns; a tab with section headers puts each section in its own
+	var cols := [[], []]
+	var sectioned: bool = entries.size() > 0 and entries[0][0] == "#"
 	var per_col := int(ceil(entries.size() / 2.0))
-	var row_h := minf(40.0, 510.0 / per_col)
+	var col_i := -1
 	for k in entries.size():
-		var e: Array = entries[k]
-		var col := k / per_col
-		var row := k % per_col
+		if sectioned:
+			if entries[k][0] == "#":
+				col_i = mini(col_i + 1, 1)
+		else:
+			col_i = k / per_col
+		cols[col_i].append(entries[k])
+	var row_h := minf(40.0, 510.0 / maxf(cols[0].size(), cols[1].size()))
+	var placed := []
+	for col in 2:
+		for row in cols[col].size():
+			placed.append([col, row, cols[col][row]])
+	for pl in placed:
+		var col: int = pl[0]
+		var row: int = pl[1]
+		var e: Array = pl[2]
 		var at := Vector2(80 + col * 560, 96 + row * row_h)
+		if e[0] == "#":   # a section header, like the build bar's tabs
+			_label(e[1], at + Vector2(0, 8), 10, KEYC, 400)
+			var rule := ColorRect.new()
+			rule.color = Color(0.55, 0.88, 0.92, 0.35)
+			rule.position = at + Vector2(0, 24)
+			rule.size = Vector2(520, 1)
+			rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_root.add_child(rule)
+			continue
 		if e[0] != "":
 			_label(e[0], at, 10, KEYC, 50)
 		_label(e[1], at + Vector2(52, 0), 10, TEXT, 200)

@@ -5213,7 +5213,7 @@ func tinker_rec() -> void:
 
 func manual_rec() -> void:
 	await wait(0.3)
-	for t in 3:
+	for t in 4:
 		main.open_manual() if t == 0 else null
 		main.get_node("Manual")._tab = t
 		main.get_node("Manual")._build()
