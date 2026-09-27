@@ -5643,6 +5643,25 @@ func counter_works_rec() -> void:
 		log_line("t=%d | count %d bits %s | bell rang %d | released %d | screw lifted %d | marbles %d (stray %d) | per-bit sent L/R %s" % [(k + 1) * 5, ro.counted, bits, bell[0].rings if bell.size() > 0 else -1, es.released, sc.lifted, ore.size(), stray.size(), sent])
 
 
+func galton_rec() -> void:
+	# The Galton board world: the bins every 5 s for 20 s, and a shot.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await main.start_galton_works()
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.25, 1.25)
+	cam.global_position = Vector2(1290, 400)
+	var g = main.get_children().filter(func(c): return c.get_script() and c.get_script().resource_path.get_file() == "galton.gd")[0]
+	for k in 4:
+		await wait(5.0)
+		if k % 2 == 1:
+			await shot("galton_%02d" % k)
+		var stray := get_nodes_in_group("ore").filter(func(o): return is_instance_valid(o) and (o.global_position.y > 590 or absf(o.global_position.x - 1290) > 200))
+		log_line("t=%d | dropped %d | bins %s (sum %d) | stray %d" % [(k + 1) * 5, g.dropped, g.bins, g.bins.reduce(func(a, b): return a + b, 0), stray.size()])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.

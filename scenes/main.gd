@@ -239,21 +239,22 @@ func _show_title() -> void:
 	sub.position = Vector2(0, 150 + sz.y + 18)
 	root.add_child(sub)
 	# two ways in: the sandbox (showcase + god tools) or survival (waves)
-	for i in 4:
+	for i in 5:
 		var spec: Array = [["1  SANDBOX", "a working showcase, god tools, no waves until you ask"],
 			["2  SURVIVAL", "a bare world: get an ingot into the dome and the waves begin"],
 			["3  MARBLE WORKS", "the Beam and a marble machine, under the dome"],
-			["4  COUNTER", "marbles counting in binary on six flip-flops"]][i]
-		var x := 30.0 + i * 310.0
-		var opt := _hud_label(spec[0], 24, Color(0.55, 0.88, 0.92))
-		opt.size = Vector2(300, 40)
+			["4  COUNTER", "marbles counting in binary on six flip-flops"],
+			["5  GALTON", "a bell curve out of pegs and chance"]][i]
+		var x := 20.0 + i * 250.0
+		var opt := _hud_label(spec[0], 20, Color(0.55, 0.88, 0.92))
+		opt.size = Vector2(240, 40)
 		opt.position = Vector2(x, 395)
 		root.add_child(opt)
 		var d := _hud_label(spec[1], 10, Color(0.85, 0.75, 0.55))
-		d.size = Vector2(300, 20)
+		d.size = Vector2(240, 20)
 		d.position = Vector2(x, 437)
 		root.add_child(d)
-		_title_opts.append(Rect2(Vector2(x, 390), Vector2(300, 70)))
+		_title_opts.append(Rect2(Vector2(x, 390), Vector2(240, 70)))
 		var blink := opt.create_tween().set_loops()
 		blink.tween_interval(i * 0.6)
 		blink.tween_property(opt, "modulate:a", 0.45, 0.6)
@@ -291,12 +292,16 @@ func _on_title_input(event: InputEvent) -> void:
 		or (event is InputEventMouseButton and _title_opts.size() > 2 and _title_opts[2].has_point(event.position))
 	var counter: bool = (event is InputEventKey and event.keycode == KEY_4) \
 		or (event is InputEventMouseButton and _title_opts.size() > 3 and _title_opts[3].has_point(event.position))
+	var galton: bool = (event is InputEventKey and event.keycode == KEY_5) \
+		or (event is InputEventMouseButton and _title_opts.size() > 4 and _title_opts[4].has_point(event.position))
 	if survival:
 		start_survival()
 	elif marble:
 		start_marble_works()
 	elif counter:
 		start_counter_works()
+	elif galton:
+		start_galton_works()
 	_title.accept_event()
 	var title := _title
 	_title = null
@@ -369,6 +374,15 @@ func start_counter_works() -> void:
 	await preload("res://scripts/counter_works.gd").build(self)
 	_player.global_position = Vector2(1520, 540)
 	_show_banner("BINARY COUNTER", "each marble adds one")
+
+
+## Chance: a Galton board, pegs and bins, filling into a bell curve
+## (scripts/galton_works.gd). Sandbox tools stay on.
+func start_galton_works() -> void:
+	preload("res://scripts/sandbox_showcase.gd").clear(self)
+	await preload("res://scripts/galton_works.gd").build(self)
+	_player.global_position = Vector2(1520, 540)
+	_show_banner("GALTON BOARD", "every peg a coin toss")
 
 
 func start_survival() -> void:
