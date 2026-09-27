@@ -6,7 +6,7 @@ extends RefCounted
 ##   feed    copper and iron tappers on the cavern floor fling ore across
 ##           the Beam, which catches it and carries it up
 ##   tap     an iron tap part way up pulls the iron out to the right, down
-##           a long chute into a tipping bucket, whose batches pour onto a
+##           a long chute, over a jump, into a tipping bucket, whose batches pour onto a
 ##           gravity wheel (heavy iron, big shoves)
 ##   crown   the copper rises to the crown and spills both ways
 ##   left    down a chute onto a flip-flop: every other marble goes left
@@ -19,7 +19,7 @@ extends RefCounted
 ##   screw   what rolls off the sieve drops into an Archimedes screw that
 ##           lifts it back up and tips it out in mid-air
 ##   ferris  a Ferris lift on the left return scoops pieces up in its cups
-##           and tips them over the top, down onto wheel 2
+##           and tips them over the top down a chute into wheel 2
 ##   return  everything lands on two long floor chutes that run back down
 ##           into the Beam's foot: it goes round and round
 ##
@@ -76,7 +76,9 @@ static func build(main: Node) -> void:
 	_piece(main, "res://scenes/beam.tscn", Vector2(BEAM_X, CROWN_Y), {"depth": FLOOR_Y - CROWN_Y - 4.0})
 	# the iron tap and its line: chute -> tipping bucket -> wheel
 	_piece(main, "res://scenes/beam_tap.tscn", Vector2(BEAM_X + 6, 330), {"mode": 1})
-	_chute(main, Vector2(1215, 342), Vector2(1506, 454))   # starts under the spout: its stop-lip behind the iron, not in its way
+	_chute(main, Vector2(1215, 342), Vector2(1420, 420))   # starts under the spout: its stop-lip behind the iron, not in its way
+	# the iron jumps a gap onto a landing ramp that ends over the bucket; slow pieces drop short
+	_piece(main, "res://scenes/jump.tscn", Vector2(1422, 420), {"end_offset": Vector2(44, 30)})
 	_piece(main, "res://scenes/tipping_bucket.tscn", Vector2(1532, 490), {"side": -1.0})   # iron flies off the chute into its back wall
 	_piece(main, "res://scenes/gravity_wheel.tscn", Vector2(1510, 520))                    # under its pour
 	# crown left: chute -> flip-flop
@@ -103,6 +105,8 @@ static func build(main: Node) -> void:
 	# a Ferris lift on the left return scoops what comes off the sieve and screw
 	# and tips it out over the top, down onto wheel 2
 	_piece(main, "res://scenes/ferris_lift.tscn", Vector2(1040, 500), {"side": 1.0})
+	# its top tips onto a chute into wheel 2, under the escapement so both feed it
+	_chute(main, Vector2(1050, 450), Vector2(1156, 500))
 	# the return: two long floor chutes into the Beam's foot
 	_chute(main, Vector2(936, 556), Vector2(1186, 568))
 	_chute(main, Vector2(1640, 556), Vector2(1214, 568))

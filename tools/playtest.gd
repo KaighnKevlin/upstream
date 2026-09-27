@@ -5612,8 +5612,9 @@ func marble_works_rec() -> void:
 		var sc = find.call("screw.gd")
 		var st = find.call("stair_lift.gd")
 		var fl = find.call("ferris_lift.gd")
-		log_line("t=%d | beam flung %d | iron tapped %d | flip-flop %s | bucket tipped %d | escapement %d | arm moved %d | screw lifted %d | stair strokes %d | ferris lifted %d | wheels power %s | ore %d" % [(k + 1) * 5,
-			bm.carried, tp.tapped, rk.sent, tb.tipped, es.released, am.moved, sc[0].lifted if sc.size() > 0 else -1, st[0].strokes if st.size() > 0 else -1, fl[0].lifted if fl.size() > 0 else -1, wh.map(func(w): return snappedf(w.power(), 0.01)), get_nodes_in_group("ore").size()])
+		var jp = find.call("jump.gd")
+		log_line("t=%d | beam flung %d | iron tapped %d | flip-flop %s | bucket tipped %d | escapement %d | arm moved %d | screw lifted %d | stair strokes %d | ferris lifted %d | jump landed/fell %s | wheels power %s | ore %d" % [(k + 1) * 5,
+			bm.carried, tp.tapped, rk.sent, tb.tipped, es.released, am.moved, sc[0].lifted if sc.size() > 0 else -1, st[0].strokes if st.size() > 0 else -1, fl[0].lifted if fl.size() > 0 else -1, [jp[0].landed, jp[0].fell] if jp.size() > 0 else [],wh.map(func(w): return snappedf(w.power(), 0.01)), get_nodes_in_group("ore").size()])
 
 
 func marble_trace_rec() -> void:
