@@ -17,6 +17,9 @@ extends Node
 ##       and a bumper on the near lip bats them back in
 ##     tapper -> catapult -> back over into the hopper, so the trap rearms
 ##     iron tapper -> splitter -> a chute each way -> two funnel turrets
+##   Guards and lights
+##     two brass sentries walking their beats east of the dome, and
+##       lanterns on poles along the works for the night
 ##   Far east (the first things a wave meets)
 ##     the gate: a tripwire across the path wired to two powder kegs, an
 ##       ambush that greets the first wave (one-shot: they're gone after)
@@ -72,6 +75,8 @@ const FLAMER_AT := Vector2(2010, 80)
 const SNARES := [Vector2(2118, 80), Vector2(2146, 80)]   # past the grinder, in the coil's reach
 const GATE_WIRE := [Vector2(2190, 72), Vector2(2250, 72)]   # waist-high across the path
 const GATE_KEGS := [Vector2(2210, 80), Vector2(2232, 80)]
+const SENTRIES := [Vector2(1520, 60), Vector2(1760, 60)]
+const LANTERNS := [Vector2(1135, 60), Vector2(1470, 60), Vector2(1660, 60), Vector2(1990, 40)]
 
 # one tapper, two turrets: splitter on a post, a chute down to each funnel
 const SPLIT_TAPPER := Vector2i(104, 7)
@@ -169,6 +174,10 @@ static func build(main: Node) -> void:
 	var wire: Node2D = preload("res://scenes/tripwire.tscn").instantiate()
 	wire.end_offset = GATE_WIRE[1] - GATE_WIRE[0]
 	_add_node(main, wire, GATE_WIRE[0])
+	for at in SENTRIES:
+		_add(main, preload("res://scenes/sentry.tscn"), at)
+	for at in LANTERNS:
+		_add(main, preload("res://scenes/lantern.tscn"), at)
 	WorldGen.reframe_all(tm)   # the cleared strip changed the ground's edges
 	if shading:
 		for c in shading.get_children():
