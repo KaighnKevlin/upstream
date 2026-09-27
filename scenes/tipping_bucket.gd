@@ -32,6 +32,10 @@ func _ready() -> void:
 	_body = StaticBody2D.new()
 	_body.collision_layer = ORE_ONLY
 	_body.collision_mask = 0
+	var m := PhysicsMaterial.new()      # landings (and fast iron off a chute) stick, not bounce out
+	m.absorbent = true
+	m.bounce = 1.0
+	_body.physics_material_override = m
 	_floor = _seg(Vector2(-W * 0.5, 0), Vector2(W * 0.5, 0))
 	_seg(Vector2(-side * W * 0.5, 0), Vector2(-side * W * 0.5, -D))          # the back wall stays
 	_wall = _seg(Vector2(side * W * 0.5, 0), Vector2(side * W * 0.5, -D))    # the pouring lip
