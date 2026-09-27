@@ -5586,6 +5586,33 @@ func marble_parts_rec() -> void:
 	log_line("arm (iron): moved %d | iron at %s, copper at %s (pick %s, drop %s)" % [am.moved, ir.global_position.round(), cp.global_position.round(), am.global_position + am.pick, am.global_position + am.drop])
 
 
+func marble_works_rec() -> void:
+	# The Marble Works demo: built, then watched for 30 s. Counters from
+	# every element, shots along the way.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await main.start_marble_works()
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.6, 1.6)
+	cam.global_position = Vector2(1290, 360)
+	var find := func(file: String) -> Array:
+		return main.get_children().filter(func(c): return c.get_script() and c.get_script().resource_path.get_file() == file)
+	for k in 6:
+		await wait(5.0)
+		await shot("marble_works_%02d" % k)
+		var bm = find.call("beam.gd")[0]
+		var tp = find.call("beam_tap.gd")[0]
+		var rk = find.call("rocker.gd")[0]
+		var tb = find.call("tipping_bucket.gd")[0]
+		var es = find.call("escapement.gd")[0]
+		var am = find.call("arm.gd")[0]
+		var wh = find.call("gravity_wheel.gd")
+		log_line("t=%d | beam flung %d | iron tapped %d | flip-flop %s | bucket tipped %d | escapement %d | arm moved %d | wheels power %s | ore %d" % [(k + 1) * 5,
+			bm.carried, tp.tapped, rk.sent, tb.tipped, es.released, am.moved, wh.map(func(w): return snappedf(w.power(), 0.01)), get_nodes_in_group("ore").size()])
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0

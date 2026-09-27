@@ -239,10 +239,11 @@ func _show_title() -> void:
 	sub.position = Vector2(0, 150 + sz.y + 18)
 	root.add_child(sub)
 	# two ways in: the sandbox (showcase + god tools) or survival (waves)
-	for i in 2:
+	for i in 3:
 		var spec: Array = [["1  SANDBOX", "a working showcase, god tools, no waves until you ask"],
-			["2  SURVIVAL", "a bare world: get an ingot into the dome and the waves begin"]][i]
-		var x := 250.0 + i * 420.0
+			["2  SURVIVAL", "a bare world: get an ingot into the dome and the waves begin"],
+			["3  MARBLE WORKS", "the Beam and a marble machine, under the dome"]][i]
+		var x := 70.0 + i * 400.0
 		var opt := _hud_label(spec[0], 30, Color(0.55, 0.88, 0.92))
 		opt.size = Vector2(360, 40)
 		opt.position = Vector2(x, 395)
@@ -285,8 +286,12 @@ func _on_title_input(event: InputEvent) -> void:
 	# 2 or a click on SURVIVAL: the wave game; anything else: the sandbox
 	var survival: bool = (event is InputEventKey and event.keycode == KEY_2) \
 		or (event is InputEventMouseButton and _title_opts.size() > 1 and _title_opts[1].has_point(event.position))
+	var marble: bool = (event is InputEventKey and event.keycode == KEY_3) \
+		or (event is InputEventMouseButton and _title_opts.size() > 2 and _title_opts[2].has_point(event.position))
 	if survival:
 		start_survival()
+	elif marble:
+		start_marble_works()
 	_title.accept_event()
 	var title := _title
 	_title = null
@@ -341,6 +346,17 @@ func toggle_music() -> void:
 
 ## Survival: the bare world and the wave game (no showcase, no god tools);
 ## the first ingot into the dome starts the waves.
+## The marble-machine demo: the surface showcase cleared, a cavern carved
+## under the dome with the Beam and one big machine around it
+## (scripts/marble_works.gd); the prospector is dropped into it. Sandbox
+## tools stay on.
+func start_marble_works() -> void:
+	preload("res://scripts/sandbox_showcase.gd").clear(self)
+	await preload("res://scripts/marble_works.gd").build(self)
+	_player.global_position = Vector2(1300, 540)
+	_show_banner("MARBLE WORKS", "the Beam lifts, the machine spends the drop")
+
+
 func start_survival() -> void:
 	sandbox = false
 	preload("res://scripts/sandbox_showcase.gd").clear(self)
