@@ -33,7 +33,8 @@ const CATS := [
 	["Production", [2, 30, 3, 15, 36, 16, 21, 17, 34]],
 	["Defence", [32, 6, 18, 23, 19, 5, 22, 26]],
 	["Traps", [7, 27, 20, 11, 14, 28, 29, 33, 35, 37]],
-	["Marble", [38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51]],
+	["Marble", [38, 39, 40, 41, 42, 47, 49, 48]],
+	["Lifts", [43, 44, 45, 46, 50, 51]],
 ]
 
 var font: Font
@@ -65,7 +66,7 @@ func _ready() -> void:
 	_name_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
 	_name_label.add_theme_constant_override("shadow_offset_x", 2)
 	_name_label.add_theme_constant_override("shadow_offset_y", 2)
-	_name_label.position = Vector2(CATS.size() * TAB_W + 12, -4)
+	_name_label.position = Vector2(4, -20)   # above the tabs (six tabs leave no room beside them)
 	add_child(_name_label)
 	_layout()
 	var bs := get_node("/root/BuildSystem")
