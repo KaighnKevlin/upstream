@@ -47,7 +47,10 @@ static func _piece(main: Node, path: String, at: Vector2, props := {}) -> Node2D
 	return Showcase._add_node(main, n, at)
 
 
-static func build(main: Node) -> void:
+## Carves the cavern (cleared, solid floor and walls); with `veins`, a copper
+## vein on the left of the floor and iron on the right. Shared with the other
+## marble example worlds. Returns once the new ground has collision.
+static func carve(main: Node, veins := true) -> TileMapLayer:
 	var tm: TileMapLayer = main.get_node("TileMapLayer")
 	var shading := main.get_node_or_null("TileShading")
 	var decor := main.get_node_or_null("CaveDecor")
@@ -60,9 +63,10 @@ static func build(main: Node) -> void:
 	for y in range(CAVE.position.y, CAVE.end.y):
 		for x in [CAVE.position.x - 1, CAVE.end.x]:
 			WorldGen.set_tile(tm, Vector2i(x, y), WorldGen.TILE_STONE)
-	# feed: a copper vein on the left of the floor, iron on the right
-	Showcase._vein(tm, Vector2i(61, CAVE.end.y), shading, decor)
-	Showcase._vein(tm, Vector2i(97, CAVE.end.y), shading, decor, WorldGen.TILE_IRON)
+	if veins:
+		# feed: a copper vein on the left of the floor, iron on the right
+		Showcase._vein(tm, Vector2i(61, CAVE.end.y), shading, decor)
+		Showcase._vein(tm, Vector2i(97, CAVE.end.y), shading, decor, WorldGen.TILE_IRON)
 	WorldGen.reframe_all(tm)
 	if shading:
 		for c in shading.get_children():
@@ -70,6 +74,11 @@ static func build(main: Node) -> void:
 	# pieces go in once the new ground has collision
 	await main.get_tree().physics_frame
 	await main.get_tree().physics_frame
+	return tm
+
+
+static func build(main: Node) -> void:
+	var tm: TileMapLayer = await carve(main)
 	Showcase._tapper(main, tm, Vector2i(61, CAVE.end.y), Vector2(38, 560))
 	Showcase._tapper(main, tm, Vector2i(97, CAVE.end.y), Vector2(-38, 560))
 	# the Beam

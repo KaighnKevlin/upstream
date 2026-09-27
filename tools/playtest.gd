@@ -5617,6 +5617,31 @@ func marble_works_rec() -> void:
 			bm.carried, tp.tapped, rk.sent, tb.tipped, es.released, am.moved, sc[0].lifted if sc.size() > 0 else -1, st[0].strokes if st.size() > 0 else -1, fl[0].lifted if fl.size() > 0 else -1, [jp[0].landed, jp[0].fell] if jp.size() > 0 else [],wh.map(func(w): return snappedf(w.power(), 0.01)), get_nodes_in_group("ore").size()])
 
 
+func counter_works_rec() -> void:
+	# The Binary Counter world: the count, bit by bit, every 5 s for 20 s,
+	# plus where the marbles are (queued, in the screw, lost).
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await main.start_counter_works()
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.5, 1.5)
+	cam.global_position = Vector2(1220, 370)
+	var ro = main.get_children().filter(func(c): return c.get_script() and c.get_script().resource_path.get_file() == "bit_readout.gd")[0]
+	var sc = main.get_children().filter(func(c): return c.get_script() and c.get_script().resource_path.get_file() == "screw.gd")[0]
+	var es = main.get_children().filter(func(c): return c.get_script() and c.get_script().resource_path.get_file() == "escapement.gd")[0]
+	for k in 4:
+		await wait(5.0)
+		if k % 2 == 1:
+			await shot("counter_%02d" % k)
+		var ore := get_nodes_in_group("ore").filter(func(o): return is_instance_valid(o))
+		var stray := ore.filter(func(o): return o.global_position.y > 580 or o.global_position.x < 930 or o.global_position.x > 1650)
+		var bits: Array = ro.bits.map(func(b): return 1 if b.tilt > 0 else 0)
+		var sent: Array = ro.bits.map(func(b): return b.sent)
+		log_line("t=%d | count %d bits %s | released %d | screw lifted %d | marbles %d (stray %d) | per-bit sent L/R %s" % [(k + 1) * 5, ro.counted, bits, es.released, sc.lifted, ore.size(), stray.size(), sent])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.
