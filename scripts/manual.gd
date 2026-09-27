@@ -26,6 +26,7 @@ const TABS := [
 		["2", "Vein tapper", "on a dug-out ore block: flings copper or iron ore; drag to aim"],
 		["", "Steam borer", "tunnels on its own (click: right, left, down); spits out ore it cuts, even through ironstone"],
 		["3", "Laser smelter", "ore flying through the beam melts into an ingot"],
+		["", "Steam engine", "burns ore dropped in its funnel; while lit, full power to machines in reach"],
 		["N", "Gravity wheel", "falling ore turns it; powers machines nearby"],
 		["T", "Assembler", "ingots into shot, gears, flasks, springs, shells; 3 scrap into a flask; click: recipe"],
 		["R", "Crusher", "grinds ore to grit; chews anything standing on its rollers"],

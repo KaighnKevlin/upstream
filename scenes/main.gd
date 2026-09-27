@@ -1014,6 +1014,7 @@ var _build_names := {
 	23: "Build: HARPOON BALLISTA (feed it scrap; downs fliers)",
 	24: "Build: SEESAW (drop heavy on one end)",
 	25: "Build: PNEUMATIC TUBE (drag intake to outlet)",
+	36: "Build: STEAM ENGINE (feed it ore: powers machines in reach)",
 	35: "Build: POP-UP BARRICADE (a wall that springs up when a trigger near it fires)",
 	34: "Build: DRONE DOCK (porter drones carry loose ore to turrets, ingots to the dome)",
 	33: "Build: CLOCKWORK TIMER (trips machines nearby every few s; click it)",

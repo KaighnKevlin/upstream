@@ -5201,6 +5201,40 @@ func night_eyes_rec() -> void:
 	log_line("noon: night factor %.2f" % main.get_node("NightEyes")._night())
 
 
+func engine_rec() -> void:
+	# A steam engine next to a conveyor belt: cold, the belt runs at 35%;
+	# fed 3 copper it lights and drives the belt at full power; when the
+	# fuel's gone it runs down again.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var bs = main.get_node("/root/BuildSystem")
+	var en: Node2D = preload("res://scenes/steam_engine.tscn").instantiate()
+	en.global_position = Vector2(1560, 60)
+	main.add_child(en)
+	bs._placed_buildings.append(en)
+	var belt: Node2D = preload("res://scenes/belt.tscn").instantiate()
+	belt.end_offset = Vector2(140, 0)
+	belt.global_position = Vector2(1620, 86)
+	main.add_child(belt)
+	bs._placed_buildings.append(belt)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.6, 2.6)
+	cam.global_position = Vector2(1610, 30)
+	await wait(1.0)
+	var cold: float = preload("res://scripts/power.gd").rate_at(main.get_tree(), belt.global_position)
+	for k in 3:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.kind = "copper"
+		o.global_position = en.global_position + en.FUNNEL + Vector2(0, -30 - k * 14)
+		main.add_child(o)
+	await wait(2.5)
+	var hot: float = preload("res://scripts/power.gd").rate_at(main.get_tree(), belt.global_position)
+	await shot("engine_lit")
+	log_line("engine fuel %.1f s, power %.2f | belt rate cold %.2f -> lit %.2f" % [en.fuel, en.power(), cold, hot])
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0
