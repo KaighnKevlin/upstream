@@ -1178,6 +1178,7 @@ var _build_names := {
 	49: "Build: LOOP-THE-LOOP (feed it off a steep drop: slow marbles fall off)",
 	50: "Build: DISPENSER (drops a marble every 1/2/4 s: click to change)",
 	51: "Build: GOAL CUP (counts marbles in; fires traps in reach when full)",
+	52: "Build: WEIGH SCALE (heavy ore rolls off one side, light the other: click for 1.5/2.5)",
 	44: "Build: ROBOTIC ARM (picks from one spot, drops at another)",
 	37: "Build: DOMINO ROW (drag start to end; click an end to reset)",
 	36: "Build: STEAM ENGINE (feed it ore: powers machines in reach)",

@@ -5753,6 +5753,35 @@ func buildbar_rec() -> void:
 		await shot("buildbar_%d" % c)
 
 
+func scale_rec() -> void:
+	# Weigh scale: copper and iron dropped in turn; iron should go right
+	# (heavy_side), copper left.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	await preload("res://scripts/marble_works.gd").carve(main, false)
+	var sc: Node2D = preload("res://scenes/weigh_scale.tscn").instantiate()
+	sc.global_position = Vector2(1300, 500)
+	main.add_child(sc)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(3, 3)
+	cam.global_position = Vector2(1300, 500)
+	var went := []
+	for k in 6:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.kind = "iron" if k % 2 == 1 else "copper"
+		o.global_position = Vector2(1300 + randf_range(-2, 2), 440)
+		main.add_child(o)
+		await wait(0.25)
+		if k == 1:
+			await shot("scale_iron")
+		await wait(0.75)
+		went.append("%s->%s" % [o.kind, "R" if o.global_position.x > 1300 else "L"])
+	log_line("scale: %s | heavy %d light %d sent L/R %s" % [went, sc.heavy, sc.light, sc.sent])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.

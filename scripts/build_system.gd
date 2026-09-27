@@ -1,6 +1,6 @@
 extends Node
 
-enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, TURRET, SPIKES, CATAPULT, CHUTE, SPLITTER, BUMPER, BELT, BELLOWS, PENDULUM, WHEEL, ASSEMBLER, LAB, TESLA, FLAMER, TRAPDOOR, CRUSHER, MAGNET, HARPOON, SEESAW, TUBE, KEG, SNARE, TRIPWIRE, PLATE, BORER, LANTERN, SENTRY, TIMER, DOCK, BARRICADE, ENGINE, DOMINOES, TAP, ROCKER, ESCAPEMENT, BUCKET, SIEVE, SCREW, ARM, STAIRS, FERRIS, JUMP, BELL, LOOP, DISPENSER, GOAL }
+enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, TURRET, SPIKES, CATAPULT, CHUTE, SPLITTER, BUMPER, BELT, BELLOWS, PENDULUM, WHEEL, ASSEMBLER, LAB, TESLA, FLAMER, TRAPDOOR, CRUSHER, MAGNET, HARPOON, SEESAW, TUBE, KEG, SNARE, TRIPWIRE, PLATE, BORER, LANTERN, SENTRY, TIMER, DOCK, BARRICADE, ENGINE, DOMINOES, TAP, ROCKER, ESCAPEMENT, BUCKET, SIEVE, SCREW, ARM, STAIRS, FERRIS, JUMP, BELL, LOOP, DISPENSER, GOAL, SCALE }
 
 var current_build: BuildType = BuildType.NONE
 var _ghost: Node2D = null
@@ -59,6 +59,7 @@ var _scenes := {
 	BuildType.LOOP: preload("res://scenes/loop.tscn"),
 	BuildType.DISPENSER: preload("res://scenes/dispenser.tscn"),
 	BuildType.GOAL: preload("res://scenes/goal_cup.tscn"),
+	BuildType.SCALE: preload("res://scenes/weigh_scale.tscn"),
 }
 
 var _ghost_colors := {
@@ -113,6 +114,7 @@ var _ghost_colors := {
 	BuildType.LOOP: Color(1.0, 0.85, 0.5, 0.8),
 	BuildType.DISPENSER: Color(1.0, 0.85, 0.5, 0.8),
 	BuildType.GOAL: Color(1.0, 0.85, 0.5, 0.8),
+	BuildType.SCALE: Color(1.0, 0.85, 0.5, 0.8),
 }
 
 signal build_mode_changed(build_type: BuildType)
