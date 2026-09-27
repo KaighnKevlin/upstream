@@ -4695,6 +4695,37 @@ func colossus_rec() -> void:
 	log_line("down: dying %s, scrap loose %d" % [co._dying, get_nodes_in_group("ore").filter(func(o): return o.get("kind") == "scrap").size()])
 
 
+func lantern_rec() -> void:
+	# Lanterns in a cave: one placed near a ceiling (hangs), one out in the
+	# middle (stands on a pole). Screenshot with the prospector's lamp off.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	preload("res://scenes/crawler.gd").scatter(main, tilemap())
+	await wait(0.2)
+	var c: Node2D = get_nodes_in_group("crawlers")[0]
+	var at := c.global_position
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.2, 2.2)
+	cam.global_position = at + Vector2(0, 40)
+	var p: Node2D = main.get_node("Player")
+	p.global_position = at + Vector2(-600, 0)
+	await wait(0.4)
+	await shot("lantern_before")
+	var bs = main.get_node("/root/BuildSystem")
+	var lanterns := []
+	for off in [Vector2(-70, 10), Vector2(70, 60)]:
+		var l: Node2D = preload("res://scenes/lantern.tscn").instantiate()
+		l.global_position = at + off
+		main.add_child(l)
+		bs._placed_buildings.append(l)
+		lanterns.append(l)
+	await wait(1.0)
+	await shot("lantern_after")
+	log_line("lanterns: %s" % [lanterns.map(func(l): return "at %s pole %.0f" % [l.global_position.round(), l._pole])])
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0

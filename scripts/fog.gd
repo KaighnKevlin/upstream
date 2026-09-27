@@ -88,7 +88,7 @@ func _process(delta: float) -> void:
 			for b in bs._placed_buildings:
 				if is_instance_valid(b) and not _known_buildings.has(b):
 					_known_buildings[b] = true
-					reveal(b.global_position, BUILD_RADIUS)
+					reveal(b.global_position, b.reveal_radius if "reveal_radius" in b else BUILD_RADIUS)
 	if _dirty:
 		_dirty = false
 		_tex.update(_img)
