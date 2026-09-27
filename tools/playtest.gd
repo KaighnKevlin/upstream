@@ -5609,8 +5609,35 @@ func marble_works_rec() -> void:
 		var es = find.call("escapement.gd")[0]
 		var am = find.call("arm.gd")[0]
 		var wh = find.call("gravity_wheel.gd")
-		log_line("t=%d | beam flung %d | iron tapped %d | flip-flop %s | bucket tipped %d | escapement %d | arm moved %d | wheels power %s | ore %d" % [(k + 1) * 5,
-			bm.carried, tp.tapped, rk.sent, tb.tipped, es.released, am.moved, wh.map(func(w): return snappedf(w.power(), 0.01)), get_nodes_in_group("ore").size()])
+		var sc = find.call("screw.gd")
+		log_line("t=%d | beam flung %d | iron tapped %d | flip-flop %s | bucket tipped %d | escapement %d | arm moved %d | screw lifted %d | wheels power %s | ore %d" % [(k + 1) * 5,
+			bm.carried, tp.tapped, rk.sent, tb.tipped, es.released, am.moved, sc[0].lifted if sc.size() > 0 else -1, wh.map(func(w): return snappedf(w.power(), 0.01)), get_nodes_in_group("ore").size()])
+
+
+func marble_trace_rec() -> void:
+	# Where the Marble Works' streams actually go: iron after the tap, drops
+	# below the escapement, pieces around the arm's shelf.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await main.start_marble_works()
+	var iron_x := []
+	var esc_x := []
+	var shelf := []
+	for t in 200:
+		await wait(0.1)
+		for o in get_nodes_in_group("ore"):
+			if not is_instance_valid(o):
+				continue
+			var p: Vector2 = o.global_position
+			if o.get("kind") == "iron" and p.x > 1440 and p.y > 440 and p.y < 520:
+				iron_x.append(int(p.x))
+			if p.x > 1100 and p.x < 1180 and p.y > 480 and p.y < 520:
+				esc_x.append(int(p.x))
+			if p.x > 1330 and p.x < 1460 and p.y > 270 and p.y < 330 and o.linear_velocity.length() < 60:
+				shelf.append(Vector2i(p))
+	log_line("iron passing y 440-520 (bucket at 1530, cup 1515-1545): x %s" % [iron_x.slice(0, 40)])
+	log_line("drops near wheel 2 (intake ~1130,513): x %s" % [esc_x.slice(0, 40)])
+	log_line("slow pieces around the shelf: %s" % [shelf.slice(0, 30)])
 
 
 func ambience_rec() -> void:

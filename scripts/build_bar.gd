@@ -26,13 +26,14 @@ const PIECES := {
 	7: ["7", "Spikes"], 8: ["8", "Catapult"], 9: ["9", "Chute"], 10: ["0", "Splitter"],
 	11: ["B", "Bumper"], 12: ["C", "Conveyor belt"], 13: ["V", "Bellows fan"],
 	14: ["M", "Wrecking pendulum"], 15: ["N", "Gravity wheel"], 16: ["T", "Assembler"],
-	17: ["Y", "Research lab"], 18: ["U", "Tesla coil"], 19: ["I", "Flame turret"], 20: ["X", "Trapdoor"], 21: ["R", "Crusher"], 22: ["Z", "Electromagnet"], 23: ["", "Harpoon ballista (anti-air)"], 24: ["", "Seesaw"], 25: ["", "Pneumatic tube"], 26: ["", "Powder keg"], 27: ["", "Snare (bear trap)"], 28: ["", "Tripwire (drag stake to stake)"], 29: ["", "Pressure plate"], 30: ["", "Steam borer (click: turn)"], 31: ["", "Lantern"], 32: ["", "Brass sentry (feed it an ingot to rewind)"], 33: ["", "Clockwork timer (click: 2/4/8 s)"], 34: ["", "Drone dock (porters tidy loose ore)"], 35: ["", "Pop-up barricade (wire it to a trigger)"], 36: ["", "Steam engine (burns ore: powers machines)"], 37: ["", "Domino row (drag; click an end to reset)"],
+	17: ["Y", "Research lab"], 18: ["U", "Tesla coil"], 19: ["I", "Flame turret"], 20: ["X", "Trapdoor"], 21: ["R", "Crusher"], 22: ["Z", "Electromagnet"], 23: ["", "Harpoon ballista (anti-air)"], 24: ["", "Seesaw"], 25: ["", "Pneumatic tube"], 26: ["", "Powder keg"], 27: ["", "Snare (bear trap)"], 28: ["", "Tripwire (drag stake to stake)"], 29: ["", "Pressure plate"], 30: ["", "Steam borer (click: turn)"], 31: ["", "Lantern"], 32: ["", "Brass sentry (feed it an ingot to rewind)"], 33: ["", "Clockwork timer (click: 2/4/8 s)"], 34: ["", "Drone dock (porters tidy loose ore)"], 35: ["", "Pop-up barricade (wire it to a trigger)"], 36: ["", "Steam engine (burns ore: powers machines)"], 37: ["", "Domino row (drag; click an end to reset)"], 38: ["", "Beam tap (click: filter)"], 39: ["", "Flip-flop (every other)"], 40: ["", "Escapement (one per beat)"], 41: ["", "Tipping bucket (batches)"], 42: ["", "Sieve rail (drag; grit drops)"], 43: ["", "Archimedes screw (drag up)"], 44: ["", "Robotic arm (click: filter)"],
 }
 const CATS := [
 	["Transport", [1, 9, 12, 25, 10, 8, 24, 4, 13, 31]],
 	["Production", [2, 30, 3, 15, 36, 16, 21, 17, 34]],
 	["Defence", [32, 6, 18, 23, 19, 5, 22, 26]],
 	["Traps", [7, 27, 20, 11, 14, 28, 29, 33, 35, 37]],
+	["Marble", [38, 39, 40, 41, 42, 43, 44]],
 ]
 
 var font: Font
@@ -233,6 +234,26 @@ func _build_icon(slot: Node2D, t: int) -> void:
 			_part(art, S + "turret_barrel.png", Rect2(), Vector2(-5, 28))
 		7:
 			_part(art, S + "spikes.png", Rect2(), Vector2(-8, -8))
+		38, 39, 40, 41, 42, 43, 44:
+			var scn: String = {38: "beam_tap", 39: "rocker", 40: "escapement", 41: "tipping_bucket", 42: "sieve", 43: "screw", 44: "arm"}[t]
+			var ic: Node2D = load("res://scenes/%s.gd" % scn).new()
+			ic.set_meta("ghost", true)
+			if scn == "sieve":
+				ic.end_offset = Vector2(34, 10)
+				ic.position = Vector2(-17, -4)
+			elif scn == "screw":
+				ic.end_offset = Vector2(14, -26)
+				ic.position = Vector2(-7, 12)
+			elif scn == "arm":
+				ic.position = Vector2(0, 14)
+			elif scn == "tipping_bucket":
+				ic.position = Vector2(8, 6)
+			elif scn == "escapement":
+				ic.position = Vector2(0, 12)
+			elif scn == "rocker":
+				ic.position = Vector2(0, 4)
+			ic.scale = Vector2(0.8, 0.8)
+			art.add_child(ic)
 		37:
 			for k in 3:
 				_part(art, S + "domino.png", Rect2(), Vector2(-14 + k * 10, -14))

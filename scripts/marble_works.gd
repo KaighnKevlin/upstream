@@ -14,6 +14,8 @@ extends RefCounted
 ##           through an escapement (one per beat) onto a second wheel
 ##   right   down a chute onto a shelf, where a robotic arm lifts each
 ##           piece off and drops it past the shelf
+##   screw   what rolls off the sieve drops into an Archimedes screw that
+##           lifts it back up and tips it out in mid-air
 ##   return  everything lands on two long floor chutes that run back down
 ##           into the Beam's foot: it goes round and round
 ##
@@ -71,7 +73,7 @@ static func build(main: Node) -> void:
 	# the iron tap and its line: chute -> tipping bucket -> wheel
 	_piece(main, "res://scenes/beam_tap.tscn", Vector2(BEAM_X + 6, 330), {"mode": 1})
 	_chute(main, Vector2(1232, 338), Vector2(1518, 452))
-	_piece(main, "res://scenes/tipping_bucket.tscn", Vector2(1530, 490), {"side": -1.0})
+	_piece(main, "res://scenes/tipping_bucket.tscn", Vector2(1545, 490), {"side": -1.0})
 	_piece(main, "res://scenes/gravity_wheel.tscn", Vector2(1482, 520))
 	# crown left: chute -> flip-flop
 	_chute(main, Vector2(1160, 196), Vector2(1062, 234))
@@ -79,15 +81,19 @@ static func build(main: Node) -> void:
 	#   left of the flip-flop: a sieve rail to the floor
 	_piece(main, "res://scenes/sieve.tscn", Vector2(1024, 284), {"end_offset": Vector2(-84, 40)})
 	#   right of it: a chute through an escapement onto a wheel
-	_chute(main, Vector2(1066, 288), Vector2(1128, 316))
-	_piece(main, "res://scenes/escapement.tscn", Vector2(1130, 316), {"side": 1.0})
-	_piece(main, "res://scenes/gravity_wheel.tscn", Vector2(1112, 520))
+	_chute(main, Vector2(1066, 288), Vector2(1122, 316))
+	_piece(main, "res://scenes/escapement.tscn", Vector2(1124, 316), {"side": 1.0})
+	_piece(main, "res://scenes/gravity_wheel.tscn", Vector2(1148, 520))
 	# crown right: chute -> a shelf -> the robotic arm
 	_chute(main, Vector2(1240, 196), Vector2(1330, 232))
-	_chute(main, Vector2(1336, 292), Vector2(1382, 296))
-	var arm := _piece(main, "res://scenes/arm.tscn", Vector2(1408, 318), {"mode": 0})
-	arm.pick = Vector2(1378, 288) - arm.global_position
+	# a V pocket the pieces settle into for the arm
+	_chute(main, Vector2(1336, 284), Vector2(1368, 298))
+	_chute(main, Vector2(1400, 280), Vector2(1370, 298))
+	var arm := _piece(main, "res://scenes/arm.tscn", Vector2(1412, 326), {"mode": 0})
+	arm.pick = Vector2(1369, 290) - arm.global_position
 	arm.drop = Vector2(1446, 300) - arm.global_position
+	# an Archimedes screw lifts what comes off the sieve back up into the air
+	_piece(main, "res://scenes/screw.tscn", Vector2(944, 528), {"end_offset": Vector2(70, -120)})
 	# the return: two long floor chutes into the Beam's foot
 	_chute(main, Vector2(936, 556), Vector2(1186, 568))
 	_chute(main, Vector2(1640, 556), Vector2(1214, 568))
