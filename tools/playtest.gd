@@ -4555,6 +4555,38 @@ func grenadier_rec() -> void:
 	log_line("bomb off a trampoline into the pack: soldier hp %s -> %s" % [hp0, foes.map(func(f): return f.hp if is_instance_valid(f) and not f._dying else 0)])
 
 
+func gust_rec() -> void:
+	# A bellows aimed east along the ground, a pressure plate beside it, a
+	# soldier standing in the stream: pressing the plate gusts it away.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var bw: Node2D = preload("res://scenes/bellows.tscn").instantiate()
+	bw.aim_angle = 90.0
+	bw.wind_speed = 300.0
+	bw.global_position = Vector2(1560, 70)
+	main.add_child(bw)
+	var pl: Node2D = preload("res://scenes/plate.tscn").instantiate()
+	pl.global_position = Vector2(1520, 60)
+	main.add_child(pl)
+	var so = _spawn(2, Vector2(1640, 60))
+	so.speed = 0.0
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.4, 2.4)
+	cam.global_position = Vector2(1620, 30)
+	await wait(1.0)
+	var x0: float = so.global_position.x
+	var w: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+	w.kind = "iron"
+	w.global_position = pl.global_position + Vector2(0, -20)
+	main.add_child(w)
+	await wait(0.2)
+	await shot("gust")
+	await wait(0.8)
+	log_line("plate tripped %d, gust %.2f | soldier x %.0f -> %.0f" % [pl.tripped, bw._gust, x0, so.global_position.x])
+
+
 func ambience_rec() -> void:
 	# Cave life: the camera on a cavern for a few seconds.
 	main._wave_timer = -9999.0

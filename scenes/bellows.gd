@@ -18,6 +18,8 @@ const HANDLE_MIN := 24.0
 const HANDLE_MAX := 110.0
 const POST_MAX := 220.0
 const Power = preload("res://scripts/power.gd")
+const FX = preload("res://scripts/fx.gd")
+const SFX = preload("res://scripts/sfx.gd")
 var rate := Power.UNPOWERED   # 0.35 unpowered .. 1 driven by a gravity wheel
 var _rate_t := 0.0
 
@@ -32,6 +34,9 @@ var _handle: Polygon2D
 var _selected := false
 var _dragging := false
 var _streaks := []             # [distance along the stream, sideways offset]
+var _gust := 0.0               # > 0: a triggered blast (tripwire / pressure plate)
+const GUST := 1.2
+const GUST_MULT := 3.0
 
 
 func _aim_dir() -> Vector2:
@@ -106,7 +111,8 @@ func wind_at(p: Vector2) -> Vector2:
 	var dir := _aim_dir()
 	var along := (p - global_position).dot(dir) - NOZZLE
 	var k := clampf(1.0 - along / reach() * 0.7, 0.3, 1.0)
-	return dir * wind_speed * rate * k
+	var g := 1.0 + (GUST_MULT - 1.0) * clampf(_gust / GUST * 1.5, 0.0, 1.0)
+	return dir * wind_speed * rate * k * g
 
 
 func _physics_process(delta: float) -> void:
@@ -114,6 +120,8 @@ func _physics_process(delta: float) -> void:
 		return
 	if not is_in_group("power_users"):
 		add_to_group("power_users")
+		add_to_group("triggerable")
+	_gust = maxf(0.0, _gust - delta)
 	_rate_t -= delta
 	if _rate_t <= 0:
 		_rate_t = 0.25
@@ -136,6 +144,19 @@ func _physics_process(delta: float) -> void:
 			e.velocity += (wind_at(e.global_position) - e.velocity) * minf(1.0, FLIER_DRAG * delta)
 
 
+## A tripwire or a pressure plate: the bellows slam shut for one great
+## gust, three times the wind for a moment, and walkers standing in the
+## stream get shoved along it.
+func trigger() -> void:
+	_gust = GUST
+	var dir := _aim_dir()
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if e is CharacterBody2D and e.has_method("knock") and not ("_dying" in e and e._dying) and _in_stream(e.global_position + Vector2(0, -10)):
+			e.knock(dir * 300.0 + Vector2(0, -140))
+	FX.burst(get_parent(), global_position + dir * NOZZLE, Color(0.85, 0.85, 0.82, 0.7), 10, 160.0, 0.4, 2.0)
+	SFX.play(self, SFX.sfx_bounce(), -2.0, 0.5)
+
+
 func _in_stream(p: Vector2) -> bool:
 	var dir := _aim_dir()
 	var rel := p - global_position
@@ -146,7 +167,7 @@ func _in_stream(p: Vector2) -> bool:
 func _process(delta: float) -> void:
 	for s in _streaks:
 		var along: float = s[0]
-		s[0] = along + wind_speed * clampf(1.0 - along / reach() * 0.7, 0.3, 1.0) * delta
+		s[0] = along + wind_speed * (1.0 + (GUST_MULT - 1.0) * clampf(_gust / GUST * 1.5, 0.0, 1.0)) * clampf(1.0 - along / reach() * 0.7, 0.3, 1.0) * delta
 		if s[0] > reach():
 			s[0] = randf() * 10.0
 			s[1] = randf_range(-1, 1)
