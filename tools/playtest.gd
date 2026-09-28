@@ -6420,6 +6420,56 @@ func crossover_rec() -> void:
 	log_line("crossover: %s | crossed %s" % [out, cx.crossed])
 
 
+func build_new_rec() -> void:
+	# Every marble-era piece through the build system's own path: select it
+	# (making its ghost), drag the ghost for drag pieces, place it; then let
+	# them all run. Any SCRIPT ERROR in the output is a failure.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	await preload("res://scripts/marble_works.gd").carve(main, false)
+	var bs = main.get_node("/root/BuildSystem")
+	var B = bs.BuildType
+	var drag := [B.SIEVE, B.SCREW, B.JUMP, B.FELT, B.CHIME, B.FLAPS, B.BOOSTER, B.BRAKE]
+	var types := [B.TAP, B.ROCKER, B.ESCAPEMENT, B.BUCKET, B.SIEVE, B.SCREW, B.ARM, B.STAIRS, B.FERRIS,
+		B.JUMP, B.BELL, B.LOOP, B.DISPENSER, B.GOAL, B.SCALE, B.CANNON, B.FELT, B.CHIME, B.PLUNGER,
+		B.VORTEX, B.FLAPS, B.OVERFLOW, B.DEFLECTOR, B.BOOSTER, B.NET, B.DRUM, B.SLUICE, B.TALLY,
+		B.POINTS, B.BRAKE, B.TEETER, B.CROSSOVER]
+	var placed := []
+	var i := 0
+	for t in types:
+		bs._set_build(t)
+		await wait(0.05)
+		var pos := Vector2(980 + (i % 8) * 85, 220 + (i / 8) * 90)
+		if t in drag:
+			bs._ghost.set_end(Vector2(70, 22) if t != B.SCREW else Vector2(20, -80))
+			await wait(0.02)
+			bs._place_chute(pos, Vector2(70, 22) if t != B.SCREW else Vector2(20, -80))
+		else:
+			var b: Node2D = bs._scenes[t].instantiate()
+			b.global_position = pos
+			main.add_child(b)
+			bs._placed_buildings.append(b)
+		placed.append(bs._placed_buildings[-1])
+		i += 1
+	bs._set_build(B.NONE)
+	# something to run through them
+	for k in 30:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.kind = ["copper", "iron", "scrap"][k % 3]
+		o.global_position = Vector2(990 + (k % 8) * 85, 180 + (k / 8) * 90)
+		main.add_child(o)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.3, 1.3)
+	cam.global_position = Vector2(1290, 360)
+	await wait(4.0)
+	await shot("build_new")
+	var alive := placed.filter(func(b): return is_instance_valid(b)).size()
+	log_line("placed %d of %d through the build system; %d still there after 4 s" % [placed.size(), types.size(), alive])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.
