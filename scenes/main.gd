@@ -1317,6 +1317,7 @@ var _build_names := {
 	108: "Build: MINE CART (drag from the loading end to the tipping end: carries batches of 3/5/8 across, winched back; click the cart)",
 	109: "Build: POP BUMPER (pinball-style: kicks whatever touches it straight away, harder than it came; a trigger kicks too)",
 	110: "Build: SPEED TRAP (over a line: fires its pull-wire for pieces faster than 150/250/350 px/s; click the box)",
+	111: "Build: SLING (catches a piece, whirls it twice, throws it the arrow's way; click the hub to aim; powered throws harder)",
 	44: "Build: ROBOTIC ARM (picks from one spot, drops at another)",
 	37: "Build: DOMINO ROW (drag start to end; click an end to reset)",
 	36: "Build: STEAM ENGINE (feed it ore: powers machines in reach)",
