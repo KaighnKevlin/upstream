@@ -403,7 +403,7 @@ func _build_icon(slot: Node2D, t: int) -> void:
 				ic.position = Vector2(-20, 4)
 				ic.scale = Vector2(0.5, 0.5)
 			elif scn == "flail":
-				ic.position = Vector2(0, 16)
+				ic.position = Vector2(-7, 16)
 				ic.scale = Vector2(0.5, 0.5)
 			elif scn == "balloon_lift":
 				ic.mode = 0
