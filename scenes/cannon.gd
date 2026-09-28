@@ -20,10 +20,29 @@ var loaded: Array[String] = []   # kinds, first in first out
 var fired := 0                   # tests
 var _t := 0.0
 var _kick := 0.0
+var _art: Node2D                 # carriage and barrel sprites, mirrored for side -1
+var _barrel: Sprite2D
 
 
 func _ready() -> void:
 	z_index = 2
+	# sprites first, so ghosts and build-bar icons get them too; behind our
+	# own _draw (the load pips in the magazine tray)
+	_art = Node2D.new()
+	_art.show_behind_parent = true
+	_art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(_art)
+	var car := Sprite2D.new()
+	car.texture = preload("res://assets/sprites/marble_cannon_carriage.png")
+	car.centered = false
+	car.offset = Vector2(-24, -44)
+	_art.add_child(car)
+	_barrel = Sprite2D.new()
+	_barrel.texture = preload("res://assets/sprites/marble_cannon_barrel.png")
+	_barrel.centered = false
+	_barrel.offset = Vector2(-16, -20)
+	_art.add_child(_barrel)
+	_art.scale.x = 1.0 if side >= 0 else -1.0
 	if has_meta("ghost"):
 		return
 	add_to_group("cannons")
@@ -86,6 +105,7 @@ func _physics_process(delta: float) -> void:
 		return
 	_t -= delta
 	_kick = maxf(0.0, _kick - delta * 6.0)
+	_barrel.position.x = -_kick * 4.0     # recoil (mirrored with the art)
 	if _t > 0 or loaded.is_empty() or _target() == null:
 		return
 	_t = EVERY
@@ -102,28 +122,9 @@ func _physics_process(delta: float) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var brass := Color(0.85, 0.65, 0.35)
-	var k := -_kick * 4.0 * side
-	# wheels and carriage
-	for x in [-10.0, 10.0]:
-		draw_circle(Vector2(x, -4), 6.0, dark)
-		draw_circle(Vector2(x, -4), 4.0, Color(0.45, 0.32, 0.2))
-	draw_rect(Rect2(-16, -14, 32, 8), dark)
-	draw_rect(Rect2(-15, -13, 30, 6), Color(0.4, 0.3, 0.2))
-	# barrel
-	var b0 := Vector2(k - side * 10, -12)
-	var b1 := Vector2(k + side * 28, -10)
-	draw_line(b0, b1, dark, 10.0)
-	draw_line(b0, b1, brass, 7.0)
-	draw_line(b0 + Vector2(0, -2), b1 + Vector2(0, -2), Color(1.0, 0.9, 0.6, 0.5), 1.0)
-	draw_circle(b1, 4.0, dark)
-	# hopper
-	var s := 1.0 if side >= 0 else -1.0
-	draw_line(Vector2(-20 * s, -40), Vector2(-7 * s, -18), dark, 3.0)
-	draw_line(Vector2(8 * s, -40), Vector2(7 * s, -18), dark, 3.0)
-	draw_line(Vector2(-20 * s, -40), Vector2(-7 * s, -18), Color(0.6, 0.62, 0.66), 1.0)
-	draw_line(Vector2(8 * s, -40), Vector2(7 * s, -18), Color(0.6, 0.62, 0.66), 1.0)
-	# the load, as pips: iron dark, copper orange
+	# carriage, wheels, barrel and hopper are sprites (see _ready)
+	_art.scale.x = 1.0 if side >= 0 else -1.0
+	_barrel.position.x = -_kick * 4.0
+	# the load, as pips in the magazine tray: iron dark, copper orange
 	for i in loaded.size():
 		draw_circle(Vector2(-14 + i * 5.5, -18), 2.2, Color(0.45, 0.47, 0.52) if loaded[i] == "iron" else Color(0.85, 0.55, 0.3))
