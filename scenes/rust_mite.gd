@@ -10,7 +10,7 @@ extends Node2D
 ## them, a shot); a knock (heavy ore ploughing past) shakes it off to crawl
 ## back; the prospector brushes off any he walks into, and gets nipped.
 ## After LIFETIME they rust through and crumble.
-## Art: drawn in _draw (a copper-red dome with legs, rust flecks).
+## Art: a 4-frame sprite (tools/art/gen_rust_mite.py), stepped in _draw.
 
 const FX = preload("res://scripts/fx.gd")
 const SFX = preload("res://scripts/sfx.gd")
@@ -44,6 +44,7 @@ var _retarget := 0.0
 var _life := LIFETIME
 var _anim := randf() * 10.0
 var _fall_t := 0.0
+var _spr: Sprite2D              # crawling / feeding frames
 
 
 ## A swarm of n mites around `at`, added to `parent`.
@@ -58,6 +59,11 @@ static func swarm(parent: Node, at: Vector2, n := SWARM) -> Array:
 
 
 func _ready() -> void:
+	_spr = Sprite2D.new()
+	_spr.texture = preload("res://assets/sprites/rust_mite.png")
+	_spr.hframes = 4
+	_spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(_spr)
 	add_to_group("enemies")
 	add_to_group("rust_mites")
 	z_index = 4
@@ -225,12 +231,6 @@ func _die(c: Color) -> void:
 func _draw() -> void:
 	var feeding := _state == State.CLING
 	var wig := sin(_anim * (30.0 if feeding else 18.0))
-	var leg := Color(0.25, 0.14, 0.08)
-	for i in 3:
-		var x := -2.5 + i * 2.5
-		draw_line(Vector2(x, 0), Vector2(x - 2.0 + wig, 3.0), leg, 1.0)
-		draw_line(Vector2(x, 0), Vector2(x + 2.0 - wig, -3.0) if feeding else Vector2(x + 2.0 - wig, 3.0), leg, 1.0)
-	draw_circle(Vector2.ZERO, 3.2, Color(0.62, 0.26, 0.12))
-	draw_circle(Vector2(-0.8, -1.0), 1.6, Color(0.85, 0.45, 0.22))
-	draw_circle(Vector2(2.6, -0.4), 1.0, Color(0.3, 0.16, 0.1))
-	draw_circle(Vector2(3.0, -0.8), 0.45, Color(1.0, 0.35, 0.2))   # eye
+	_spr.frame = (2 if feeding else 0) + (1 if wig < 0.0 else 0)
+	if absf(velocity.x) > 2.0 and not feeding:
+		_spr.flip_h = velocity.x < 0.0

@@ -20,10 +20,36 @@ var _load: Array = []            # per cup: the body it carries, or null
 var _rate := Power.UNPOWERED
 var _rate_t := 0.0
 var _area: Area2D
+var _wheel: Sprite2D             # pixel art: the stand, the turning wheel, level cups
+var _cups: Array[Sprite2D] = []
 
 
 func _ready() -> void:
 	z_index = 2
+	# sprites first (ghosts too)
+	var stand := Sprite2D.new()
+	stand.texture = preload("res://assets/sprites/ferris_stand.png")
+	stand.centered = false
+	stand.offset = Vector2(-32, -6)
+	stand.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(stand)
+	_wheel = Sprite2D.new()      # the spokes turn; the rim, being round, stays put (crisp)
+	_wheel.texture = preload("res://assets/sprites/ferris_spokes.png")
+	_wheel.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(_wheel)
+	var rim := Sprite2D.new()
+	rim.texture = preload("res://assets/sprites/ferris_rim.png")
+	rim.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(rim)
+	for k in CUPS:
+		var cup := Sprite2D.new()
+		cup.texture = preload("res://assets/sprites/ferris_cup.png")
+		cup.centered = false
+		cup.offset = Vector2(-9, -10)
+		cup.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		cup.position = _cup(k)
+		add_child(cup)
+		_cups.append(cup)
 	if has_meta("ghost"):
 		return
 	add_to_group("power_users")
@@ -97,28 +123,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var brass := Color(0.72, 0.55, 0.3)
-	# the stand
-	for s in [-1.0, 1.0]:
-		draw_line(Vector2.ZERO, Vector2(s * 26, RADIUS + 22), dark, 4.0)
-		draw_line(Vector2.ZERO, Vector2(s * 26, RADIUS + 22), Color(0.4, 0.3, 0.2), 2.0)
-	# rim and spokes
-	draw_arc(Vector2.ZERO, RADIUS, 0, TAU, 40, dark, 4.0)
-	draw_arc(Vector2.ZERO, RADIUS, 0, TAU, 40, brass, 2.0)
+	# the wheel turns; its cups hang level from the rim
+	_wheel.rotation = _angle
 	for k in CUPS:
-		var p := _cup(k)
-		draw_line(Vector2.ZERO, p, dark, 3.0)
-		draw_line(Vector2.ZERO, p, Color(0.6, 0.46, 0.26), 1.0)
-	# the cups hang level from the rim
-	for k in CUPS:
-		var p := _cup(k)
-		draw_line(p + Vector2(-7, -8), p + Vector2(-6, 2), dark, 3.0)
-		draw_line(p + Vector2(-6, 2), p + Vector2(6, 2), dark, 3.0)
-		draw_line(p + Vector2(6, 2), p + Vector2(7, -8), dark, 3.0)
-		draw_line(p + Vector2(-6, 1), p + Vector2(6, 1), Color(0.9, 0.72, 0.42), 1.0)
-		draw_circle(p, 2.0, brass)
-	# hub
-	draw_circle(Vector2.ZERO, 7.0, dark)
-	draw_circle(Vector2.ZERO, 5.0, brass)
-	draw_circle(Vector2.ZERO, 2.0, dark)
+		_cups[k].position = _cup(k)

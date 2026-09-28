@@ -32,10 +32,29 @@ var _waiting: Array = []
 var _cool := {}
 var _rate := 1.0
 var _rate_t := 0.0
+var _art: Node2D                 # pixel art, drawn for side +1 and mirrored
+var _arm_sp: Sprite2D
+const STAND_TEX := preload("res://assets/sprites/transfer_stand.png")
+const ARM_TEX := preload("res://assets/sprites/transfer_arm.png")
 
 
 func _ready() -> void:
 	z_index = 0                  # under the ore: the rider shows in the cup
+	# sprites first (ghosts too), under our _draw (the governor pip)
+	_art = Node2D.new()
+	_art.show_behind_parent = true
+	_art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(_art)
+	var st := Sprite2D.new()
+	st.texture = STAND_TEX
+	st.centered = false
+	st.offset = Vector2(-38, -7)
+	_art.add_child(st)
+	_arm_sp = Sprite2D.new()
+	_arm_sp.texture = ARM_TEX
+	_arm_sp.centered = false
+	_arm_sp.offset = Vector2(-11, -20)
+	_art.add_child(_arm_sp)
 	if has_meta("ghost"):
 		return
 	add_to_group("power_users")
@@ -127,33 +146,10 @@ func _tip(now: float) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var brass := Color(0.85, 0.65, 0.35)
-	var steel := Color(0.42, 0.44, 0.5)
-	# the stand: a post down to the floor side of the pivot, a bracket to the wall
-	draw_line(Vector2(0, 0), Vector2(side * 10, ARM + 10), dark, 5.0)
-	draw_line(Vector2(0, 0), Vector2(side * 10, ARM + 9), steel.darkened(0.2), 3.0)
-	draw_line(Vector2(side * 4, ARM + 11), Vector2(side * 16, ARM + 11), dark, 3.0)
-	# the cradle at the catch: where it rests, and where the queue waits
-	var c := catch_point()
-	draw_line(c + Vector2(-side * 16, 8), c + Vector2(side * 6, 8), dark, 3.0)
-	draw_line(c + Vector2(-side * 16, 7.5), c + Vector2(side * 6, 7.5), brass.darkened(0.3), 1.0)
-	# the arm, with a counterweight on the short end
-	var cup := _cup(_phi)
-	var d := cup.normalized()
-	draw_line(-d * 12, cup, dark, 5.0)
-	draw_line(-d * 12, cup, steel, 3.0)
-	draw_circle(-d * 12, 5.0, dark)
-	draw_circle(-d * 12, 3.5, steel.darkened(0.3))
-	# the scoop: a brass cup open away from the pivot
-	var n := Vector2(-d.y, d.x)
-	var pts := PackedVector2Array()
-	for i in 9:
-		var a := PI * i / 8.0
-		pts.append(cup - d * 1.0 + (n * cos(a) + d * sin(a)) * 8.0)
-	draw_polyline(pts, dark, 4.0)
-	draw_polyline(pts, brass, 2.0)
-	# the pivot, and a governor pip that glows when it's powered
-	draw_circle(Vector2.ZERO, 4.0, dark)
-	draw_circle(Vector2.ZERO, 2.5, brass)
+	# the arm sprite hangs straight down at phi 0 and turns with it (art
+	# space is side +1: the _art node mirrors)
+	_art.scale = Vector2(side, 1)
+	_arm_sp.rotation = _phi
+	# the governor pip on the pivot glows when it's powered
+	draw_circle(Vector2.ZERO, 1.6, Color(0.1, 0.08, 0.07))
 	draw_circle(Vector2.ZERO, 1.2, Color(1.0, 0.8, 0.4).lerp(Color(0.35, 0.25, 0.15), 1.0 - (_rate - Power.UNPOWERED) / (1.0 - Power.UNPOWERED)))

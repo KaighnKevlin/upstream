@@ -20,6 +20,10 @@ var _area: Area2D
 var _rate := Power.UNPOWERED
 var _rate_t := 0.0
 var _phase := 0.0
+var _art: Node2D                 # pixel art: the tube and its turning helix, tiled along it
+const WALL_TEX := preload("res://assets/sprites/screw_wall.png")
+const FLIGHT_TEX := preload("res://assets/sprites/screw_flight.png")
+const COLLAR_TEX := preload("res://assets/sprites/screw_collar.png")
 
 
 func set_end(offset: Vector2) -> void:
@@ -34,6 +38,13 @@ func set_end(offset: Vector2) -> void:
 
 func _ready() -> void:
 	z_index = 2
+	# art first (ghosts too)
+	_art = Node2D.new()
+	_art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_art.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+	_art.show_behind_parent = true
+	_art.draw.connect(_draw_art)
+	add_child(_art)
 	if has_meta("ghost"):
 		return
 	add_to_group("power_users")
@@ -92,20 +103,18 @@ func _physics_process(delta: float) -> void:
 
 
 func _draw() -> void:
+	_art.queue_redraw()          # all sprite: see _draw_art
+
+
+## Drawn along the tube (x from the mouth up, y across it): the walls, the
+## helix flights scrolling up as it turns, a collar at each end.
+func _draw_art() -> void:
 	var l := end_offset.length()
-	var dir := end_offset / maxf(l, 1.0)
-	var n := dir.orthogonal()
-	# the tube's walls
-	for s in [-1.0, 1.0]:
-		draw_line(n * RADIUS * s, end_offset + n * RADIUS * s, Color(0.1, 0.08, 0.07), 3.0)
-		draw_line(n * RADIUS * s, end_offset + n * RADIUS * s, Color(0.72, 0.55, 0.3), 1.0)
-	# the helix flights, sliding up as it turns
+	_art.draw_set_transform(Vector2.ZERO, end_offset.angle(), Vector2.ONE)
 	var k := fmod(_phase * 6.0, 10.0)
-	while k < l:
-		var c := dir * k
-		draw_line(c - n * (RADIUS - 1), c + dir * 4.0 + n * (RADIUS - 1), Color(0.62, 0.64, 0.68, 0.8), 1.0)
-		k += 10.0
-	# mouth and lip rings
-	for p in [Vector2.ZERO, end_offset]:
-		draw_line(p - n * (RADIUS + 2), p + n * (RADIUS + 2), Color(0.1, 0.08, 0.07), 4.0)
-		draw_line(p - n * (RADIUS + 2), p + n * (RADIUS + 2), Color(0.85, 0.65, 0.35), 2.0)
+	_art.draw_texture_rect_region(FLIGHT_TEX, Rect2(0, -10, l, 20), Rect2(10.0 - k, 0, l, 20), Color(1, 1, 1, 0.85))
+	for s in [-1.0, 1.0]:
+		_art.draw_texture_rect(WALL_TEX, Rect2(0, s * RADIUS - 2, l, 4), true)
+	for x in [0.0, l]:
+		_art.draw_texture(COLLAR_TEX, Vector2(x - 4, -13))
+	_art.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

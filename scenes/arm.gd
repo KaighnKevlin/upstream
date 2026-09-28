@@ -27,10 +27,25 @@ var _t := 0.0
 var _from := Vector2.ZERO
 var _to := Vector2.ZERO
 var _held: RigidBody2D = null
+var _art: Node2D                 # pixel art under our _draw (filter lamp, pick/drop marks)
+var _upper: Sprite2D
+var _lower: Sprite2D
+var _claw: Sprite2D
 
 
 func _ready() -> void:
 	z_index = 3
+	# sprites first (ghosts too): the turret, two links turned to the reach, the claw
+	_art = Node2D.new()
+	_art.show_behind_parent = true
+	_art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(_art)
+	_part(preload("res://assets/sprites/arm_base.png"), Vector2(-12, -22))
+	_upper = _part(preload("res://assets/sprites/arm_upper.png"), Vector2(-4, -4))
+	_lower = _part(preload("res://assets/sprites/arm_lower.png"), Vector2(-4, -4))
+	_claw = _part(preload("res://assets/sprites/arm_claw.png"), Vector2(-7, -2))
+	_claw.hframes = 2
+	_art.move_child(_lower, 1)   # the forearm under the upper link's elbow knuckle
 	_hand = pick + Vector2(0, -14)
 	if has_meta("ghost"):
 		return
@@ -118,24 +133,27 @@ func _elbow(hand: Vector2) -> Vector2:
 	return SHOULDER + d.normalized().rotated(-a * signf(d.x if d.x != 0 else 1.0)) * UPPER
 
 
+func _part(tex: Texture2D, off: Vector2) -> Sprite2D:
+	var sp := Sprite2D.new()
+	sp.texture = tex
+	sp.centered = false
+	sp.offset = off
+	_art.add_child(sp)
+	return sp
+
+
 func _draw() -> void:
 	var col: Color = COLORS[FILTERS[mode]]
-	# base turret
-	draw_rect(Rect2(-10, -6, 20, 6), Color(0.16, 0.13, 0.1))
-	draw_rect(Rect2(-9, -5, 18, 4), Color(0.72, 0.55, 0.3))
-	draw_circle(SHOULDER, 5.0, Color(0.16, 0.13, 0.1))
-	draw_circle(SHOULDER, 4.0, Color(0.85, 0.65, 0.35))
-	draw_circle(Vector2(0, -3), 1.5, col)
-	# arm
+	# pose the sprites: shoulder -> elbow -> hand
 	var e := _elbow(_hand)
-	for seg in [[SHOULDER, e], [e, _hand]]:
-		draw_line(seg[0], seg[1], Color(0.1, 0.08, 0.07), 4.0)
-		draw_line(seg[0], seg[1], Color(0.62, 0.64, 0.68), 2.0)
-	draw_circle(e, 2.5, Color(0.72, 0.55, 0.3))
-	# claw
-	var open := 4.0 if _held == null or _state == 1 else 2.5
-	draw_line(_hand, _hand + Vector2(-open, 5), Color(0.1, 0.08, 0.07), 2.0)
-	draw_line(_hand, _hand + Vector2(open, 5), Color(0.1, 0.08, 0.07), 2.0)
+	_upper.position = SHOULDER
+	_upper.rotation = (e - SHOULDER).angle()
+	_lower.position = e
+	_lower.rotation = (_hand - e).angle()
+	_claw.position = _hand
+	_claw.frame = 0 if _held == null or _state == 1 else 1
+	# the filter lamp on the turret
+	draw_circle(Vector2(0, -3), 1.5, col)
 	# where it picks from and drops to (faint)
 	draw_arc(pick, PICK_R, 0, TAU, 16, Color(col.r, col.g, col.b, 0.25), 1.0)
 	draw_line(drop + Vector2(-3, 0), drop + Vector2(3, 0), Color(col.r, col.g, col.b, 0.35), 1.0)

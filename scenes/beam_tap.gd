@@ -19,10 +19,17 @@ const BAND := 12.0
 
 var tapped := 0                   # tests
 var _beam: Node2D = null
+var _spr: Sprite2D               # the collar, pixel art (mirrored to the spout's side)
 
 
 func _ready() -> void:
 	z_index = 2
+	# sprite first (ghosts too), under our _draw (the filter lamp)
+	_spr = Sprite2D.new()
+	_spr.texture = preload("res://assets/sprites/beam_tap.png")
+	_spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_spr.show_behind_parent = true
+	add_child(_spr)
 	if has_meta("ghost"):
 		return
 	add_to_group("beam_taps")
@@ -68,15 +75,9 @@ func _physics_process(_delta: float) -> void:
 
 func _draw() -> void:
 	var col: Color = COLORS[FILTERS[mode]]
-	# collar: two brass bands around the beam, a spout to one side, a lamp
 	var w := 34.0
-	draw_rect(Rect2(-w * 0.5, -7, w, 3), Color(0.16, 0.13, 0.1))
-	draw_rect(Rect2(-w * 0.5, 4, w, 3), Color(0.16, 0.13, 0.1))
-	draw_rect(Rect2(-w * 0.5 + 1, -6, w - 2, 1), Color(0.85, 0.65, 0.35))
-	draw_rect(Rect2(-w * 0.5 + 1, 5, w - 2, 1), Color(0.85, 0.65, 0.35))
-	draw_rect(Rect2(side * w * 0.5 - (6 if side < 0 else 0), -5, 6, 10), Color(0.16, 0.13, 0.1))
-	draw_rect(Rect2(side * w * 0.5 - (5 if side < 0 else -1), -4, 4, 8), Color(0.72, 0.55, 0.3))
-	draw_circle(Vector2(-side * w * 0.5, 0), 3.0, Color(0.16, 0.13, 0.1))
+	# the collar is _spr (spout toward side); the filter lamp opposite it
+	_spr.scale = Vector2(side, 1)
 	draw_circle(Vector2(-side * w * 0.5, 0), 2.0, col)
 
 

@@ -20,6 +20,7 @@ var looped := 0                  # tests: marbles that went round
 var fell := 0                    # and that came off
 var entry_speeds: Array[int] = []   # tests
 var _riders := {}                # instance id -> [body, phi, v0sq]
+var _spr: Sprite2D
 
 
 func _centre() -> Vector2:
@@ -28,6 +29,15 @@ func _centre() -> Vector2:
 
 func _ready() -> void:
 	z_index = 2
+	# sprite first (ghosts too): hoop, stand and rail, drawn for side +1
+	_spr = Sprite2D.new()
+	_spr.texture = preload("res://assets/sprites/loop.png")
+	_spr.centered = false
+	_spr.offset = Vector2(-72, -42)
+	_spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_spr.show_behind_parent = true
+	_spr.scale = Vector2(side, 1)
+	add_child(_spr)
 	if has_meta("ghost"):
 		return
 	var body := StaticBody2D.new()
@@ -103,22 +113,7 @@ func _release(o: RigidBody2D, vel: Vector2) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var steel := Color(0.72, 0.74, 0.78)
-	var c := _centre()
-	var rr := R + BALL + 1.0
-	# the stand under the hoop
-	draw_line(Vector2(-10, BALL + 2), Vector2(-4, BALL + 24), Color(0.16, 0.13, 0.1), 2.0)
-	draw_line(Vector2(10, BALL + 2), Vector2(4, BALL + 24), Color(0.16, 0.13, 0.1), 2.0)
-	# the hoop
-	draw_arc(c, rr, 0, TAU, 48, dark, 4.0)
-	draw_arc(c, rr, 0, TAU, 48, steel, 2.0)
-	draw_arc(c, rr - 3, -PI * 0.9, -PI * 0.1, 24, Color(1, 1, 1, 0.25), 1.0)
-	# the rail
-	var a := Vector2(-side * 70, BALL - 8)
-	var b := Vector2(side * 80, BALL + 6)
-	draw_line(a, b, dark, 4.0)
-	draw_line(a, b, steel, 2.0)
+	_spr.scale = Vector2(side, 1)   # the hoop, stand and rail are _spr
 	# riders get a speed streak
 	for id in _riders:
 		var o = _riders[id][0]

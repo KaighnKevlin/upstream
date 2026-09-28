@@ -16,7 +16,7 @@ extends Node2D
 ## whichever end of the run is quicker going (the rock in the way), never
 ## gnaws at a piece through a plate, and gives a piece walled in all round
 ## up after a few tries. Come up through a cave floor, it scrambles out.
-## Art: drawn in _draw (a riveted brass body, a spinning steel drill cone).
+## Art: a 4-frame sprite (tools/art/gen_burrower.py), posed in _draw.
 
 const FX = preload("res://scripts/fx.gd")
 const SFX = preload("res://scripts/sfx.gd")
@@ -79,9 +79,16 @@ var detours := 0                 # tests: times it had to go round plating
 var _rounds_here := 0
 var _step_t := 0.0
 var _spill: Array = []           # [ore, s]: what it spilled from a vein, tumbling down its own tunnel
+var _spr: Sprite2D               # the mole: drill turning, claws scratching
 
 
 func _ready() -> void:
+	_spr = Sprite2D.new()
+	_spr.texture = preload("res://assets/sprites/burrower.png")
+	_spr.hframes = 4
+	_spr.offset = Vector2(0, -1)     # frames are 38x24 about (19, 13)
+	_spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(_spr)
 	add_to_group("enemies")
 	add_to_group("burrowers")
 	z_index = 3
@@ -523,41 +530,11 @@ func _draw() -> void:
 	var flip := 1.0 if (_heading.x >= 0 if absf(_heading.x) > 0.05 else direction > 0) else -1.0
 	if absf(_heading.x) <= 0.05:
 		ang = (PI / 2 if _heading.y > 0 else -PI / 2) * flip
-	draw_set_transform(_judder, ang, Vector2(flip, 1))
-	var lit := Color(3, 3, 3) if _flash > 0 else Color.WHITE
-	var brass := Color(0.66, 0.48, 0.22) * lit
-	var dark := Color(0.32, 0.22, 0.12)
-	var steel := Color(0.72, 0.73, 0.76) * lit
-	# tail: a coiled spring
-	for i in 3:
-		draw_arc(Vector2(-12 - i * 2.5, -1), 2.2, 0, TAU, 8, Color(0.5, 0.5, 0.52), 1.0)
-	# digging paws, scratching
-	var s := sin(_anim * 22.0) * 2.0
-	draw_line(Vector2(2, 4), Vector2(6 + s, 8), dark, 2.0)
-	draw_line(Vector2(-4, 5), Vector2(-1 - s, 8), dark, 2.0)
-	# body: a riveted brass barrel
-	var body := PackedVector2Array()
-	for i in 18:
-		var a := TAU * i / 18.0
-		body.append(Vector2(-2 + cos(a) * 11.0, sin(a) * 6.5))
-	draw_colored_polygon(body, brass)
-	body.append(body[0])
-	draw_polyline(body, dark, 1.0)
-	draw_line(Vector2(-6, -6), Vector2(-6, 6), dark, 1.0)
-	draw_line(Vector2(1, -6.3), Vector2(1, 6.3), dark, 1.0)
-	for p in [Vector2(-9, -3), Vector2(-9, 3), Vector2(-3, -4), Vector2(-3, 4)]:
-		draw_circle(p, 0.8, Color(0.95, 0.8, 0.45))
-	# drill cone, its spiral turning
-	draw_colored_polygon(PackedVector2Array([Vector2(7, -5), Vector2(17, 0), Vector2(7, 5)]), steel)
-	var spin := fmod(_anim * 14.0, 3.0)
-	for k in 3:
-		var x := 7.0 + k * 3.0 + spin
-		if x < 16.0:
-			var h := 5.0 * (17.0 - x) / 10.0
-			draw_line(Vector2(x, -h), Vector2(x + 1.5, h), Color(0.35, 0.36, 0.4), 1.0)
-	# eye: a red lamp
-	draw_circle(Vector2(4, -3), 1.4, Color(1.0, 0.3, 0.15))
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	_spr.position = _judder
+	_spr.rotation = ang
+	_spr.scale = Vector2(flip, 1)
+	_spr.frame = int(_anim * 16.0) % 4
+	_spr.self_modulate = Color(3, 3, 3) if _flash > 0 else Color.WHITE
 	if _state == State.CHEW and _target and is_instance_valid(_target):
 		var top := to_local(_target.global_position + Vector2(-14, -46))
 		draw_rect(Rect2(top, Vector2(28, 4)), Color(0.08, 0.07, 0.06, 0.85))

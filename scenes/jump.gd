@@ -22,6 +22,8 @@ var _body: StaticBody2D
 var _land_area: Area2D
 var _gap_area: Area2D
 var _counted := {}
+var _kick_sp: Sprite2D           # pixel art: the kicker, and the landing ramp across the gap
+var _land_sp: Sprite2D
 
 
 func _dir() -> float:
@@ -38,6 +40,21 @@ func set_end(offset: Vector2) -> void:
 
 func _ready() -> void:
 	z_index = 1
+	# sprites first (ghosts too), drawn for a jump to the right and mirrored
+	_kick_sp = Sprite2D.new()
+	_kick_sp.texture = preload("res://assets/sprites/jump_kick.png")
+	_kick_sp.centered = false
+	_kick_sp.offset = Vector2(-4, -8)
+	_kick_sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_kick_sp.show_behind_parent = true
+	add_child(_kick_sp)
+	_land_sp = Sprite2D.new()
+	_land_sp.texture = preload("res://assets/sprites/jump_land.png")
+	_land_sp.centered = false
+	_land_sp.offset = Vector2(-4, -30)
+	_land_sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_land_sp.show_behind_parent = true
+	add_child(_land_sp)
 	if has_meta("ghost"):
 		return
 	_body = StaticBody2D.new()
@@ -122,23 +139,12 @@ func _seg(on: CollisionObject2D, a: Vector2, b: Vector2) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var steel := Color(0.72, 0.74, 0.78)
-	var brass := Color(0.85, 0.65, 0.35)
 	var k := _kick_end()
-	var e := _land_end()
 	var s := _dir()
-	# posts
-	for p in [Vector2.ZERO, end_offset, e]:
-		draw_line(p, p + Vector2(0, 30), Color(0.16, 0.13, 0.1), 2.0)
-	# kicker: curved up
-	draw_line(Vector2.ZERO, k, dark, 4.0)
-	draw_line(Vector2.ZERO, k, brass, 2.0)
-	# landing ramp and backboard
-	draw_line(end_offset, e, dark, 4.0)
-	draw_line(end_offset, e, steel, 2.0)
-	draw_line(e + Vector2(0, -14), e + Vector2(s * 4, -40), dark, 4.0)
-	draw_line(e + Vector2(0, -14), e + Vector2(s * 4, -40), Color(0.55, 0.4, 0.25), 2.0)
+	# the kicker and the landing ramp (posts, backboard) are sprites
+	_kick_sp.scale = Vector2(s, 1)
+	_land_sp.scale = Vector2(s, 1)
+	_land_sp.position = end_offset
 	# a dotted arc showing the flight
 	var n := 8
 	for i in n:
