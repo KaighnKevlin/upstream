@@ -20,10 +20,28 @@ var _swing := 0.0
 var _swing_v := 0.0
 var _flash := 0.0
 var _cool := 0.0
+var _bell: Sprite2D              # swings about the yoke pin, (0, -2)
 
 
 func _ready() -> void:
 	z_index = 1
+	# sprites first, so ghosts and build-bar icons get them too; behind our
+	# own _draw (the pull-wire and the ring)
+	var br := Sprite2D.new()
+	br.texture = preload("res://assets/sprites/bell_bracket.png")
+	br.centered = false
+	br.offset = Vector2(-13, -7)
+	br.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	br.show_behind_parent = true
+	_bell = Sprite2D.new()
+	_bell.texture = preload("res://assets/sprites/bell_felt.png") if muffled else preload("res://assets/sprites/bell.png")
+	_bell.centered = false
+	_bell.offset = Vector2(-14, -2)
+	_bell.position = Vector2(0, -2)
+	_bell.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_bell.show_behind_parent = true
+	add_child(_bell)
+	add_child(br)                # the yoke over the bell's crown
 	if has_meta("ghost"):
 		return
 	var body := StaticBody2D.new()
@@ -88,6 +106,10 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
+	# bracket and bell are sprites (see _ready); the bell swings and glows
+	_bell.texture = preload("res://assets/sprites/bell_felt.png") if muffled else preload("res://assets/sprites/bell.png")
+	_bell.rotation = _swing
+	_bell.self_modulate = Color.WHITE.lerp(Color(1.45, 1.35, 1.1), 0.0 if muffled else _flash)
 	var dark := Color(0.1, 0.08, 0.07)
 	if wire_to != Vector2.ZERO:
 		# the pull-wire, sagging, to a little pulley at its far end
@@ -95,27 +117,5 @@ func _draw() -> void:
 		draw_polyline(PackedVector2Array([Vector2(8, -4), mid, wire_to]), Color(0.55, 0.5, 0.42, 0.8), 1.0)
 		draw_circle(wire_to, 3.0, dark)
 		draw_circle(wire_to, 2.0, Color(0.85, 0.65, 0.35))
-	# bracket
-	draw_line(Vector2(-10, -4), Vector2(10, -4), dark, 4.0)
-	draw_line(Vector2(-10, -4), Vector2(10, -4), Color(0.4, 0.3, 0.2), 2.0)
-	draw_set_transform(Vector2(0, -2), _swing, Vector2.ONE)
-	var body := PackedVector2Array([Vector2(-3, 0), Vector2(3, 0), Vector2(6, 6), Vector2(8, 14),
-		Vector2(R + 1, 20), Vector2(-R - 1, 20), Vector2(-8, 14), Vector2(-6, 6)])
-	draw_colored_polygon(body, dark)
-	var inner := PackedVector2Array()
-	for p in body:
-		inner.append(p * 0.85 + Vector2(0, 1.5))
-	var brass := Color(0.85, 0.65, 0.3).lerp(Color(1.0, 0.95, 0.7), _flash)
-	draw_colored_polygon(inner, brass)
-	draw_line(Vector2(-4, 5), Vector2(-6, 15), Color(1.0, 0.9, 0.6, 0.7), 1.0)
-	draw_circle(Vector2(0, 21), 2.5, dark)
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	if muffled:
-		# the felt wrapping, tied round the waist
-		draw_set_transform(Vector2(0, -2), _swing, Vector2.ONE)
-		draw_colored_polygon(inner, Color(0.2, 0.45, 0.28))
-		draw_line(Vector2(-9, 12), Vector2(9, 12), Color(0.55, 0.42, 0.25), 1.5)
-		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-		return
-	if _flash > 0:
+	if _flash > 0 and not muffled:
 		draw_arc(Vector2(0, 10), 16 + (1.0 - _flash) * 14, 0, TAU, 24, Color(1.0, 0.85, 0.5, _flash * 0.6), 1.5)
