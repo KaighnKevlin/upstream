@@ -966,6 +966,12 @@ func _melee_target(m: Dictionary) -> Node2D:
 	if player and absf(player.global_position.x - global_position.x) < m.reach_player \
 			and absf(player.global_position.y - global_position.y) < 60:
 		return player
+	# a wall in the way (a filled gabion): hack at it
+	for w in get_tree().get_nodes_in_group("walls"):
+		if is_instance_valid(w) and w.height() > 12.0 and signf(w.global_position.x - global_position.x) == signf(direction) \
+				and absf(w.global_position.x - global_position.x) < m.reach_player + 12.0 \
+				and absf(w.global_position.y - global_position.y) < 50:
+			return w
 	var dome := scene.get_node_or_null("DomeZone") as Node2D
 	# the dome only from up on the surface beside it, not from a cave beneath
 	if dome and absf(dome.global_position.x - global_position.x) < m.reach_dome \
