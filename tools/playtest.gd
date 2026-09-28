@@ -6182,6 +6182,32 @@ func drum_rec() -> void:
 	log_line("drum: %s | pulled %d" % [out, dr.pulled])
 
 
+func sluice_rec() -> void:
+	# Sluice gate: a dispenser feeds a chute with the gate across it; after
+	# 6 s it's holding the backlog; then it's triggered and lets it all go.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	var MW = preload("res://scripts/marble_works.gd")
+	await MW.carve(main, false)
+	MW._piece(main, "res://scenes/dispenser.tscn", Vector2(1165, 360), {"mode": 0, "limit": 6})
+	MW._chute(main, Vector2(1150, 400), Vector2(1290, 440))
+	var sl: Node2D = MW._piece(main, "res://scenes/sluice.tscn", Vector2(1262, 432), {"side": 1.0})
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.5, 2.5)
+	cam.global_position = Vector2(1240, 420)
+	await wait(6.5)
+	await shot("sluice_held")
+	log_line("held back: %d, released %d" % [sl.held(), sl.released])
+	sl.trigger()
+	await wait(1.0)
+	await shot("sluice_open")
+	await wait(2.0)
+	log_line("after trigger: held %d, released %d, opened %d" % [sl.held(), sl.released, sl.opened])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.
