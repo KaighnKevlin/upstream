@@ -56,6 +56,59 @@ static func _metal(b: PackedFloat32Array, base: float, amp: float, decay: float,
 		_tone(b, base * p[0], base * p[0] * 0.995, amp * p[1], decay * p[2], start, 0.0005)
 
 
+## Plucked spring: a tone whose pitch wobbles (vibrato `depth` at `rate` Hz,
+## dying away faster than the tone) as it rings down.
+static func _twang(b: PackedFloat32Array, f: float, amp: float, decay: float, depth: float,
+		rate: float, start := 0.0) -> void:
+	var s0 := int(start * RATE)
+	var phase := 0.0
+	for i in b.size() - s0:
+		var t := float(i) / RATE
+		phase += f * (1.0 + depth * exp(-t / (decay * 0.6)) * sin(TAU * rate * t)) / RATE
+		b[s0 + i] += sin(phase * TAU) * amp * minf(1.0, t / 0.001) * exp(-t / decay)
+
+
+## Moving air: band-passed noise (cutoff sweeping lo0 -> lo1) that swells
+## to its peak at `rise` s and then dies away over `decay`.
+static func _swell(b: PackedFloat32Array, amp: float, rise: float, decay: float, lo0: float,
+		lo1: float, rng: RandomNumberGenerator) -> void:
+	var hi := 0.0
+	var lo := 0.0
+	for i in b.size():
+		var t := float(i) / RATE
+		var k := float(i) / float(b.size())
+		var c := lo0 * pow(lo1 / lo0, k)
+		var w := rng.randf() * 2.0 - 1.0
+		hi += (1.0 - exp(-TAU * c * 2.5 / RATE)) * (w - hi)
+		lo += (1.0 - exp(-TAU * c * 0.4 / RATE)) * (w - lo)
+		var env := pow(t / rise, 2.0) if t < rise else exp(-(t - rise) / decay)
+		b[i] += (hi - lo) * amp * env
+
+
+## Stick-slip friction (a rope on a pulley, a dry hinge): a train of pulses
+## at `r0` -> `r1` per second ringing a resonance at `res` Hz, swelling in
+## and out over the buffer.
+static func _creak(b: PackedFloat32Array, amp: float, r0: float, r1: float, res: float,
+		rng: RandomNumberGenerator) -> void:
+	var w := TAU * res / RATE
+	var q := 0.985
+	var y1 := 0.0
+	var y2 := 0.0
+	var ph := 0.0
+	var n := b.size()
+	for i in n:
+		var k := float(i) / float(n)
+		ph += r0 * pow(r1 / r0, k) * rng.randf_range(0.8, 1.2) / RATE
+		var x := 0.0
+		if ph >= 1.0:
+			ph -= 1.0
+			x = rng.randf_range(0.6, 1.0)
+		var y := 2.0 * q * cos(w) * y1 - q * q * y2 + x
+		y2 = y1
+		y1 = y
+		b[i] += y * amp * 0.05 * sin(PI * k)
+
+
 static func _wav(b: PackedFloat32Array, vol: float) -> AudioStreamWAV:
 	var peak := 0.0001
 	for v in b:
@@ -244,6 +297,134 @@ static func sfx_ammo_received() -> AudioStreamWAV:
 		return _wav(b, 0.4))
 
 
+# ── machine parts: small, quiet sounds that stay distinct in a busy run ──
+
+## A pawl dropping into a notch (tally wheel, escapement, a clock winding):
+## a tiny bright click and its softer echo.
+static func sfx_ratchet() -> AudioStreamWAV:
+	return _sound("ratchet", func(r: RandomNumberGenerator):
+		var b := _buf(0.08)
+		var gap := r.randf_range(0.016, 0.028)
+		for c in 2:
+			var a := 1.0 if c == 0 else 0.45
+			_noise(b, 0.5 * a, 0.0018, 5000, c * gap, true, r)
+			_metal(b, r.randf_range(2600, 3300), 0.25 * a, 0.007, c * gap)
+			_tone(b, 950, 700, 0.2 * a, 0.004, c * gap, 0.0005)
+		return _wav(b, 0.42))
+
+
+## A lever or catch throwing over (points, latch, gates): a firm clack
+## and a small settling knock.
+static func sfx_latch() -> AudioStreamWAV:
+	return _sound("latch", func(r: RandomNumberGenerator):
+		var b := _buf(0.13)
+		var f := r.randf_range(460, 560)
+		_tone(b, f, f * 0.6, 0.55, 0.012)
+		_noise(b, 0.45, 0.005, 3200, 0.0, false, r)
+		_metal(b, r.randf_range(1000, 1250), 0.14, 0.018)
+		var at := r.randf_range(0.022, 0.032)
+		_tone(b, f * 0.8, f * 0.55, 0.22, 0.008, at)
+		_noise(b, 0.18, 0.003, 3000, at, false, r)
+		return _wav(b, 0.45))
+
+
+## A coil spring let go (plunger, flap, teeter): a short wobbling twang
+## over a soft thunk.
+static func sfx_twang() -> AudioStreamWAV:
+	return _sound("twang", func(r: RandomNumberGenerator):
+		var b := _buf(0.3)
+		var f := r.randf_range(290, 360)
+		_twang(b, f, 0.5, 0.085, 0.07, r.randf_range(24, 32))
+		_twang(b, f * 2.71, 0.14, 0.04, 0.05, r.randf_range(30, 40))
+		_tone(b, 130, 80, 0.35, 0.018)
+		_noise(b, 0.12, 0.004, 5000, 0.0, true, r)
+		return _wav(b, 0.4))
+
+
+## A puff of steam / a pneumatic stroke (kicker, booster rollers): a soft
+## airy hiss with a low piston tap at its front.
+static func sfx_hiss() -> AudioStreamWAV:
+	return _sound("hiss", func(r: RandomNumberGenerator):
+		var b := _buf(0.24)
+		_swell(b, 0.9, 0.012, 0.05, 5200, 3000, r)
+		_noise(b, 0.25, 0.03, 7000, 0.0, true, r)
+		_tone(b, 170, 95, 0.3, 0.014)
+		return _wav(b, 0.34))
+
+
+## Stone on stone (grindstone): a low rumble full of gritty grains.
+static func sfx_grind() -> AudioStreamWAV:
+	return _sound("grind", func(r: RandomNumberGenerator):
+		var b := _buf(0.34)
+		_noise(b, 0.55, 0.11, 380, 0.0, false, r)
+		_tone(b, r.randf_range(62, 74), 52, 0.35, 0.1, 0.0, 0.01)
+		for g in 14:
+			_noise(b, r.randf_range(0.12, 0.3) * (1.0 - g / 16.0), 0.005,
+				r.randf_range(1000, 2200), r.randf_range(0.0, 0.24), false, r)
+		return _wav(b, 0.42))
+
+
+## A heavy weight coming down on an anvil (stamp press, gear stamp): a deep
+## thud with a dull iron ring.
+static func sfx_thud() -> AudioStreamWAV:
+	return _sound("thud", func(r: RandomNumberGenerator):
+		var b := _buf(0.3)
+		_tone(b, r.randf_range(105, 120), 42, 0.9, 0.06)
+		_noise(b, 0.5, 0.03, 650, 0.0, false, r)
+		_metal(b, r.randf_range(320, 380), 0.12, 0.06, 0.002)
+		_noise(b, 0.15, 0.004, 4000, 0.0, true, r)
+		return _wav(b, 0.5))
+
+
+## A magnet catching iron (magnet drum, gauss cannon): a short electric hum
+## that ends in a snap-clunk.
+static func sfx_magnet() -> AudioStreamWAV:
+	return _sound("magnet", func(r: RandomNumberGenerator):
+		var b := _buf(0.18)
+		var f := r.randf_range(110, 130)
+		for h in [[1.0, 0.25], [2.0, 0.16], [3.0, 0.1], [5.0, 0.05]]:
+			_tone(b, f * h[0], f * h[0] * 1.08, h[1], 0.04, 0.0, 0.03)
+		var at := r.randf_range(0.035, 0.05)
+		_metal(b, r.randf_range(680, 800), 0.4, 0.022, at)
+		_tone(b, 220, 120, 0.4, 0.012, at)
+		return _wav(b, 0.4))
+
+
+## Rope working round a pulley (counterweight, ropeway, sluice winch): a
+## short dry creak.
+static func sfx_creak() -> AudioStreamWAV:
+	return _sound("creak", func(r: RandomNumberGenerator):
+		var b := _buf(r.randf_range(0.22, 0.3))
+		_creak(b, 1.0, r.randf_range(55, 75), r.randf_range(90, 130), r.randf_range(650, 900), r)
+		_creak(b, 0.4, 140, 180, r.randf_range(1500, 1800), r)
+		return _wav(b, 0.34))
+
+
+## Something big swinging or blasting through the air (trebuchet arm,
+## volcano): a rising-then-falling whoosh.
+static func sfx_whoosh() -> AudioStreamWAV:
+	return _sound("whoosh", func(r: RandomNumberGenerator):
+		var b := _buf(0.42)
+		_swell(b, 1.0, r.randf_range(0.08, 0.12), 0.09, r.randf_range(500, 700), r.randf_range(1800, 2400), r)
+		_tone(b, 80, 55, 0.15, 0.12, 0.05, 0.05)
+		return _wav(b, 0.36))
+
+
+## A marble rolling onto a steel track (banked turn, bowling ramp, vortex):
+## a light patter of ticks over a soft roll.
+static func sfx_roll() -> AudioStreamWAV:
+	return _sound("roll", func(r: RandomNumberGenerator):
+		var b := _buf(0.2)
+		_noise(b, 0.18, 0.07, 300, 0.0, false, r)
+		var at := 0.0
+		for k in 5:
+			var a := 0.35 * pow(0.72, k)
+			_tone(b, r.randf_range(2600, 3400), 2400, a, 0.0035, at, 0.0003)
+			_noise(b, a * 0.6, 0.0015, 6000, at, true, r)
+			at += r.randf_range(0.022, 0.034)
+		return _wav(b, 0.36))
+
+
 ## Legacy single-tone generator (kept for anything still calling it).
 static func create_sample(freq: float, duration: float, volume: float = 0.3,
 		type: String = "square", freq_end: float = -1) -> AudioStreamWAV:
@@ -307,4 +488,7 @@ static func all_builders() -> Array[Callable]:
 		func(): sfx_enemy_hit(), func(): sfx_ore_knock("ore"), func(): sfx_ore_knock("metal"),
 		func(): sfx_laser(), func(): sfx_bounce(), func(): sfx_ore_knock("ground"), func(): sfx_ore_knock("wood"),
 		func(): sfx_mine_hit(), func(): sfx_bell(),
+		func(): sfx_ratchet(), func(): sfx_latch(), func(): sfx_twang(), func(): sfx_hiss(),
+		func(): sfx_grind(), func(): sfx_thud(), func(): sfx_magnet(), func(): sfx_creak(),
+		func(): sfx_whoosh(), func(): sfx_roll(),
 	]

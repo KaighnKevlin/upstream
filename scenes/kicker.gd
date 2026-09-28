@@ -79,7 +79,7 @@ func _punch(b: RigidBody2D) -> void:
 	kicked += 1
 	_stroke = 1.0
 	_cool = RELOAD
-	SFX.play_small(self, SFX.sfx_bumper(), -12.0, 1.4)
+	SFX.play_small(self, SFX.sfx_hiss(), -12.0, 1.1)
 
 
 func trigger() -> void:

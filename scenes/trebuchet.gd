@@ -138,7 +138,7 @@ func trigger() -> void:
 	_swing = 1.0
 	thrown += 1
 	last_speed = v
-	SFX.play_small(self, SFX.sfx_bounce(), -4.0, 0.6)
+	SFX.play_small(self, SFX.sfx_whoosh(), -6.0, 0.8)
 	FX.burst(get_parent(), global_position + _p(Vector2(-10, -70)), Color(0.9, 0.8, 0.6), 6, 60.0, 0.3, 1.0)
 
 

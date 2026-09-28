@@ -76,7 +76,7 @@ func fire(p: float) -> void:
 	get_parent().add_child(o)
 	o.collision_mask |= 2        # marbles in play knock each other about
 	o.linear_velocity = Vector2(0, -lerpf(MIN_SPEED, MAX_SPEED, clampf(p, 0.0, 1.0)))
-	SFX.play_small(self, SFX.sfx_bounce(), -6.0, 0.8 + p * 0.5)
+	SFX.play_small(self, SFX.sfx_twang(), -8.0, 0.8 + p * 0.4)
 	power = 0.0
 	queue_redraw()
 

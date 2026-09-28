@@ -82,7 +82,7 @@ func _arrive(o: RigidBody2D, now: float) -> void:
 		last_speed = v
 		fired += 1
 		FX.burst(get_parent(), _loaded.global_position, Color(0.7, 0.85, 1.0), 6, 90.0, 0.2, 1.0)
-		SFX.play_small(self, SFX.sfx_clink(), -6.0, 1.4)
+		SFX.play_small(self, SFX.sfx_magnet(), -8.0, 1.5)
 		_loaded = null
 	_pass = o
 	_pass_t = 0.0

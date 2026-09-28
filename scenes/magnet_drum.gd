@@ -53,7 +53,7 @@ func _physics_process(delta: float) -> void:
 		if p.length() < R + GRAB + 6.5:
 			_riders[o.get_instance_id()] = [o, p.angle()]
 			o.gravity_scale = 0.0
-			SFX.play_small(self, SFX.sfx_ore_knock("metal"), -16.0, 1.3)
+			SFX.play_small(self, SFX.sfx_magnet(), -16.0, 1.1)
 	for id in _riders.keys():
 		var r: Array = _riders[id]
 		var o = r[0]

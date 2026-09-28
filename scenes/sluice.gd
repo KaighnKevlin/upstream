@@ -84,7 +84,7 @@ func held() -> int:
 func trigger() -> void:
 	if _open_t <= 0:
 		opened += 1
-		SFX.play_small(self, SFX.sfx_ore_knock("wood"), -8.0, 0.7)
+		SFX.play_small(self, SFX.sfx_creak(), -10.0, 0.8)
 	_open_t = OPEN_FOR
 	_gate.set_deferred("disabled", true)
 	# wake whatever's resting against it

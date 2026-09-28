@@ -137,7 +137,7 @@ func _strike(k: String) -> void:
 	o.linear_velocity = Vector2(EJECT.x * side, EJECT.y)
 	o.angular_velocity = side * 8.0
 	FX.burst(get_parent(), global_position + Vector2(0, FACE - 2), Color(1.0, 0.8, 0.45), 7, 90.0, 0.25, 1.4, 200.0)
-	SFX.play_small(self, SFX.sfx_clink(), -6.0, 0.8)
+	SFX.play_small(self, SFX.sfx_thud(), -8.0, 1.3)
 
 
 ## The hammer's height over the face: a slow wind-up, a quick drop.

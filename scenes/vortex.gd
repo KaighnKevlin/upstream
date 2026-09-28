@@ -61,7 +61,7 @@ func _physics_process(delta: float) -> void:
 			var v := maxf(V_MIN, absf(o.linear_velocity.x) + 40.0)
 			_riders[o.get_instance_id()] = [o, theta, R, v]
 			o.gravity_scale = 0.0
-			SFX.play_small(self, SFX.sfx_ore_knock("metal"), -16.0, 0.9)
+			SFX.play_small(self, SFX.sfx_roll(), -16.0, 0.8)
 	for id in _riders.keys():
 		var r: Array = _riders[id]
 		var o = r[0]

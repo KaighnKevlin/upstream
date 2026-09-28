@@ -138,7 +138,7 @@ func _weigh(b, k: int) -> void:
 	dropped[k] += 1
 	# pressed down into the hole rather than skipping over it
 	b.linear_velocity = Vector2(b.linear_velocity.x * 0.25, 90.0)
-	SFX.play_small(self, SFX.sfx_ore_knock("metal"), -14.0, 0.7 + k * 0.2)
+	SFX.play_small(self, SFX.sfx_twang(), -14.0, 0.9 + k * 0.15)
 
 
 func _physics_process(delta: float) -> void:

@@ -104,7 +104,7 @@ func _physics_process(delta: float) -> void:
 			_cool[o.get_instance_id()] = now + 999.0
 			o.gravity_scale = 0.0
 			_riding.append([o, 0.0, maxf(0.0, o.linear_velocity.y) * 0.5])
-			SFX.play_small(self, SFX.sfx_ore_knock("metal"), -18.0, 1.3)
+			SFX.play_small(self, SFX.sfx_roll(), -16.0, 0.9)
 	# down the slide: gravity along its fall, held to the rail
 	var total: float = _len[_len.size() - 1]
 	for r in _riding.duplicate():

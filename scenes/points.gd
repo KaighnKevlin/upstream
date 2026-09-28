@@ -15,7 +15,7 @@ func _ready() -> void:
 func trigger() -> void:
 	tilt = -tilt
 	_apply()
-	SFX.play_small(self, SFX.sfx_ore_knock("wood"), -12.0, 0.8)
+	SFX.play_small(self, SFX.sfx_latch(), -12.0, 0.9)
 
 
 func _on_leave(b) -> void:

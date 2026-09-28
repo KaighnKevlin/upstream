@@ -179,7 +179,7 @@ func set_on(v: bool) -> void:
 		return
 	on = v
 	changes += 1
-	SFX.play_small(self, SFX.sfx_ore_knock("metal"), -12.0, 1.3 if on else 0.9)
+	SFX.play_small(self, SFX.sfx_latch(), -12.0, 1.15 if on else 0.9)
 	fire()
 
 

@@ -58,7 +58,7 @@ func _physics_process(delta: float) -> void:
 			o.linear_velocity = Vector2(-side * v * KEEP, 0)
 			_cool[id] = now + 0.8
 			turned += 1
-			SFX.play_small(self, SFX.sfx_ore_knock("metal"), -18.0, 1.3)
+			SFX.play_small(self, SFX.sfx_roll(), -16.0, 1.0)
 			_riders.erase(id)
 			continue
 		# round the outside of the bend: from the top, out toward `side`, down, back

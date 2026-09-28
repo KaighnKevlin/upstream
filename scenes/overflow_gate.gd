@@ -68,7 +68,7 @@ func _physics_process(delta: float) -> void:
 	if want != tilt:
 		tilt = want
 		_apply()
-		SFX.play_small(self, SFX.sfx_ore_knock("wood"), -16.0, 1.1)
+		SFX.play_small(self, SFX.sfx_latch(), -16.0, 1.1)
 
 
 func _on_leave(b) -> void:
