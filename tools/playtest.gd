@@ -6779,6 +6779,43 @@ func loadcell_rec() -> void:
 	log_line("load cell: %s" % [log])
 
 
+func turn_rec() -> void:
+	# Banked turn: a chute into its top mouth, a chute out of its bottom one
+	# the other way. Speed into the turn and out of it.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	var MW = preload("res://scripts/marble_works.gd")
+	await MW.carve(main, false)
+	var bt: Node2D = MW._piece(main, "res://scenes/banked_turn.tscn", Vector2(1360, 400), {"side": 1.0})
+	MW._chute(main, Vector2(1200, 360), Vector2(1352, 408))
+	var outc = MW._chute(main, Vector2(1356, 452), Vector2(1200, 500))
+	outc.has_lip = false
+	outc._rebuild()
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.5, 2.5)
+	cam.global_position = Vector2(1290, 430)
+	var out := []
+	for k in 3:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.global_position = Vector2(1210, 348)
+		main.add_child(o)
+		var v_in := -1
+		var v_out := -1
+		for t in 110:
+			await wait(0.03)
+			if v_in < 0 and o.global_position.x > 1340:
+				v_in = int(o.linear_velocity.length())
+			if v_out < 0 and o.global_position.y > 452 and o.global_position.x < 1340:
+				v_out = int(o.linear_velocity.length())
+			if k == 0 and t == 52:
+				await shot("turn")
+		out.append("in %d out %d, at %s v %s" % [v_in, v_out, Vector2i(o.global_position), Vector2i(o.linear_velocity)])
+	log_line("banked turn: %s | turned %d" % [out, bt.turned])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.
