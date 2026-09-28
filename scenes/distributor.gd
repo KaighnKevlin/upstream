@@ -13,10 +13,28 @@ var turn := 0
 var sent := [0, 0, 0]            # tests
 var _cool := {}
 var _angle := 0.0
+var _spout: Sprite2D             # turns on its pivot, (0, -2)
 
 
 func _ready() -> void:
 	z_index = 2
+	# sprites first, so ghosts and build-bar icons get them too; behind our
+	# own _draw (the outlet lamps)
+	var bd := Sprite2D.new()
+	bd.texture = preload("res://assets/sprites/distributor_body.png")
+	bd.centered = false
+	bd.offset = Vector2(-20, -24)
+	bd.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	bd.show_behind_parent = true
+	add_child(bd)
+	_spout = Sprite2D.new()
+	_spout.texture = preload("res://assets/sprites/distributor_spout.png")
+	_spout.centered = false
+	_spout.offset = Vector2(-6, -5)
+	_spout.position = Vector2(0, -2)
+	_spout.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_spout.show_behind_parent = true
+	add_child(_spout)
 	if has_meta("ghost"):
 		return
 	var a := Area2D.new()
@@ -63,19 +81,9 @@ func _input(event: InputEvent) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var brass := Color(0.85, 0.65, 0.35)
-	# hopper
-	draw_line(Vector2(-16, -20), Vector2(-7, -4), dark, 3.0)
-	draw_line(Vector2(16, -20), Vector2(7, -4), dark, 3.0)
-	draw_line(Vector2(-16, -20), Vector2(-7, -4), Color(0.6, 0.62, 0.66), 1.0)
-	draw_line(Vector2(16, -20), Vector2(7, -4), Color(0.6, 0.62, 0.66), 1.0)
-	# the turning spout
-	var d := Vector2(sin(_angle), cos(_angle)) * 14.0
-	draw_line(Vector2(0, -2), d, dark, 7.0)
-	draw_line(Vector2(0, -2), d, brass, 4.0)
-	draw_circle(Vector2(0, -2), 4.0, dark)
-	draw_circle(Vector2(0, -2), 2.5, brass)
+	# hopper, housing and spout are sprites (see _ready); the spout points
+	# along (sin, cos) of _angle
+	_spout.rotation = -_angle
 	# the three outlets, next one lit
 	for k in 3:
 		var p: Vector2 = SPOUT[k] * 1.6

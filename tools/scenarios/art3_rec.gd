@@ -28,6 +28,12 @@ static func run(t) -> void:
 	var ty: Node2D = MW._piece(t.main, "res://scenes/tally.tscn", Vector2(1200, 410), {"mode": 1, "wire_to": Vector2(40, 40)})
 	ty.count = 2
 	MW._piece(t.main, "res://scenes/counterweight.tscn", Vector2(1340, 360))
+	# frame 3: distributor, flippers, pair gate, load cell
+	MW._piece(t.main, "res://scenes/distributor.tscn", Vector2(1440, 250))
+	MW._piece(t.main, "res://scenes/flipper.tscn", Vector2(1480, 330), {"side": 1.0})
+	MW._piece(t.main, "res://scenes/flipper.tscn", Vector2(1600, 330), {"side": -1.0})
+	MW._piece(t.main, "res://scenes/pair_gate.tscn", Vector2(1530, 240))
+	MW._piece(t.main, "res://scenes/load_cell.tscn", Vector2(1610, 250), {"wire_to": Vector2(20, 30)})
 	await t.wait(1.0)
 	b1.ring(1.0)
 	await t.wait(0.15)
@@ -39,6 +45,10 @@ static func run(t) -> void:
 	cam.global_position = Vector2(1230, 450)
 	await t.wait(0.1)
 	await t.shot("art_b")
+	cam.zoom = Vector2(3.4, 3.4)
+	cam.global_position = Vector2(1530, 285)
+	await t.wait(0.1)
+	await t.shot("art_c")
 	# the build bar's tabs that hold these pieces (production: flywheel;
 	# defence: cannon; lifts: counterweight, plunger, chime; logic: the rest)
 	var bar: Control = t.main.get_node("CanvasLayer").get_children().filter(func(c): return c.get_script() and c.get_script().resource_path.get_file() == "build_bar.gd")[0]
