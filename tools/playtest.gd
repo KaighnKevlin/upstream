@@ -6884,6 +6884,47 @@ func tread_rec() -> void:
 	log_line("treadwheel: %s | walked %.1f s, player x %d" % [out, tw.walked, int(pl.global_position.x)])
 
 
+func trebuchet_rec() -> void:
+	# Trebuchet: 3 copper in the box vs 3 iron, 2 copper in the sling each
+	# time; how fast and how far the shot goes.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	await preload("res://scripts/marble_works.gd").carve(main, false)
+	var tb: Node2D = preload("res://scenes/trebuchet.tscn").instantiate()
+	tb.global_position = Vector2(1000, 568)
+	main.add_child(tb)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.1, 1.1)
+	cam.global_position = Vector2(1280, 420)
+	var drop := func(kind: String, at: Vector2) -> RigidBody2D:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.kind = kind
+		o.lifetime = 1.0e9
+		o.global_position = at
+		main.add_child(o)
+		return o
+	var out := []
+	for load_kind in ["copper", "iron"]:
+		for k in 3:
+			drop.call(load_kind, tb.global_position + Vector2(-26, -80 - k * 14))
+		var shots := []
+		for k in 2:
+			shots.append(drop.call("copper", tb.global_position + Vector2(34, -40 - k * 14)))
+		await wait(1.5)
+		var m: float = tb._mass(tb._box)
+		tb.trigger()
+		await wait(0.6)
+		if load_kind == "iron":
+			await shot("trebuchet")
+		await wait(2.5)
+		out.append("box %.0f (%s): %d px/s, landed x %s" % [m, load_kind, int(tb.last_speed), shots.map(func(o): return int(o.global_position.x))])
+		await wait(1.5)
+	log_line("trebuchet: %s | thrown %d" % [out, tb.thrown])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.
