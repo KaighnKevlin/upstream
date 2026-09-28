@@ -29,8 +29,12 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	var seen := {}
+	var now := Time.get_ticks_msec() / 1000.0
 	for o in get_tree().get_nodes_in_group("ore"):
 		if not is_instance_valid(o):
+			continue
+		if o.get_meta("muffled_until", 0.0) > now:
+			_prev.erase(o.get_instance_id())   # on felt: not heard
 			continue
 		var id: int = o.get_instance_id()
 		var v: float = o.linear_velocity.length()

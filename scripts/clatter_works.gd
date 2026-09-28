@@ -12,17 +12,24 @@ const Director = preload("res://scenes/defence_director.gd")
 const NoiseMeter = preload("res://scenes/noise_meter.gd")
 
 
-static func build(main: Node) -> Array:
+## `felt`: every chute felt-lined and the bell muffled (quiet, slower).
+static func build(main: Node, felt := false) -> Array:
 	await MarbleWorks.carve(main, false)
+	var chute := func(a: Vector2, b: Vector2) -> Node2D:
+		if not felt:
+			return MarbleWorks._chute(main, a, b)
+		var ch: Node2D = preload("res://scenes/felt_chute.tscn").instantiate()
+		ch.end_offset = b - a
+		return MarbleWorks.Showcase._add_node(main, ch, a)
 	MarbleWorks._piece(main, "res://scenes/dispenser.tscn", Vector2(1000, 190), {"mode": 0})
-	MarbleWorks._chute(main, Vector2(985, 215), Vector2(1180, 280))
+	chute.call(Vector2(985, 215), Vector2(1180, 280))
 	# the run ends against a bell (a stop that rings), which drops it onto a flip-flop
-	MarbleWorks._piece(main, "res://scenes/bell.tscn", Vector2(1204, 262))
+	MarbleWorks._piece(main, "res://scenes/bell.tscn", Vector2(1204, 262), {"muffled": felt})
 	var rk := MarbleWorks._piece(main, "res://scenes/rocker.tscn", Vector2(1192, 330))
 	# left: into the production cup; right: to the turret
-	MarbleWorks._chute(main, Vector2(1174, 352), Vector2(1080, 420))
+	chute.call(Vector2(1174, 352), Vector2(1080, 420))
 	var cup := MarbleWorks._piece(main, "res://scenes/goal_cup.tscn", Vector2(1066, 470), {"target": 999, "backboard": -1.0})
-	MarbleWorks._chute(main, Vector2(1210, 352), Vector2(1330, 420))
+	chute.call(Vector2(1210, 352), Vector2(1330, 420))
 	MarbleWorks._piece(main, "res://scenes/funnel_turret.tscn", Vector2(1345, 490))
 	var d: Node2D = Director.new()
 	d.wave = 0                        # nothing comes until something hears

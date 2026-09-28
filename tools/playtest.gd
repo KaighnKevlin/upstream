@@ -5845,7 +5845,7 @@ func clatter_rec() -> void:
 	# The Clatter world: noise, what it's drawn and the production, every 5 s.
 	main._wave_timer = -9999.0
 	await wait(0.3)
-	await main.start_clatter_works()
+	await main.start_clatter_works(OS.get_environment("FELT") == "1")
 	var find := func(file: String): return main.get_children().filter(func(c): return c.get_script() and c.get_script().resource_path.get_file() == file)[0]
 	var n = find.call("noise_meter.gd")
 	var d = find.call("defence_director.gd")

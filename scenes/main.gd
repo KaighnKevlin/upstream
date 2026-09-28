@@ -438,9 +438,9 @@ func start_defence_works(sorted := false) -> void:
 
 ## Noise draws enemies: the machine's clatter sends walkers for the vault
 ## (scripts/clatter_works.gd).
-func start_clatter_works() -> void:
+func start_clatter_works(felt := false) -> void:
 	preload("res://scripts/sandbox_showcase.gd").clear(self)
-	var parts: Array = await preload("res://scripts/clatter_works.gd").build(self)
+	var parts: Array = await preload("res://scripts/clatter_works.gd").build(self, felt)
 	parts[1].finished.connect(func(_won: bool): _show_banner("VAULT BROKEN", "the racket drew too many"))
 	parts[0].attract.connect(func(n: int): _show_banner("HEARD", "the clatter carries: %d coming" % (n + 1)))
 	_player.global_position = Vector2(1050, 540)
@@ -1213,6 +1213,7 @@ var _build_names := {
 	51: "Build: GOAL CUP (counts marbles in; fires traps in reach when full)",
 	52: "Build: WEIGH SCALE (heavy ore rolls off one side, light the other: click for 1.5/2.5)",
 	53: "Build: MARBLE CANNON (feed its hopper: fires flat at walkers in front; iron punches shields)",
+	54: "Build: FELT CHUTE (drag: marbles on it make no clatter, but it slows them)",
 	44: "Build: ROBOTIC ARM (picks from one spot, drops at another)",
 	37: "Build: DOMINO ROW (drag start to end; click an end to reset)",
 	36: "Build: STEAM ENGINE (feed it ore: powers machines in reach)",

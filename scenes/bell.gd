@@ -10,6 +10,8 @@ const Tripwire = preload("res://scenes/tripwire.gd")
 const ORE_ONLY := 64
 const R := 11.0                  # the bell's mouth half-width
 
+@export var muffled := false     # wrapped in felt: a thud, barely heard, and it fires nothing
+
 var rings := 0                   # tests
 var _swing := 0.0
 var _swing_v := 0.0
@@ -55,6 +57,10 @@ func ring(dir := 1.0) -> void:
 	rings += 1
 	_swing_v += 3.0 * dir
 	_flash = 1.0
+	if muffled:
+		SFX.play_small(self, SFX.sfx_ore_knock("wood"), -18.0, 0.7)
+		preload("res://scenes/noise_meter.gd").add(get_tree(), 1.0)
+		return
 	SFX.play(self, SFX.sfx_bell(), -8.0, 1.0)
 	preload("res://scenes/noise_meter.gd").add(get_tree(), 15.0)   # a bell carries: it's heard
 	for n in Tripwire.linked_to(get_tree(), [global_position]):
@@ -92,5 +98,12 @@ func _draw() -> void:
 	draw_line(Vector2(-4, 5), Vector2(-6, 15), Color(1.0, 0.9, 0.6, 0.7), 1.0)
 	draw_circle(Vector2(0, 21), 2.5, dark)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	if muffled:
+		# the felt wrapping, tied round the waist
+		draw_set_transform(Vector2(0, -2), _swing, Vector2.ONE)
+		draw_colored_polygon(inner, Color(0.2, 0.45, 0.28))
+		draw_line(Vector2(-9, 12), Vector2(9, 12), Color(0.55, 0.42, 0.25), 1.5)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		return
 	if _flash > 0:
 		draw_arc(Vector2(0, 10), 16 + (1.0 - _flash) * 14, 0, TAU, 24, Color(1.0, 0.85, 0.5, _flash * 0.6), 1.5)
