@@ -78,7 +78,7 @@ const TABS := [
 		["", "Sorting", "by weight: flap sorter, weigh scale, trampoline + deflector; by kind: magnet drum, kicker"],
 		["", "Power", "gravity, paddle and tread wheels drive machines in reach; a flywheel stores the surplus"],
 		["", "Pacing", "escapement: one per beat; tipping bucket, volcano: batches; silo: a steady feed"],
-		["", "Signals", "tally wheel, load cell, bell, plate, tripwire fire what's in reach (and at a pull-wire's end)"],
+		["", "Signals", "tally wheel, load cell, bell, plate, tripwire fire what's at their pull-wire's end (or around them, unwired)"],
 		["", "What they fire", "points, sluices, flippers, drawbridges, kickers, mortars, silos, and the traps"],
 		["#", "MARBLE", ""],
 		["", "Beam tap", "on the Beam: pulls rising pieces of one kind out sideways; click: copper/iron/scrap/grit/ingots/any"],
