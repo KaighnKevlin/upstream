@@ -22,10 +22,21 @@ var _phase := 0.0
 var _rate := Power.UNPOWERED
 var _rate_t := 0.0
 var strokes := 0                 # tests
+var _art: Node2D                 # pixel art: blocks, stems and base rail, posed each frame
+const BLOCK_TEX := preload("res://assets/sprites/stair_block.png")
+const POST_TEX := preload("res://assets/sprites/stair_post.png")
+const BASE_TEX := preload("res://assets/sprites/stair_base.png")
 
 
 func _ready() -> void:
 	z_index = 1
+	# art first (ghosts too)
+	_art = Node2D.new()
+	_art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_art.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+	_art.show_behind_parent = true
+	_art.draw.connect(_draw_art)
+	add_child(_art)
 	if has_meta("ghost"):
 		queue_redraw()
 		return
@@ -71,16 +82,18 @@ func _physics_process(delta: float) -> void:
 
 
 func _draw() -> void:
+	_art.queue_redraw()          # all sprite: see _draw_art
+
+
+func _draw_art() -> void:
 	var n := steps
+	# base rail
+	var x0 := minf(-RUN * 0.5 * side, side * (n - 0.5) * RUN)
+	_art.draw_texture_rect(BASE_TEX, Rect2(x0, 7, n * RUN, 6), true)
 	for k in n:
 		var p: Vector2 = _blocks[k].position if k < _blocks.size() else _home(k)
-		# the block and its post down to the base line
-		var top := p + Vector2(0, 0)
-		draw_line(top + Vector2(0, 6), Vector2(top.x, 8), Color(0.16, 0.13, 0.1), 2.0)
-		draw_set_transform(top + Vector2(0, 3), TILT * side, Vector2.ONE)
-		draw_rect(Rect2(-RUN * 0.5, -3, RUN, 6), Color(0.1, 0.08, 0.07))
-		draw_rect(Rect2(-RUN * 0.5 + 1, -2, RUN - 2, 4), Color(0.72, 0.55, 0.3))
-		draw_rect(Rect2(-RUN * 0.5 + 1, -2, RUN - 2, 1), Color(0.9, 0.75, 0.45))
-		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	# base rail
-	draw_line(Vector2(-RUN * 0.5 * side, 9), Vector2(side * (n - 0.5) * RUN, 9), Color(0.16, 0.13, 0.1), 3.0)
+		# the block's stem down to the base rail, then the block, tilted forward
+		_art.draw_texture_rect(POST_TEX, Rect2(p.x - 2, p.y + 5, 4, 8 - (p.y + 5)), true)
+		_art.draw_set_transform(p + Vector2(0, 3), TILT * side, Vector2.ONE)
+		_art.draw_texture(BLOCK_TEX, Vector2(-9, -4))
+		_art.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
