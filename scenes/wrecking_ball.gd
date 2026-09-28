@@ -20,6 +20,7 @@ const WINDS := 4
 var releases := 0                # tests
 var hits := 0
 var armed := true
+var pose := 1.0                  # how far cocked it starts (build-bar icon: less, to fit)
 var _th := 0.0                   # angle from straight down (+ toward +x)
 var _om := 0.0
 var _wind := 0
@@ -31,7 +32,7 @@ var _latch: Sprite2D
 
 func _ready() -> void:
 	z_index = 2
-	_th = COCK * side
+	_th = COCK * side * pose
 	# the sprites first, so ghosts and build-bar icons get them too: the
 	# bracket and bucket behind our own _draw (the gauge lights)
 	var br := _spr(preload("res://assets/sprites/wrecking_bracket.png"), Vector2(-29, -10))

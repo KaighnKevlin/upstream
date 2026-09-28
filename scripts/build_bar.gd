@@ -14,6 +14,7 @@ const ICON_BOX := Vector2(43, 36)
 # pieces whose sprites fill a known box (x, y, w, h about their origin),
 # so their icons centre on the art rather than a guess
 const ART_RECTS := {
+	"wrecking_ball.gd": Rect2(-30, -10, 68, 84),
 	"teeter.gd": Rect2(-38, -24, 76, 42),
 	"trebuchet.gd": Rect2(-38, -58, 86, 70),
 	"treadwheel.gd": Rect2(-40, -40, 80, 82),
@@ -399,11 +400,11 @@ func _build_icon(slot: Node2D, t: int) -> void:
 				ic.wire_to = Vector2.ZERO
 				ic.position = Vector2(0, 8)
 			elif scn == "wrecking_ball":
-				ic.position = Vector2(-10, -18)
-				ic.scale = Vector2(0.45, 0.45)
+				ic.pose = 0.3
+				ic.scale = Vector2.ONE
 			elif scn == "flume":
-				ic.end_offset = Vector2(80, 0)
-				ic.position = Vector2(-20, 4)
+				ic.end_offset = Vector2(70, 0)
+				ic.position = Vector2(-17, 4)
 				ic.scale = Vector2(0.5, 0.5)
 			elif scn == "flail":
 				ic.position = Vector2(-7, 16)
