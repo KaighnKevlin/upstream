@@ -12,6 +12,25 @@ var pairs := 0                   # tests
 var _held: Array = [[], []]
 var _cool := {}
 var _flash := 0.0
+var _plate: Sprite2D             # the medallion, brightening as a pair goes
+
+
+func _ready() -> void:
+	# sprites (for ghosts and build-bar icons too), behind our own _draw
+	# (the counts and the ampersand)
+	var bd := Sprite2D.new()
+	bd.texture = preload("res://assets/sprites/pair_gate.png")
+	bd.centered = false
+	bd.offset = Vector2(-34, -20)
+	bd.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	bd.show_behind_parent = true
+	add_child(bd)
+	_plate = Sprite2D.new()
+	_plate.texture = preload("res://assets/sprites/pair_gate_plate.png")   # centred on it
+	_plate.position = Vector2(0, -6)
+	_plate.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_plate.show_behind_parent = true
+	add_child(_plate)
 
 
 func _cup(k: int) -> Vector2:
@@ -59,19 +78,11 @@ func _physics_process(delta: float) -> void:
 
 
 func _draw() -> void:
+	# cups, spout and medallion are sprites (see _ready)
+	_plate.self_modulate = Color.WHITE.lerp(Color(1.45, 1.35, 1.1), _flash)
 	var dark := Color(0.1, 0.08, 0.07)
-	var brass := Color(0.85, 0.65, 0.35).lerp(Color(1, 0.95, 0.7), _flash)
 	for k in 2:
 		var c := _cup(k)
-		draw_line(c + Vector2(-10, -16), c + Vector2(-8, 2), dark, 3.0)
-		draw_line(c + Vector2(8, 2), c + Vector2(10, -16), dark, 3.0)
-		draw_line(c + Vector2(-8, 2), c + Vector2(8, 2), dark, 3.0)
-		draw_line(c + Vector2(-8, 1), c + Vector2(8, 1), brass, 1.0)
 		var font := ThemeDB.fallback_font
 		draw_string(font, c + Vector2(-4, 14), str(_held[k].size()), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.9, 0.8, 0.55))
-	# the joint spout and an ampersand plate
-	draw_line(Vector2(-12, 4), Vector2(-5, 14), dark, 3.0)
-	draw_line(Vector2(12, 4), Vector2(5, 14), dark, 3.0)
-	draw_circle(Vector2(0, -6), 6.0, dark)
-	draw_circle(Vector2(0, -6), 4.5, brass)
 	draw_string(ThemeDB.fallback_font, Vector2(-3, -2), "&", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, dark)

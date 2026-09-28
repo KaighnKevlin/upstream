@@ -19,10 +19,25 @@ var _turn := 0.0
 var _flash := 0.0
 var _last := {}
 var _dragging := false
+var _wheel: Sprite2D             # turns a notch per piece
 
 
 func _ready() -> void:
 	z_index = 2
+	# sprites first, so ghosts and build-bar icons get them too; behind our
+	# own _draw (the wire and the count)
+	var br := Sprite2D.new()
+	br.texture = preload("res://assets/sprites/tally_bracket.png")
+	br.centered = false
+	br.offset = Vector2(-8, -13)
+	br.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	br.show_behind_parent = true
+	add_child(br)
+	_wheel = Sprite2D.new()
+	_wheel.texture = preload("res://assets/sprites/tally_wheel.png")   # centred on the axle
+	_wheel.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_wheel.show_behind_parent = true
+	add_child(_wheel)
 	if has_meta("ghost"):
 		return
 	var a := Area2D.new()
@@ -91,23 +106,15 @@ func _input(event: InputEvent) -> void:
 
 
 func _draw() -> void:
+	# bracket and star-wheel are sprites (see _ready); it glows as it fires
+	_wheel.rotation = _turn
+	_wheel.self_modulate = Color.WHITE.lerp(Color(1.45, 1.35, 1.1), _flash)
 	var dark := Color(0.1, 0.08, 0.07)
-	var brass := Color(0.85, 0.65, 0.35).lerp(Color(1, 0.95, 0.7), _flash)
 	if wire_to != Vector2.ZERO:
 		var mid := wire_to * 0.5 + Vector2(0, 14)
 		draw_polyline(PackedVector2Array([Vector2(6, -6), mid, wire_to]), Color(0.55, 0.5, 0.42, 0.8), 1.0)
 		draw_circle(wire_to, 3.0, dark)
 		draw_circle(wire_to, 2.0, Color(0.85, 0.65, 0.35))
-	# bracket down to the wheel
-	draw_line(Vector2(0, -10), Vector2(0, 0), dark, 3.0)
-	# the star-wheel: eight arms, turning a notch per piece
-	for k in 8:
-		var a := _turn + k * TAU / 8.0
-		var d := Vector2(cos(a), sin(a))
-		draw_line(Vector2.ZERO, d * 9.0, dark, 3.0)
-		draw_line(Vector2.ZERO, d * 8.0, brass, 1.5)
-	draw_circle(Vector2.ZERO, 3.0, dark)
-	draw_circle(Vector2.ZERO, 2.0, brass)
 	# the count toward the next firing
 	var font := ThemeDB.fallback_font
 	draw_string(font, Vector2(-10, -14), "%d/%d" % [count % EVERY[mode], EVERY[mode]], HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.9, 0.8, 0.55))

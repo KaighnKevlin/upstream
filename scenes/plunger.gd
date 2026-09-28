@@ -15,10 +15,20 @@ var fired := 0                   # tests
 var power := 0.0                 # 0..1 while charging
 var _charging := false
 var _mouth: Area2D
+var _spring: Sprite2D            # squashed in y as the spring is drawn back
+var _head: Sprite2D              # the piston on top of it
+var _knob: Sprite2D              # pulled down with it
 
 
 func _ready() -> void:
 	z_index = 2
+	# sprites first, so ghosts and build-bar icons get them too; behind our
+	# own _draw (the power gauge and the ammo count)
+	_knob = _sprite(preload("res://assets/sprites/plunger_knob.png"), Vector2(-7, -19))
+	_sprite(preload("res://assets/sprites/plunger_barrel.png"), Vector2(-12, -33))
+	_spring = _sprite(preload("res://assets/sprites/plunger_spring.png"), Vector2(-6, -22))
+	_head = _sprite(preload("res://assets/sprites/plunger_head.png"), Vector2(-7, -1))
+	_pose()
 	if has_meta("ghost"):
 		return
 	# a marble that drops back into the barrel is reloaded
@@ -32,6 +42,25 @@ func _ready() -> void:
 	cs.position = Vector2(0, -2)
 	_mouth.add_child(cs)
 	add_child(_mouth)
+
+
+func _sprite(tex: Texture2D, off: Vector2) -> Sprite2D:
+	var sp := Sprite2D.new()
+	sp.texture = tex
+	sp.centered = false
+	sp.offset = off
+	sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	sp.show_behind_parent = true
+	add_child(sp)
+	return sp
+
+
+## Spring, piston and knob where `power` puts them.
+func _pose() -> void:
+	var top := -22.0 + power * 14.0
+	_spring.scale.y = -top / 22.0
+	_head.position.y = top - 4.0
+	_knob.position.y = 12.0 + power * 12.0
 
 
 ## Fire at `p` (0..1 of the speed range). The tests call this directly.
@@ -82,24 +111,8 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
+	_pose()                      # barrel, spring, piston and knob are sprites (see _ready)
 	var dark := Color(0.1, 0.08, 0.07)
-	var brass := Color(0.85, 0.65, 0.35)
-	# the barrel
-	draw_rect(Rect2(-9, -30, 18, 34), dark)
-	draw_rect(Rect2(-7, -28, 14, 30), Color(0.3, 0.24, 0.18))
-	# the spring, squashed as it's drawn back
-	var top := -22.0 + power * 14.0
-	var k := 0
-	var y := top
-	while y < 0:
-		draw_line(Vector2(-5, y), Vector2(5, y + 2), Color(0.7, 0.72, 0.76), 1.0)
-		y += 3.0 - power * 1.6
-		k += 1
-	draw_rect(Rect2(-6, top - 4, 12, 4), brass)
-	# the knob underneath, pulled down with the spring
-	draw_line(Vector2(0, 4), Vector2(0, 10 + power * 12), dark, 3.0)
-	draw_circle(Vector2(0, 12 + power * 12), 6.0, dark)
-	draw_circle(Vector2(0, 12 + power * 12), 4.5, Color(0.8, 0.25, 0.2))
 	# power gauge
 	if power > 0:
 		draw_rect(Rect2(12, -30, 4, 30), dark)

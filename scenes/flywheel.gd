@@ -16,10 +16,25 @@ var _angle := 0.0
 var _scan := 0.0
 var _users := 0
 var _feeding := false
+var _disc: Sprite2D              # turns by _angle
 
 
 func _ready() -> void:
 	z_index = 1
+	# sprites first, so ghosts and build-bar icons get them too; behind our
+	# own _draw (the charge arc)
+	var fr := Sprite2D.new()
+	fr.texture = preload("res://assets/sprites/flywheel_frame.png")
+	fr.centered = false
+	fr.offset = Vector2(-20, -6)
+	fr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	fr.show_behind_parent = true
+	add_child(fr)
+	_disc = Sprite2D.new()
+	_disc.texture = preload("res://assets/sprites/flywheel_disc.png")   # centred on the axle
+	_disc.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_disc.show_behind_parent = true
+	add_child(_disc)
 	if has_meta("ghost"):
 		return
 	add_to_group("power_wheels")
@@ -58,19 +73,7 @@ func _is_flywheel() -> bool:
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	# the frame
-	draw_line(Vector2(0, 0), Vector2(-14, 30), Color(0.16, 0.13, 0.1), 3.0)
-	draw_line(Vector2(0, 0), Vector2(14, 30), Color(0.16, 0.13, 0.1), 3.0)
-	draw_line(Vector2(-18, 30), Vector2(18, 30), Color(0.16, 0.13, 0.1), 3.0)
-	# the disc: a heavy rim and spokes, spinning with what it's storing
-	draw_circle(Vector2.ZERO, 20.0, dark)
-	draw_circle(Vector2.ZERO, 18.0, Color(0.36, 0.38, 0.42))
-	draw_circle(Vector2.ZERO, 13.0, Color(0.22, 0.23, 0.26))
-	for k in 5:
-		var a := _angle + k * TAU / 5.0
-		draw_line(Vector2.ZERO, Vector2(cos(a), sin(a)) * 13.0, Color(0.5, 0.52, 0.56), 2.0)
-	draw_circle(Vector2.ZERO, 4.0, Color(0.85, 0.65, 0.35))
+	_disc.rotation = _angle      # frame and disc are sprites (see _ready)
 	# the charge, as a brass arc round the rim
 	if spin > 0.01:
 		draw_arc(Vector2.ZERO, 22.0, -PI * 0.5, -PI * 0.5 + TAU * spin, 32, Color(1.0, 0.8, 0.35, 0.85), 2.0)
