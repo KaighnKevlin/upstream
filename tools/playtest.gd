@@ -6654,6 +6654,41 @@ func pair_rec() -> void:
 	log_line("then 2 iron: pairs %d, held %d / %d" % [pg.pairs, pg._held[0].size(), pg._held[1].size()])
 
 
+func furnace_rec() -> void:
+	# Furnace rail: ore rolled over a shallow one (smelts) and a steep one
+	# (runs through raw). Ingots out of each.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	var MW = preload("res://scripts/marble_works.gd")
+	await MW.carve(main, false)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.8, 1.8)
+	cam.global_position = Vector2(1250, 420)
+	var out := []
+	var rails := []
+	for spec in [[Vector2(1050, 380), Vector2(200, 14)], [Vector2(1150, 300), Vector2(160, 110)]]:
+		var fr: Node2D = preload("res://scenes/furnace_rail.tscn").instantiate()
+		fr.end_offset = spec[1]
+		fr.global_position = spec[0]
+		main.add_child(fr)
+		rails.append(fr)
+	await wait(0.2)
+	for k in 4:
+		for i in 2:
+			var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+			o.kind = "iron" if k % 2 == 1 else "copper"
+			o.lifetime = 1.0e9
+			o.global_position = rails[i].global_position + Vector2(8, -12)
+			main.add_child(o)
+		await wait(0.9)
+	await shot("furnace")
+	await wait(2.0)
+	log_line("furnace: shallow rail smelted %d of 4, steep rail %d of 4 | ingots now %d" % [rails[0].smelted, rails[1].smelted, get_nodes_in_group("ingots").size()])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.
