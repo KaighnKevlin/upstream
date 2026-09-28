@@ -6078,6 +6078,42 @@ func airsort_rec() -> void:
 	log_line("airsort: %s" % [out])
 
 
+func booster_rec() -> void:
+	# Booster rail: marbles dropped at its low end, driven uphill; did they
+	# climb off the top, and how fast (unpowered: ~0.35 of full speed).
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	await preload("res://scripts/marble_works.gd").carve(main, false)
+	var bo: Node2D = preload("res://scenes/booster.tscn").instantiate()
+	bo.end_offset = Vector2(200, -70)
+	bo.global_position = Vector2(1100, 520)
+	main.add_child(bo)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.5, 2.5)
+	cam.global_position = Vector2(1210, 480)
+	var out := []
+	for k in 3:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.global_position = Vector2(1110, 505)
+		main.add_child(o)
+		var top_v := 0.0
+		var over := false
+		for t in 60:
+			await wait(0.05)
+			if not is_instance_valid(o):
+				break
+			if o.global_position.x > 1300 and not over:
+				over = true
+				top_v = o.linear_velocity.length()
+			if k == 0 and t == 20:
+				await shot("booster")
+		out.append("over %s at %d px/s" % [over, int(top_v)])
+	log_line("booster (rate %.2f): %s | boosted %d" % [bo._rate, out, bo.boosted])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.
