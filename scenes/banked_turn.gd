@@ -17,6 +17,17 @@ var _riders := {}                # id -> [body, theta, v]
 var _cool := {}
 
 
+func _ready() -> void:
+	# the half-pipe: a sprite, drawn turning out to +x (ghosts too)
+	var art := Sprite2D.new()
+	art.texture = preload("res://assets/sprites/banked_turn.png")
+	art.centered = false
+	art.offset = Vector2(-6, -12)
+	art.scale = Vector2(side, 1)
+	art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(art)
+
+
 func _centre() -> Vector2:
 	return Vector2(0, R)
 
@@ -56,18 +67,3 @@ func _physics_process(delta: float) -> void:
 		if "_timer" in o:
 			o._timer = 0.0
 	queue_redraw()
-
-
-func _draw() -> void:
-	var dark := Color(0.09, 0.07, 0.1)
-	var steel := Color(0.42, 0.44, 0.5)
-	var c := _centre()
-	var rr := R + 7.5
-	var pts := PackedVector2Array()
-	for i in 17:
-		var th := PI * i / 16.0
-		pts.append(c + Vector2(sin(th) * side, -cos(th)) * rr)
-	draw_polyline(pts, dark, 6.0)
-	draw_polyline(pts, steel, 3.0)
-	# a bracket to the wall behind
-	draw_line(c + Vector2(side * rr, 0), c + Vector2(side * (rr + 10), 0), Color(0.16, 0.13, 0.1), 3.0)
