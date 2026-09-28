@@ -19,10 +19,20 @@ var last := 0.0
 var _flash := 0.0
 var _seen := {}
 var _dragging := false
+var _box_art: Sprite2D           # art: the brass box, lit on a fire
 
 
 func _ready() -> void:
 	z_index = 2
+	# the sprite first, so ghosts and build-bar icons get it too; behind our
+	# own _draw (the lens, beam, wire and readouts)
+	_box_art = Sprite2D.new()
+	_box_art.texture = preload("res://assets/sprites/speed_trap.png")
+	_box_art.centered = false
+	_box_art.offset = Vector2(-10, -17)
+	_box_art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_box_art.show_behind_parent = true
+	add_child(_box_art)
 	if has_meta("ghost"):
 		return
 	var a := Area2D.new()
@@ -89,17 +99,14 @@ func _input(event: InputEvent) -> void:
 
 func _draw() -> void:
 	var dark := Color(0.1, 0.08, 0.07)
-	var brass := Color(0.85, 0.65, 0.35).lerp(Color(1, 0.95, 0.7), _flash)
 	if wire_to != Vector2.ZERO:
 		var mid := wire_to * 0.5 + Vector2(0, 14)
 		draw_polyline(PackedVector2Array([Vector2(8, -8), mid, wire_to]), Color(0.55, 0.5, 0.42, 0.8), 1.0)
 		draw_circle(wire_to, 3.0, dark)
 		draw_circle(wire_to, 2.0, Color(0.85, 0.65, 0.35))
-	# the box, its eye looking down, and the beam it watches with
-	draw_rect(Rect2(-9, -16, 18, 14), dark)
-	draw_rect(Rect2(-8, -15, 16, 12), brass)
-	draw_circle(Vector2(0, -4), 3.0, dark)
-	draw_circle(Vector2(0, -4), 2.0, Color(1.0, 0.3, 0.2).lerp(Color(1, 1, 0.6), _flash))
+	# (the box is a sprite) its eye looking down, and the beam it watches with
+	_box_art.self_modulate = Color(1, 1, 1).lerp(Color(1.4, 1.3, 1.05), _flash)
+	draw_circle(Vector2(0, -4), 1.6, Color(1.0, 0.3, 0.2).lerp(Color(1, 1, 0.6), _flash))
 	draw_line(Vector2(0, -1), Vector2(0, 22), Color(1.0, 0.3, 0.2, 0.25 + _flash * 0.5), 1.0)
 	var font := ThemeDB.fallback_font
 	draw_string(font, Vector2(-14, -20), ">%d" % int(LIMITS[mode]), HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.9, 0.8, 0.55))

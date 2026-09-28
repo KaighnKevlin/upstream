@@ -15,10 +15,16 @@ var kicks := 0                   # tests
 var _flash := 0.0
 var _seen := {}
 var _area: Area2D
+var _ring_art: Sprite2D          # art: the brass ring, pushed out (scaled) on a kick
+var _post_art: Sprite2D
 
 
 func _ready() -> void:
 	z_index = 2
+	# the sprites first, so ghosts and build-bar icons get them too; behind
+	# our own _draw (the flash)
+	_ring_art = _spr(preload("res://assets/sprites/pop_bumper_ring.png"), Vector2(-13, -13))
+	_post_art = _spr(preload("res://assets/sprites/pop_bumper.png"), Vector2(-10, -10))
 	if has_meta("ghost"):
 		return
 	add_to_group("triggerable")
@@ -41,6 +47,17 @@ func _ready() -> void:
 	_area.add_child(ac)
 	add_child(_area)
 	_area.body_entered.connect(_kick)
+
+
+func _spr(tex: Texture2D, off: Vector2) -> Sprite2D:
+	var sp := Sprite2D.new()
+	sp.texture = tex
+	sp.centered = false
+	sp.offset = off
+	sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	sp.show_behind_parent = true
+	add_child(sp)
+	return sp
 
 
 func _kick(b) -> void:
@@ -76,14 +93,10 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var brass := Color(0.85, 0.65, 0.35)
-	var lit := Color(1.0, 0.9, 0.55)
-	# the kicking ring, pushed out while it flashes
-	draw_circle(Vector2.ZERO, R + 2 + _flash * 3, dark)
-	draw_arc(Vector2.ZERO, R + 1 + _flash * 3, 0, TAU, 24, brass.lerp(lit, _flash), 2.0)
-	draw_circle(Vector2.ZERO, R - 2, Color(0.42, 0.44, 0.5))
-	draw_circle(Vector2.ZERO, R - 5, brass.lerp(lit, _flash))
-	draw_circle(Vector2(-2, -2), 1.5, Color(1, 1, 1, 0.6))
+	# (the ring and the post are sprites) the ring pushed out and lit while it
+	# flashes, and a shock ring spreading from it
+	_ring_art.scale = Vector2.ONE * ((R + 2 + _flash * 3) / (R + 2))
+	_ring_art.self_modulate = Color(1, 1, 1).lerp(Color(1.5, 1.35, 1.0), _flash)
+	_post_art.self_modulate = Color(1, 1, 1).lerp(Color(1.35, 1.25, 1.0), _flash)
 	if _flash > 0:
 		draw_arc(Vector2.ZERO, R + 6 + (1.0 - _flash) * 8, 0, TAU, 24, Color(1.0, 0.85, 0.5, _flash * 0.6), 1.5)
