@@ -1,5 +1,5 @@
 extends RefCounted
-## Grapeshot mortar at x 1000. First, with nothing in range, a trigger must
+## Grapeshot mortar at x 1280. First, with nothing in range, a trigger must
 ## hold the load. Then per round a walker comes in from the right, 8 pieces
 ## are dropped into the mouth and a tally wheel wired to it fires once:
 ## the burst's damage (hp padded to 60 so it all counts), and how many of the 8 came down within 40 px of it.
@@ -12,17 +12,17 @@ static func run(t) -> void:
 	await preload("res://scripts/marble_works.gd").carve(t.main, false)
 	t.main.get_node("Player").global_position = Vector2(960, 540)
 	var mt: Node2D = preload("res://scenes/grapeshot_mortar.tscn").instantiate()
-	mt.global_position = Vector2(1000, 576)
+	mt.global_position = Vector2(1280, 576)
 	t.main.add_child(mt)
 	var tl: Node2D = preload("res://scenes/tally.tscn").instantiate()
 	tl.wire_to = Vector2.ZERO
-	tl.global_position = Vector2(1060, 470)
+	tl.global_position = Vector2(1340, 470)
 	t.main.add_child(tl)
 	var cam: Camera2D = t.main.get_node("Player/Camera2D")
 	cam.top_level = true
 	cam.position_smoothing_enabled = false
 	cam.zoom = Vector2(1.8, 1.8)
-	cam.global_position = Vector2(1160, 480)
+	cam.global_position = Vector2(1440, 480)
 	var feed := func(kind: String, n: int) -> void:
 		for k in n:
 			var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
@@ -39,7 +39,7 @@ static func run(t) -> void:
 	await feed.call("copper", 5)
 	await t.wait(0.4)
 	var out := []
-	for round in [[2, "copper", 1330.0], [0, "iron", 1400.0], [5, "copper", 1330.0]]:
+	for round in [[2, "copper", 1590.0], [0, "iron", 1600.0], [5, "copper", 1590.0]]:
 		var e = t._spawn(round[0], Vector2(round[2], 560))
 		if round[1] == "iron":
 			await feed.call("iron", 8)

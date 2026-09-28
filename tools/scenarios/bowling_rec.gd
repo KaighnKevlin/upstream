@@ -1,5 +1,5 @@
 extends RefCounted
-## Bowling ramp: a ramp at x 1000 bowling right along the floor. A soldier
+## Bowling ramp: a ramp at x 1300 bowling right along the floor. A soldier
 ## (then a shieldbearer) walks in from the right; two pieces of one kind are
 ## fed into the mouth. Per kind: exit speed, hp lost, and how far each hit
 ## shoved it back (its x after the hit, over its x at the hit).
@@ -12,18 +12,18 @@ static func run(t) -> void:
 	await preload("res://scripts/marble_works.gd").carve(t.main, false)
 	t.main.get_node("Player").global_position = Vector2(960, 540)
 	var br: Node2D = preload("res://scenes/bowling_ramp.tscn").instantiate()
-	br.global_position = Vector2(1000, 576)
+	br.global_position = Vector2(1300, 576)
 	t.main.add_child(br)
 	var cam: Camera2D = t.main.get_node("Player/Camera2D")
 	cam.top_level = true
 	cam.position_smoothing_enabled = false
 	cam.zoom = Vector2(2.0, 2.0)
-	cam.global_position = Vector2(1130, 500)
+	cam.global_position = Vector2(1430, 500)
 	await t.wait(0.5)
 	var out := []
 	for who in [2, 5]:
 		for kind in ["copper", "iron"]:
-			var e = t._spawn(who, Vector2(1230, 560))
+			var e = t._spawn(who, Vector2(1530, 560))
 			await t.wait(0.4)
 			var hp0: int = e.hp
 			var hits0: int = br.hits
