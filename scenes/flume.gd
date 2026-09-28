@@ -34,6 +34,15 @@ var _wall: Sprite2D              # the head wall and the weir (over the water)
 var _weir_art: Sprite2D
 
 
+## Is `p` (global) in this flume's running water? And which way it runs.
+func water_at(p: Vector2) -> float:
+	var q := to_local(p)
+	var along := q.x * signf(end_offset.x)
+	if along > 4 and along < absf(end_offset.x) - 4 and q.y < 2 and q.y > -D - 2:
+		return signf(end_offset.x)
+	return 0.0
+
+
 func set_end(offset: Vector2) -> void:
 	var l := clampf(absf(offset.x), LEN_MIN, LEN_MAX)
 	end_offset = Vector2(l * (1.0 if offset.x >= 0 else -1.0), 0)
@@ -59,6 +68,7 @@ func _ready() -> void:
 	if has_meta("ghost"):
 		return
 	add_to_group("triggerable")
+	add_to_group("flumes")
 	_body = StaticBody2D.new()
 	_body.collision_layer = ORE_ONLY
 	_body.collision_mask = 0
