@@ -90,7 +90,7 @@ const TABS := [
 		["", "Sieve rail", "drag like a chute: grit drops through its rungs, bigger pieces roll on"],
 		["", "Felt chute", "drag like a chute: marbles on it make no noise, but the felt slows them"],
 		["", "Crossover", "two streams cross in an X, each keeping its own line; feed its top corners"],
-		["", "Trommel", "drag like a chute from its mouth: a stream tumbles through, grit drops out along it, the rest rolls out the end; faster powered"],
+		["", "Trommel", "drag from its mouth: grit drops out the holes, the rest rolls out the end; faster powered"],
 		["", "Dice box", "drop a stream in: each piece out a random side (2 or 3 ways: click); fair over a long run, never a pattern"],
 		["", "Flow meter", "over a chute: reads pieces a minute going by (last 10 s); click for all / copper / iron; touches nothing"],
 		["", "Jump", "flicks pieces across a gap; drag to set the landing; slow ones drop short (sorts by speed)"],
