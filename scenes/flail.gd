@@ -19,14 +19,32 @@ var _w := 0.0
 var _level := 0.0
 var _level_t := 0.0
 var _seen := {}
+var _chain_art: Sprite2D         # art: the chain and ball, turned to _a
 
 
 func _ready() -> void:
 	z_index = 2
+	# the sprites first, so ghosts and build-bar icons get them too; over
+	# our own _draw (the blur ring)
+	_spr(preload("res://assets/sprites/flail_post.png"), Vector2.ZERO, Vector2(-9, -33))
+	_chain_art = _spr(preload("res://assets/sprites/flail_chain.png"), HUB, Vector2(-2, -11))
+	_chain_art.rotation = _a
+	_spr(preload("res://assets/sprites/flail_cap.png"), HUB, Vector2(-5, -5))
 	if has_meta("ghost"):
 		return
 	_snap_to_floor()
 	add_to_group("power_users")
+
+
+func _spr(tex: Texture2D, at: Vector2, off: Vector2) -> Sprite2D:
+	var sp := Sprite2D.new()
+	sp.texture = tex
+	sp.centered = false
+	sp.position = at
+	sp.offset = off
+	sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(sp)
+	return sp
 
 
 func _snap_to_floor() -> void:
@@ -55,6 +73,7 @@ func _physics_process(delta: float) -> void:
 	var target := lerpf(0.8, W_MAX, _level)
 	_w = move_toward(_w, target, 4.0 * delta)
 	_a += _w * delta
+	_chain_art.rotation = _a
 	var b := ball()
 	var now := Time.get_ticks_msec() / 1000.0
 	var tangent := Vector2.RIGHT.rotated(_a + PI * 0.5) * _w * CHAIN
@@ -84,30 +103,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var iron := Color(0.42, 0.44, 0.5)
-	var brass := Color(0.85, 0.65, 0.35)
-	# the post and its footing
-	draw_rect(Rect2(-7, -3, 14, 4), dark)
-	draw_rect(Rect2(-6, -2, 12, 2), iron)
-	draw_line(Vector2(0, 0), HUB, dark, 5.0)
-	draw_line(Vector2(0, 0), HUB, iron, 3.0)
-	# a blur disc when it's fast, the chain, the ball
+	# (the post, chain, ball and swivel are sprites) a blur ring when it's fast
 	var k := _w / W_MAX
 	if k > 0.4:
 		draw_arc(HUB, CHAIN, 0, TAU, 40, Color(0.7, 0.72, 0.8, 0.12 + 0.1 * k), BALL * 2.0)
-	var tip := HUB + Vector2.RIGHT.rotated(_a) * CHAIN
-	var links := 6
-	for i in links:
-		var p := HUB.lerp(tip, (i + 0.5) / links)
-		draw_circle(p, 1.5, dark)
-		draw_circle(p, 1.0, iron.lightened(0.2))
-	draw_circle(tip, BALL + 1.0, dark)
-	for s in 6:
-		var d := Vector2.RIGHT.rotated(s * TAU / 6.0 + _a * 0.5)
-		draw_line(tip + d * BALL, tip + d * (BALL + 3), dark, 2.0)
-	draw_circle(tip, BALL, iron)
-	draw_circle(tip + Vector2(-1.5, -1.5), 1.5, iron.lightened(0.35))
-	# the swivel on top
-	draw_circle(HUB, 3.5, dark)
-	draw_circle(HUB, 2.5, brass)
