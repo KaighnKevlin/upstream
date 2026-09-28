@@ -1253,6 +1253,7 @@ var _build_names := {
 	63: "Build: MAGNET DRUM (put it where a chute ends: iron things cling and drop behind it, copper and stone fly on)",
 	64: "Build: SLUICE GATE (across a chute: holds the stream back until a tripwire, plate, bell or click opens it)",
 	65: "Build: TALLY WHEEL (over a chute: every 3/5/10 pieces it fires traps at its wire's end; click to change, drag the wire)",
+	66: "Build: POINTS SWITCH (a rocker that stays put: thrown by a trigger, like a tally wheel or a plate, or a click)",
 	44: "Build: ROBOTIC ARM (picks from one spot, drops at another)",
 	37: "Build: DOMINO ROW (drag start to end; click an end to reset)",
 	36: "Build: STEAM ENGINE (feed it ore: powers machines in reach)",
