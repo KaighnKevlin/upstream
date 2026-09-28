@@ -1321,6 +1321,7 @@ var _build_names := {
 	112: "Build: IGNITER (over a track: what rolls under is lit, bursts on a walker or after its 1/2/3 s fuse; click the basket)",
 	113: "Build: SPINNER (hang it just over a track: pieces rolling under spin it up; powers machines in reach like a wheel)",
 	114: "Build: GABION (on the ground; end a chute over it: 12 pieces make a wall walkers stop and hack at; keep feeding it)",
+	115: "Build: MAGNET RAIL (drag, like a chute: iron coming up under it clings and rides to the far end; copper falls through)",
 	44: "Build: ROBOTIC ARM (picks from one spot, drops at another)",
 	37: "Build: DOMINO ROW (drag start to end; click an end to reset)",
 	36: "Build: STEAM ENGINE (feed it ore: powers machines in reach)",
