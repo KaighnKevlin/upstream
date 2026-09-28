@@ -21,10 +21,28 @@ var _shape: CollisionShape2D
 var _area: Area2D
 var _angle := REST
 var _up_t := 0.0
+var _base: Sprite2D              # stand and stop post, mirrored for side -1
+var _paddle: Sprite2D            # turns about the pivot, mirrored for side -1
 
 
 func _ready() -> void:
 	z_index = 2
+	# sprites first, so ghosts and build-bar icons get them too
+	_base = Sprite2D.new()
+	_base.texture = preload("res://assets/sprites/flipper_base.png")
+	_base.centered = false
+	_base.offset = Vector2(-10, -14)
+	_base.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_base.show_behind_parent = true
+	add_child(_base)
+	_paddle = Sprite2D.new()
+	_paddle.texture = preload("res://assets/sprites/flipper_paddle.png")
+	_paddle.centered = false
+	_paddle.offset = Vector2(-6, -7)
+	_paddle.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_paddle.show_behind_parent = true
+	add_child(_paddle)
+	_pose()
 	if has_meta("ghost"):
 		return
 	add_to_group("triggerable")
@@ -69,6 +87,13 @@ func _apply() -> void:
 	_area.rotation = -_angle * side
 
 
+func _pose() -> void:
+	var s := 1.0 if side >= 0 else -1.0
+	_base.scale.x = s
+	_paddle.scale.x = s
+	_paddle.rotation = -_angle * side
+
+
 func trigger() -> void:
 	if _up_t > 0:
 		return
@@ -105,13 +130,4 @@ func _input(event: InputEvent) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var a := -_angle * side
-	var tip := Vector2(side * LEN, 0).rotated(a)
-	draw_line(Vector2.ZERO, tip, dark, 9.0)
-	draw_line(Vector2.ZERO, tip, Color(0.8, 0.25, 0.2), 6.0)
-	draw_line(Vector2(0, -2).rotated(a), tip + Vector2(0, -2).rotated(a), Color(1, 0.7, 0.6, 0.5), 1.0)
-	draw_circle(Vector2.ZERO, 5.0, dark)
-	draw_circle(Vector2.ZERO, 3.5, Color(0.85, 0.65, 0.35))
-	draw_line(Vector2(-side * 3, 0), Vector2(-side * 3, -12), dark, 3.0)
-	draw_line(Vector2(0, 4), Vector2(0, 20), Color(0.16, 0.13, 0.1), 3.0)
+	_pose()                      # paddle, pivot, stand and stop post are sprites (see _ready)
