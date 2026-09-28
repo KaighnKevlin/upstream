@@ -14,6 +14,8 @@ const GAP := 6.0                 # grit (r 2.6) falls through; shot, ore, scrap 
 @export var end_offset := Vector2(120, 30)
 
 var _body: StaticBody2D
+var _art: Node2D                 # the rungs, pixel art tiled along the rail
+const RAIL_TEX := preload("res://assets/sprites/sieve_rail.png")
 
 
 func set_end(offset: Vector2) -> void:
@@ -26,6 +28,13 @@ func set_end(offset: Vector2) -> void:
 
 func _ready() -> void:
 	z_index = 1
+	# art first, so ghosts and build-bar icons have it
+	_art = Node2D.new()
+	_art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_art.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+	_art.show_behind_parent = true
+	_art.draw.connect(_draw_art)
+	add_child(_art)
 	if has_meta("ghost"):
 		return
 	_body = StaticBody2D.new()
@@ -53,16 +62,15 @@ func _rebuild() -> void:
 
 
 func _draw() -> void:
+	_art.queue_redraw()          # the rail is all sprite now
+
+
+## The rail tile (a rung and a gap, RUNG + GAP long) repeated from the high
+## end, turned to the slope, its back rail kept on top of the rungs' side.
+func _draw_art() -> void:
 	var l := end_offset.length()
 	var d := end_offset / maxf(l, 1.0)
-	var n := d.orthogonal()
-	# side rails, then the rungs
-	draw_line(n * 3, end_offset + n * 3, Color(0.1, 0.08, 0.07), 2.0)
-	draw_line(n * 3, end_offset + n * 3, Color(0.6, 0.62, 0.66), 1.0)
-	var x := 0.0
-	while x < l:
-		var a := d * x
-		var b := d * minf(l, x + RUNG)
-		draw_line(a, b, Color(0.1, 0.08, 0.07), 3.0)
-		draw_line(a, b, Color(0.72, 0.74, 0.78), 1.0)
-		x += RUNG + GAP
+	var flip := 1.0 if d.x >= 0 else -1.0
+	_art.draw_set_transform(Vector2.ZERO, d.angle(), Vector2(1, flip))
+	_art.draw_texture_rect(RAIL_TEX, Rect2(0, -7, l, 10), true)
+	_art.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
