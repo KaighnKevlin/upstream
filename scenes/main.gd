@@ -1268,6 +1268,7 @@ var _build_names := {
 	78: "Build: LOAD CELL (when the ore in its pan weighs 2/5/10, it fires traps at its wire's end; click the dial)",
 	79: "Build: BANKED TURN (at a chute's end: pieces swing round and come back the other way a level down, keeping their speed)",
 	80: "Build: GAUSS CANNON (roll pieces into its magnet end: each shoots the waiting one out the far end, fast)",
+	81: "Build: TREADWHEEL (stand in it and walk: it drives machines in reach like a gravity wheel; jump out)",
 	44: "Build: ROBOTIC ARM (picks from one spot, drops at another)",
 	37: "Build: DOMINO ROW (drag start to end; click an end to reset)",
 	36: "Build: STEAM ENGINE (feed it ore: powers machines in reach)",

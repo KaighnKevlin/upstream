@@ -6853,6 +6853,37 @@ func gauss_rec() -> void:
 	log_line("gauss: %s | pieces at x %s" % [out, xs])
 
 
+func tread_rec() -> void:
+	# Treadwheel: the prospector walks in it for 3 s, then stops for 3 s;
+	# power at a booster beside it each second.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	var MW = preload("res://scripts/marble_works.gd")
+	await MW.carve(main, false)
+	var tw: Node2D = MW._piece(main, "res://scenes/treadwheel.tscn", Vector2(1300, 576 - 40))
+	var pl: CharacterBody2D = main.get_node("Player")
+	pl.global_position = Vector2(1300, 555)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.5, 2.5)
+	cam.global_position = Vector2(1320, 520)
+	var Power = preload("res://scripts/power.gd")
+	var out := []
+	Input.action_press("move_right")
+	for k in 3:
+		await wait(1.0)
+		out.append("walk %.2f" % Power.level_at(main.get_tree(), Vector2(1420, 540)))
+		if k == 1:
+			await shot("treadwheel")
+	Input.action_release("move_right")
+	for k in 3:
+		await wait(1.0)
+		out.append("stop %.2f" % Power.level_at(main.get_tree(), Vector2(1420, 540)))
+	log_line("treadwheel: %s | walked %.1f s, player x %d" % [out, tw.walked, int(pl.global_position.x)])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.
