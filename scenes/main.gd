@@ -1372,6 +1372,13 @@ func _make_god_label() -> void:
 	_god_label.add_theme_constant_override("shadow_offset_x", 2)
 	_god_label.add_theme_constant_override("shadow_offset_y", 2)
 	_god_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	# a dark backing, so the keys read over whatever's behind (the dome at the surface)
+	var back := StyleBoxFlat.new()
+	back.bg_color = Color(0.08, 0.06, 0.05, 0.72)
+	back.set_content_margin_all(4)
+	back.corner_radius_top_left = 3
+	back.corner_radius_bottom_left = 3
+	_god_label.add_theme_stylebox_override("normal", back)
 	_god_label.position = Vector2(770, 40)
 	_god_label.size = Vector2(490, 60)
 	$CanvasLayer.add_child(_god_label)

@@ -146,7 +146,9 @@ func _draw() -> void:
 	var c := _colour()
 	var t := end_offset.normalized()
 	var n := Vector2(t.y, -t.x)
+	if n.y > 0:
+		n = -n                   # the letter goes above the bar, whichever way it was dragged
 	var font := ThemeDB.fallback_font
-	draw_string(font, end_offset * 0.5 + n * 14 - Vector2(4, 0), NAMES[note], HORIZONTAL_ALIGNMENT_LEFT, -1, 9, c)
+	draw_string(font, end_offset * 0.5 + n * 12 - Vector2(4, 0), NAMES[note], HORIZONTAL_ALIGNMENT_LEFT, -1, 9, c)
 	if _flash > 0:
 		draw_line(Vector2.ZERO, end_offset, Color(1, 1, 0.8, _flash * 0.5), 10.0)
