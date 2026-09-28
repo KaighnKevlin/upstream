@@ -1249,6 +1249,7 @@ var _build_names := {
 	59: "Build: OVERFLOW GATE (feeds its first side until the spot it watches is full: drag the ring there)",
 	60: "Build: DEFLECTOR PLATE (flying ore ricochets off it: bank trampoline shots; click to turn 15 degrees)",
 	61: "Build: BOOSTER RAIL (drag the way it drives: rollers push marbles along it, uphill too; faster when powered)",
+	62: "Build: CATCH NET (flying ore lands soft, rolls to the ring and drops straight down: aim trampolines at it)",
 	44: "Build: ROBOTIC ARM (picks from one spot, drops at another)",
 	37: "Build: DOMINO ROW (drag start to end; click an end to reset)",
 	36: "Build: STEAM ENGINE (feed it ore: powers machines in reach)",

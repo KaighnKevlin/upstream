@@ -6114,6 +6114,40 @@ func booster_rec() -> void:
 	log_line("booster (rate %.2f): %s | boosted %d" % [bo._rate, out, bo.boosted])
 
 
+func net_rec() -> void:
+	# Catch net: marbles thrown in on different arcs; where each comes out
+	# below it (x as it passes y 500). All should be ~1300.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	await preload("res://scripts/marble_works.gd").carve(main, false)
+	var nt: Node2D = preload("res://scenes/catch_net.tscn").instantiate()
+	nt.global_position = Vector2(1300, 450)
+	main.add_child(nt)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.2, 2.2)
+	cam.global_position = Vector2(1270, 430)
+	var out := []
+	for v in [Vector2(260, -260), Vector2(330, -120), Vector2(180, -380), Vector2(400, -60), Vector2(220, -320)]:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.global_position = Vector2(1180, 440)
+		main.add_child(o)
+		o.linear_velocity = v
+		var x_out := -1
+		for t in 60:
+			await wait(0.05)
+			if not is_instance_valid(o):
+				break
+			if x_out < 0 and o.global_position.y > 500:
+				x_out = int(o.global_position.x)
+			if t == 14 and out.is_empty():
+				await shot("net")
+		out.append(x_out)
+	log_line("net: out at x %s | caught %d" % [out, nt.caught])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.
