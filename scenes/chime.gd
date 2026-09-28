@@ -11,6 +11,10 @@ const LEN_MAX := 160.0
 const NAMES := ["C", "D", "E", "F", "G", "A", "B", "C'", "D'", "E'"]
 const FREQS := [523.25, 587.33, 659.25, 698.46, 783.99, 880.0, 987.77, 1046.5, 1174.66, 1318.51]
 const HUES := [0.0, 0.08, 0.15, 0.3, 0.5, 0.6, 0.75, 0.0, 0.08, 0.15]
+const BAR_TEX := preload("res://assets/sprites/chime_bar.png")     # grey: tinted by the note
+const CAPS_TEX := preload("res://assets/sprites/chime_caps.png")
+const POST_TEX := preload("res://assets/sprites/chime_post.png")
+const STOP_TEX := preload("res://assets/sprites/chime_stop.png")
 
 @export var note := 0
 @export var end_offset := Vector2(70, 18)   # the other end of the bar
@@ -18,6 +22,7 @@ const HUES := [0.0, 0.08, 0.15, 0.3, 0.5, 0.6, 0.75, 0.0, 0.08, 0.15]
 var rung := 0                    # tests
 var _flash := 0.0
 var _last := {}
+var _art: Node2D                 # the bar, posts and stop, pixel art (nearest, tiled)
 
 
 func set_end(offset: Vector2) -> void:
@@ -27,6 +32,14 @@ func set_end(offset: Vector2) -> void:
 
 func _ready() -> void:
 	z_index = 1
+	# art first, so ghosts and build-bar icons have it; behind our own _draw
+	# (the note's name and the ring's flash)
+	_art = Node2D.new()
+	_art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_art.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+	_art.show_behind_parent = true
+	_art.draw.connect(_draw_art)
+	add_child(_art)
 	if has_meta("ghost"):
 		return
 	var body := StaticBody2D.new()
@@ -104,21 +117,35 @@ func _input(event: InputEvent) -> void:
 		ring()
 
 
-func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
+func _colour() -> Color:
 	var c := Color.from_hsv(HUES[note], 0.55, 0.85)
-	c = c.lerp(Color(1, 1, 0.9), _flash * 0.6)
+	return c.lerp(Color(1, 1, 0.9), _flash * 0.6)
+
+
+func _draw_art() -> void:
+	var l := end_offset.length()
+	if l < 0.1:
+		return
+	var t := end_offset / l
+	# the posts it rests on, upright under its nodes, and the stop at the high end
+	for f in [0.2, 0.8]:
+		_art.draw_texture(POST_TEX, end_offset * f + Vector2(-3, 3))
+	var high := Vector2.ZERO if end_offset.y > 0 else end_offset
+	_art.draw_texture(STOP_TEX, high + Vector2(-2, -15))
+	# the bar, tinted with its note; kept right way up whichever way it runs
+	var c := _colour() * Color(1.2, 1.2, 1.2)
+	_art.draw_set_transform(Vector2.ZERO, end_offset.angle(), Vector2(1, -1) if t.x < 0 else Vector2.ONE)
+	_art.draw_texture_rect(BAR_TEX, Rect2(0, -4, l, 8), true, c)
+	_art.draw_texture_rect_region(CAPS_TEX, Rect2(-1, -4, 6, 8), Rect2(0, 0, 6, 8), c)
+	_art.draw_texture_rect_region(CAPS_TEX, Rect2(l - 4, -4, 6, 8), Rect2(6, 0, 6, 8), c)
+	_art.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+func _draw() -> void:
+	_art.queue_redraw()          # bar, posts and stop are pixel art (see _draw_art)
+	var c := _colour()
 	var t := end_offset.normalized()
 	var n := Vector2(t.y, -t.x)
-	# two posts, the bar on felt pads
-	for p in [end_offset * 0.2, end_offset * 0.8]:
-		draw_line(p + n * -3, p + n * -10, Color(0.16, 0.13, 0.1), 2.0)
-	var high := Vector2.ZERO if end_offset.y > 0 else end_offset
-	draw_line(high, high + Vector2(0, -14), dark, 3.0)
-	draw_line(high, high + Vector2(0, -14), Color(0.6, 0.62, 0.66), 1.0)
-	draw_line(Vector2.ZERO, end_offset, dark, 7.0)
-	draw_line(Vector2.ZERO, end_offset, c, 5.0)
-	draw_line(n * 1.5, end_offset + n * 1.5, Color(1, 1, 1, 0.35), 1.0)
 	var font := ThemeDB.fallback_font
 	draw_string(font, end_offset * 0.5 + n * 14 - Vector2(4, 0), NAMES[note], HORIZONTAL_ALIGNMENT_LEFT, -1, 9, c)
 	if _flash > 0:
