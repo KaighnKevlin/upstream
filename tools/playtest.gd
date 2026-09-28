@@ -6522,6 +6522,29 @@ func flywheel_rec() -> void:
 	log_line("flywheel %s: power at the booster at 4/10/16/22 s %s | wheel %.2f%s" % ["on" if fly else "off", out, wh.power(), (" fly spin %.2f" % fly.spin) if fly else ""])
 
 
+func distributor_rec() -> void:
+	# Rotary distributor: 9 pieces from a dispenser; per-outlet counts and
+	# where they land (should be three clusters).
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	var MW = preload("res://scripts/marble_works.gd")
+	await MW.carve(main, false)
+	MW._piece(main, "res://scenes/dispenser.tscn", Vector2(1300, 380), {"mode": 0, "limit": 9})
+	var ds: Node2D = MW._piece(main, "res://scenes/distributor.tscn", Vector2(1300, 440))
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.2, 2.2)
+	cam.global_position = Vector2(1300, 480)
+	await wait(6.0)
+	await shot("distributor")
+	await wait(4.0)
+	var xs: Array = get_nodes_in_group("ore").map(func(o): return int(o.global_position.x))
+	xs.sort()
+	log_line("distributor: sent %s | landed x %s" % [ds.sent, xs])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.

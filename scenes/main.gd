@@ -1258,6 +1258,7 @@ var _build_names := {
 	68: "Build: TEETER LAUNCHER (drop a piece in its high cup: it flings the one waiting in the low cup up)",
 	69: "Build: CROSSOVER (feed its top corners: each stream crosses to the far bottom corner without catching the other)",
 	70: "Build: FLYWHEEL (next to a gravity wheel: spins up on its surplus, keeps machines running when the feed stops)",
+	71: "Build: ROTARY DISTRIBUTOR (drop a stream in: out left, down, right in turn; click to skip one)",
 	44: "Build: ROBOTIC ARM (picks from one spot, drops at another)",
 	37: "Build: DOMINO ROW (drag start to end; click an end to reset)",
 	36: "Build: STEAM ENGINE (feed it ore: powers machines in reach)",
