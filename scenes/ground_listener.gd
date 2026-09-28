@@ -30,10 +30,20 @@ var _dir := Vector2.RIGHT
 var _flash := 0.0
 var _anim := 0.0
 var _dragging := false
+var _art: Sprite2D                # plate, bell, horn and dial face; brightens as it hears
 
 
 func _ready() -> void:
 	z_index = 2
+	# the sprite first, so ghosts and build-bar icons get it too; behind our
+	# own _draw (the range marks, the needle, the arrow, the rings, the wire)
+	_art = Sprite2D.new()
+	_art.texture = preload("res://assets/sprites/ground_listener.png")
+	_art.centered = false
+	_art.offset = Vector2(-14, -23)
+	_art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_art.show_behind_parent = true
+	add_child(_art)
 	if has_meta("ghost"):
 		return
 	add_to_group("ground_listeners")
@@ -118,35 +128,16 @@ func _input(event: InputEvent) -> void:
 
 func _draw() -> void:
 	var dark := Color(0.1, 0.08, 0.07)
-	var brass := Color(0.85, 0.65, 0.35).lerp(Color(1, 0.95, 0.7), _flash)
 	var steel := Color(0.42, 0.44, 0.5)
 	if wire_to != Vector2.ZERO:
 		var mid := wire_to * 0.5 + Vector2(0, 14)
 		draw_polyline(PackedVector2Array([Vector2(8, -18), mid, wire_to]), Color(0.55, 0.5, 0.42, 0.8), 1.0)
 		draw_circle(wire_to, 3.0, dark)
 		draw_circle(wire_to, 2.0, Color(0.85, 0.65, 0.35))
-	# the mounting plate, bolted to the rock
-	draw_rect(Rect2(-12, -3, 24, 3), dark)
-	draw_rect(Rect2(-11, -2.5, 22, 2), steel)
-	for x in [-9.0, 9.0]:
-		draw_circle(Vector2(x, -1.5), 1.2, brass.darkened(0.3))
-	# the bell, flared down onto the stone
-	var bell := PackedVector2Array([Vector2(-9, -2), Vector2(9, -2), Vector2(4, -9), Vector2(-4, -9)])
-	draw_colored_polygon(bell, dark)
-	draw_colored_polygon(PackedVector2Array([Vector2(-7, -3), Vector2(7, -3), Vector2(3, -8), Vector2(-3, -8)]), brass)
-	# the horn, curling up and over to the earpiece
-	var pts := PackedVector2Array()
-	for i in 9:
-		var a := PI * (1.0 - i / 8.0)
-		pts.append(Vector2(6 + cos(a) * 6.0, -14 - sin(a) * 6.0) if i > 0 else Vector2(0, -9))
-	draw_polyline(pts, dark, 4.0)
-	draw_polyline(pts, brass, 2.0)
-	draw_circle(pts[pts.size() - 1] + Vector2(1, 2), 2.5, dark)
-	draw_circle(pts[pts.size() - 1] + Vector2(1, 2), 1.5, brass.darkened(0.2))
+	# the plate, bell, horn and dial are art; it glows as it hears
+	_art.self_modulate = Color.WHITE.lerp(Color(1.35, 1.28, 1.1), _flash)
 	# the dial: a round face where the horn leaves the bell
 	var c := Vector2(0, -14)
-	draw_circle(c, 6.5, dark)
-	draw_circle(c, 5.2, Color(0.9, 0.86, 0.75))
 	for k in RANGES.size():
 		draw_circle(c + Vector2(-3 + k * 3, 3.2), 0.9, Color(0.8, 0.2, 0.15) if k == mode else steel)
 	if _show > 0.0:
