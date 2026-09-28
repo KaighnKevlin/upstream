@@ -1271,6 +1271,7 @@ var _build_names := {
 	81: "Build: TREADWHEEL (stand in it and walk: it drives machines in reach like a gravity wheel; jump out)",
 	82: "Build: TREBUCHET (ore in its box is the power, ore in its sling the shot; a trigger or click looses it)",
 	83: "Build: PADDLE WHEEL (set it in a falling stream: the stream turns it and passes on; drives machines in reach)",
+	84: "Build: BALL-BEARING MAT (lay it on the walkers' path and keep ore in it: they skid and slip across)",
 	44: "Build: ROBOTIC ARM (picks from one spot, drops at another)",
 	37: "Build: DOMINO ROW (drag start to end; click an end to reset)",
 	36: "Build: STEAM ENGINE (feed it ore: powers machines in reach)",

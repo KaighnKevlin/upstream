@@ -6440,7 +6440,7 @@ func build_new_rec() -> void:
 		B.JUMP, B.BELL, B.LOOP, B.DISPENSER, B.GOAL, B.SCALE, B.CANNON, B.FELT, B.CHIME, B.PLUNGER,
 		B.VORTEX, B.FLAPS, B.OVERFLOW, B.DEFLECTOR, B.BOOSTER, B.NET, B.DRUM, B.SLUICE, B.TALLY,
 		B.POINTS, B.BRAKE, B.TEETER, B.CROSSOVER, B.FLYWHEEL, B.DISTRIBUTOR, B.FLIPPER, B.COUNTERWEIGHT,
-		B.PAIR, B.FURNACE, B.SILO, B.ROPEWAY]
+		B.PAIR, B.FURNACE, B.SILO, B.ROPEWAY, B.LOADCELL, B.TURN, B.GAUSS, B.TREAD, B.TREBUCHET, B.PADDLE]
 	var placed := []
 	var i := 0
 	for t in types:
@@ -6949,6 +6949,38 @@ func paddle_rec() -> void:
 			await shot("paddle")
 	var below := get_nodes_in_group("ore").filter(func(o): return o.global_position.y > 500).size()
 	log_line("paddle wheel, %s: power at 3/6 s %s | knocks %d, pieces carried on below %d" % [kind, out, pw.knocks, below])
+
+
+func mat_rec() -> void:
+	# Bearing mat on the floor, STOCK pieces of ore in it; a soldier walks
+	# across from the right. How long it takes to cross the mat's span.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	await preload("res://scripts/marble_works.gd").carve(main, false)
+	var mt: Node2D = preload("res://scenes/bearing_mat.tscn").instantiate()
+	mt.global_position = Vector2(1300, 576)
+	main.add_child(mt)
+	var stock := int(OS.get_environment("STOCK")) if OS.has_environment("STOCK") else 6
+	for k in stock:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.lifetime = 1.0e9
+		o.global_position = Vector2(1265 + k * 12, 560)
+		main.add_child(o)
+	await wait(1.0)
+	main.get_node("Player").global_position = Vector2(960, 540)   # out of its way: it stops to fight
+	var e = _spawn(2, Vector2(1360, 560))   # a soldier
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.2, 2.2)
+	cam.global_position = Vector2(1300, 530)
+	var x0: float = e.global_position.x
+	for step in 8:
+		await wait(1.0)
+		if step == 4:
+			await shot("mat_%d" % stock)
+	log_line("bearing mat with %d ore: the soldier made %d px in 8 s (slowed %.1f s)" % [stock, int(x0 - e.global_position.x) if is_instance_valid(e) else -1, mt.slowed])
 
 
 func marble_trace_rec() -> void:
