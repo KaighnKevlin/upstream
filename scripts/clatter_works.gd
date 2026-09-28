@@ -9,6 +9,7 @@ extends RefCounted
 
 const MarbleWorks = preload("res://scripts/marble_works.gd")
 const Director = preload("res://scenes/defence_director.gd")
+const PENDULUM := Vector2(1500, 440)
 const NoiseMeter = preload("res://scenes/noise_meter.gd")
 
 
@@ -24,7 +25,11 @@ static func build(main: Node, felt := false) -> Array:
 	MarbleWorks._piece(main, "res://scenes/dispenser.tscn", Vector2(1000, 190), {"mode": 0})
 	chute.call(Vector2(985, 215), Vector2(1180, 280))
 	# the run ends against a bell (a stop that rings), which drops it onto a flip-flop
-	MarbleWorks._piece(main, "res://scenes/bell.tscn", Vector2(1204, 262), {"muffled": felt})
+	# its pull-wire runs down to a wrecking pendulum over the walkers' path: every
+	# ring kicks the ball, so the loud machine has a second weapon (a muffled
+	# bell fires nothing)
+	MarbleWorks._piece(main, "res://scenes/bell.tscn", Vector2(1204, 262), {"muffled": felt, "wire_to": PENDULUM - Vector2(1204, 262)})
+	MarbleWorks._piece(main, "res://scenes/pendulum.tscn", PENDULUM)
 	var rk := MarbleWorks._piece(main, "res://scenes/rocker.tscn", Vector2(1192, 330))
 	# left: into the production cup; right: to the turret
 	chute.call(Vector2(1174, 352), Vector2(1080, 420))

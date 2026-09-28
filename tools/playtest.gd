@@ -5860,6 +5860,8 @@ func clatter_rec() -> void:
 		if k == 3:
 			await shot("clatter_%d" % k)
 		var rk = find.call("rocker.gd")
+		var pd = find.call("pendulum.gd")
+		log_line("   pendulum omega %.2f" % pd.omega)
 		log_line("t=%d | clatter %d heard x%d | sent %d/%d down %d leaks %d | cup %d | flip-flop %s" % [(k + 1) * 5, n.level, n.peak_steps, d.sent, d.wave, d.killed, d.leaks, cup.count, rk.sent])
 
 

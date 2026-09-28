@@ -11,6 +11,9 @@ const ORE_ONLY := 64
 const R := 11.0                  # the bell's mouth half-width
 
 @export var muffled := false     # wrapped in felt: a thud, barely heard, and it fires nothing
+## a pull-wire: the ring also fires what's in reach of this point (an offset),
+## so a bell up in the machine can work a trap down on the floor
+@export var wire_to := Vector2.ZERO
 
 var rings := 0                   # tests
 var _swing := 0.0
@@ -63,7 +66,10 @@ func ring(dir := 1.0) -> void:
 		return
 	SFX.play(self, SFX.sfx_bell(), -8.0, 1.0)
 	preload("res://scenes/noise_meter.gd").add(get_tree(), 15.0)   # a bell carries: it's heard
-	for n in Tripwire.linked_to(get_tree(), [global_position]):
+	var points := [global_position]
+	if wire_to != Vector2.ZERO:
+		points.append(global_position + wire_to)
+	for n in Tripwire.linked_to(get_tree(), points):
 		if n != self and n.has_method("trigger"):
 			n.trigger()
 
@@ -83,6 +89,12 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
 	var dark := Color(0.1, 0.08, 0.07)
+	if wire_to != Vector2.ZERO:
+		# the pull-wire, sagging, to a little pulley at its far end
+		var mid := wire_to * 0.5 + Vector2(0, 18)
+		draw_polyline(PackedVector2Array([Vector2(8, -4), mid, wire_to]), Color(0.55, 0.5, 0.42, 0.8), 1.0)
+		draw_circle(wire_to, 3.0, dark)
+		draw_circle(wire_to, 2.0, Color(0.85, 0.65, 0.35))
 	# bracket
 	draw_line(Vector2(-10, -4), Vector2(10, -4), dark, 4.0)
 	draw_line(Vector2(-10, -4), Vector2(10, -4), Color(0.4, 0.3, 0.2), 2.0)
