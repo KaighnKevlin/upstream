@@ -38,10 +38,27 @@ var _intake: Area2D
 var _rate := Power.UNPOWERED
 var _rate_t := 0.0
 var _pushed := {}
+var _stone: Sprite2D         # pre-turned frames (its dressing repeats every quarter turn)
 
 
 func _ready() -> void:
 	z_index = 1
+	# sprites first, so ghosts and build-bar icons get them too; behind our
+	# own _draw, which keeps the out-end chevron, pips and progress on top
+	var bed := Sprite2D.new()
+	bed.texture = preload("res://assets/sprites/grindstone_bed.png")
+	bed.centered = false
+	bed.offset = Vector2(-24, -27)
+	bed.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	bed.show_behind_parent = true
+	add_child(bed)
+	_stone = Sprite2D.new()
+	_stone.texture = preload("res://assets/sprites/grindstone_stone.png")
+	_stone.hframes = 6
+	_stone.position = STONE
+	_stone.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_stone.show_behind_parent = true
+	add_child(_stone)
 	queue_redraw()
 	if has_meta("ghost"):
 		return
@@ -130,28 +147,9 @@ func _input(event: InputEvent) -> void:
 func _draw() -> void:
 	var dark := Color(0.1, 0.08, 0.07)
 	var brass := Color(0.85, 0.65, 0.35)
-	var steel := Color(0.42, 0.44, 0.5)
-	var stone := Color(0.55, 0.52, 0.48)
-	# the bed: a stone trough, iron-banded, open at both ends
-	draw_rect(Rect2(-BED - 1, 0, BED * 2 + 2, 7), dark)
-	draw_rect(Rect2(-BED, 1, BED * 2, 5), stone.darkened(0.3))
-	draw_line(Vector2(-BED, 1), Vector2(BED, 1), stone.lightened(0.2), 1.0)
-	for x in [-BED + 3, BED - 4]:
-		draw_rect(Rect2(x, 1, 1, 5), steel)
-	# the A-frame holding the axle, and the axle
-	for s in [-1.0, 1.0]:
-		draw_line(Vector2(s * 12, 0), STONE + Vector2(s * 2, -2), dark, 3.0)
-		draw_line(Vector2(s * 12, 0), STONE + Vector2(s * 2, -2), brass.darkened(0.2), 1.0)
-	# the millstone, turning: rim, face, dressing grooves
-	draw_circle(STONE, STONE_R + 1, dark)
-	draw_circle(STONE, STONE_R, stone)
-	draw_circle(STONE, STONE_R - 3, stone.darkened(0.12))
-	for i in 4:
-		var a := _turn * side + i * PI / 2.0
-		var d := Vector2(cos(a), sin(a))
-		draw_line(STONE + d * 3, STONE + d * (STONE_R - 1), stone.darkened(0.35), 1.0)
-	draw_circle(STONE, 2.5, dark)
-	draw_circle(STONE, 1.5, brass)
+	# the trough, A-frame and millstone are sprites (see _ready); the stone
+	# shows the frame for how far it has turned
+	_stone.frame = int(fposmod(_turn * side, PI / 2.0) / (PI / 2.0) * 6.0) % 6
 	# which way it sends: a small chevron at the out end
 	var o := Vector2(side * (BED - 3), -4)
 	draw_line(o + Vector2(-side * 3, -3), o, brass, 1.0)
