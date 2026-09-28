@@ -138,6 +138,7 @@ const TABS := [
 		["", "Spring trap", "plate in the ground: flings the first walker up and back the way it came; 2 pieces dropped in its hopper re-cock it"],
 		["", "Wrecking ball", "hung from the ceiling, cocked by a latch: a trigger or click lets it swing through the walkers; 4 pieces in its winch bucket wind it back"],
 		["", "Rope bridge", "drag post to post: walkers, you and pieces cross; a trigger or a click on the near post cuts it, dropping what's on it; knits back in 5 s"],
+		["", "Caltrop spreader", "each piece in its hopper becomes caltrops (iron 4, copper 3, grit 1) sown 30-140 px toward its side; a walker stepping on one takes a spike and limps for 1.5 s; 24 at most; click to flip"],
 		["", "Flail", "post with a spiked ball on a chain: a wheel in reach whirls it, battering walkers and knocking them back; it only lolls round unpowered"],
 		["", "Gabion", "wire cage on the ground: pieces dropped in build a wall (12 = full); walkers stop and hack pieces out; a feed mends it"],
 		["", "Igniter", "brazier over a track: lights what rolls under it; it bursts on a walker, or when its fuse (1/2/3 s, click) runs out"],

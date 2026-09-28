@@ -7,7 +7,7 @@ extends Node2D
 
 const SFX = preload("res://scripts/sfx.gd")
 const FX = preload("res://scripts/fx.gd")
-const DAMAGE := 2
+const DAMAGE := 1
 const LIMP := 0.4                # a limping walker's speed, x its own
 const LIMP_TIME := 1.5
 const REACH := 7.0               # feet this close (x) step on it
