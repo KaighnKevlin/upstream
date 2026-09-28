@@ -5823,14 +5823,14 @@ func defence_rec() -> void:
 	# The Marble Defence world: the wave's progress every 5 s for 25 s.
 	main._wave_timer = -9999.0
 	await wait(0.3)
-	var d = await main.start_defence_works()
+	var d = await main.start_defence_works(OS.get_environment("FEED") == "scale")
 	d = main.get_children().filter(func(c): return c.get_script() and c.get_script().resource_path.get_file() == "defence_director.gd")[0]
 	var cam: Camera2D = main.get_node("Player/Camera2D")
 	cam.top_level = true
 	cam.position_smoothing_enabled = false
 	cam.zoom = Vector2(1.4, 1.4)
 	cam.global_position = Vector2(1290, 380)
-	for k in 5:
+	for k in (int(OS.get_environment("SECS")) / 5 if OS.has_environment("SECS") else 5):
 		await wait(5.0)
 		if k == 2 or k == 4:
 			await shot("defence_%d" % k)

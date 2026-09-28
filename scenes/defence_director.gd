@@ -11,6 +11,8 @@ const Enemy = preload("res://scenes/enemy.gd")
 @export var spawn_at := Vector2(1620, 560)
 @export var vault_x := 975.0
 @export var max_leaks := 3
+## the wave, in order, repeating: enemy type names
+@export var types: Array = ["SCUTTLER", "SCUTTLER", "SOLDIER"]
 
 var sent := 0
 var leaks := 0
@@ -31,7 +33,7 @@ func _physics_process(delta: float) -> void:
 		sent += 1
 		var e: Node = preload("res://scenes/enemy.tscn").instantiate()
 		e.add_to_group("enemies")
-		e.setup(Enemy.EnemyType.SCUTTLER if sent % 3 != 0 else Enemy.EnemyType.SOLDIER)
+		e.setup(Enemy.EnemyType[types[(sent - 1) % types.size()]])
 		e.global_position = spawn_at
 		e.direction = -1.0
 		get_parent().add_child(e)

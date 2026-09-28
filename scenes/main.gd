@@ -423,9 +423,9 @@ func start_puzzle_works() -> void:
 
 ## The marble machine as defence: a dispenser and a flip-flop feed two
 ## turrets against a wave walking for the vault (scripts/defence_works.gd).
-func start_defence_works() -> void:
+func start_defence_works(sorted := false) -> void:
 	preload("res://scripts/sandbox_showcase.gd").clear(self)
-	var d: Node2D = await preload("res://scripts/defence_works.gd").build(self)
+	var d: Node2D = await preload("res://scripts/defence_works.gd").build(self, sorted)
 	d.finished.connect(func(won: bool): _show_banner("VAULT HELD" if won else "VAULT BROKEN", "the machine kept the turrets fed" if won else "too many got through"))
 	_player.global_position = Vector2(1050, 540)
 	_show_banner("MARBLE DEFENCE", "the machine feeds the turrets: hold the vault")
