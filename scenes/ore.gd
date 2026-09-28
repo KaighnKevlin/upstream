@@ -81,6 +81,10 @@ func _ready() -> void:
 			c.radius = spec.radius
 			_shapes[kind] = c
 		$CollisionShape2D.shape = _shapes[kind]
+		if spec.radius < 4.0:
+			# small and quick (grit, shot) tunnels through a thin one-way rail
+			# in a frame: sweep its motion instead
+			continuous_cd = RigidBody2D.CCD_MODE_CAST_SHAPE
 	if spec.get("rolls", false):
 		angular_damp = 0.15  # a gear rolls away like a wheel
 
