@@ -29,7 +29,7 @@ const PIECES := {
 	14: ["M", "Wrecking pendulum"], 15: ["N", "Gravity wheel"], 16: ["T", "Assembler"],
 	17: ["Y", "Research lab"], 18: ["U", "Tesla coil"], 19: ["I", "Flame turret"], 20: ["X", "Trapdoor"], 21: ["R", "Crusher"], 22: ["Z", "Electromagnet"], 23: ["", "Harpoon ballista (anti-air)"], 24: ["", "Seesaw"], 25: ["", "Pneumatic tube"], 26: ["", "Powder keg"], 27: ["", "Snare (bear trap)"], 28: ["", "Tripwire (drag stake to stake)"], 29: ["", "Pressure plate"], 30: ["", "Steam borer (click: turn)"], 31: ["", "Lantern"], 32: ["", "Brass sentry (feed it an ingot to rewind)"], 33: ["", "Clockwork timer (click: 2/4/8 s)"], 34: ["", "Drone dock (porters tidy loose ore)"], 35: ["", "Pop-up barricade (wire it to a trigger)"], 36: ["", "Steam engine (burns ore: powers machines)"], 37: ["", "Domino row (drag; click an end to reset)"], 38: ["", "Beam tap (click: filter)"], 39: ["", "Flip-flop (every other)"], 40: ["", "Escapement (one per beat)"], 41: ["", "Tipping bucket (batches)"], 42: ["", "Sieve rail (drag; grit drops)"], 43: ["", "Archimedes screw (drag up)"], 44: ["", "Robotic arm (click: filter)"], 45: ["", "Stair lift (climbs marbles up)"], 46: ["", "Ferris lift (cups carry marbles up)"], 47: ["", "Jump (drag: landing; slow ones drop short)"], 48: ["", "Bell (a marble rings it: fires linked traps)"], 49: ["", "Loop-the-loop (needs a fast marble)"], 50: ["", "Dispenser (a marble every 1/2/4 s: click)"], 51: ["", "Goal cup (counts marbles; fires traps when full)"], 52: ["", "Weigh scale (heavy one way, light the other: click)"], 53: ["", "Marble cannon (fires marbles flat: iron through shields)"], 54: ["", "Felt chute (drag: quiet, a little slow)"], 55: ["", "Chime bar (drag; click: note)"], 56: ["", "Plunger (click-hold, release: fires a marble up)"], 57: ["", "Vortex funnel (spirals marbles, one at a time)"], 58: ["", "Flap sorter (drag; heavy drops through, click a flap: spring)"], 59: ["", "Overflow gate (drag its ring to what it feeds)"], 60: ["", "Deflector plate (ricochets flying ore: click to turn)"], 61: ["", "Booster rail (drag the way it drives: climbs; powered)"], 62: ["", "Catch net (catches flying ore, drops it at one point)"], 63: ["", "Magnet drum (at a chute end: iron drops behind, copper flies on)"], 64: ["", "Sluice gate (holds ore back; a trigger or click opens it)"], 65: ["", "Tally wheel (every 3/5/10 pieces fires its wire: click)"], 66: ["", "Points switch (stays put; a trigger or click throws it)"], 67: ["", "Brake rail (drag; caps speed: click its number)"], 68: ["", "Teeter launcher (a drop flings the one waiting)"], 69: ["", "Crossover (two streams cross, each keeps its line)"], 70: ["", "Flywheel (stores a wheel's surplus power)"], 71: ["", "Rotary distributor (three ways, in turn)"], 72: ["", "Flipper (a trigger or click bats what's on it)"], 73: ["", "Counterweight lift (heavy down lifts light up)"], 74: ["", "Pair gate (AND: one from each side, together)"], 75: ["", "Furnace rail (drag; slow ore comes off as ingots)"], 76: ["", "Silo (stores 40; lets them out on a clock or trigger)"], 77: ["", "Ropeway (drag high post to low: zips ore across)"], 78: ["", "Load cell (fires its wire when the pan is full)"], 79: ["", "Banked turn (U-turn corner that keeps the speed)"], 80: ["", "Gauss cannon (a roll in shoots the waiting one out fast)"], 81: ["", "Treadwheel (walk in it: power by hand)"], 82: ["", "Trebuchet (weight in the box throws the sling far)"], 83: ["", "Paddle wheel (a falling stream turns it: power, stream passes on)"], 84: ["", "Ball-bearing mat (stock it with ore: walkers slip)"], 85: ["", "Kicker (punches iron/copper/scrap out of the line, or on a trigger)"],
 }
-const CATS := [
+var CATS := [
 	["Transport", [1, 60, 62, 9, 67, 12, 25, 10, 8, 24, 4, 13, 31]],
 	["Production", [2, 30, 3, 75, 15, 83, 81, 70, 36, 16, 21, 17, 34]],
 	["Defence", [32, 6, 53, 82, 18, 23, 19, 5, 22, 26]],
@@ -40,8 +40,14 @@ const CATS := [
 	["Logic", [39, 71, 66, 74, 59, 85, 40, 65, 78, 64, 72, 48]],
 ]
 
+## A tab shows up to MAX slots; one with more is paged, PER at a time with a
+## page arrow in the last slot.
+const MAX := 13
+const PER := 12
+
 var font: Font
 var _cat := 0
+var _page := 0
 var _current := 0
 var _hover := -1
 var _name_label: Label
@@ -52,7 +58,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	var most := 0
 	for c in CATS:
-		most = maxi(most, c[1].size())
+		most = maxi(most, mini(c[1].size(), MAX))
 	size = Vector2(maxf(most * (SLOT.x + GAP) - GAP, CATS.size() * TAB_W), TAB_H + 2 + SLOT.y)
 	for t in PIECES:
 		var holder := Node2D.new()
@@ -81,10 +87,25 @@ func _types() -> Array:
 	return CATS[_cat][1]
 
 
+func _paged() -> bool:
+	return _types().size() > MAX
+
+
+func _pages() -> int:
+	return ceili(float(_types().size()) / PER) if _paged() else 1
+
+
+## The slots on show: the whole tab, or this page of it.
+func _shown() -> Array:
+	if not _paged():
+		return _types()
+	return _types().slice(_page * PER, _page * PER + PER)
+
+
 func _layout() -> void:
 	for t in _icons:
 		_icons[t].visible = false
-	var types := _types()
+	var types := _shown()
 	for i in types.size():
 		var h: Node2D = _icons[types[i]]
 		h.visible = true
@@ -98,8 +119,10 @@ func _on_build_mode(t: int) -> void:
 		for c in CATS.size():
 			if t in CATS[c][1]:
 				_cat = c
-				_layout()
-	queue_redraw()
+				_page = 0
+	if t != 0 and t in _types() and not t in _shown():
+		_page = _types().find(t) / PER
+	_layout()
 
 
 func _tab_rect(c: int) -> Rect2:
@@ -111,7 +134,7 @@ func _slot_rect(i: int) -> Rect2:
 
 
 func _slot_at(p: Vector2) -> int:
-	for i in _types().size():
+	for i in _shown().size():
 		if _slot_rect(i).has_point(p):
 			return i
 	return -1
@@ -124,19 +147,26 @@ func _gui_input(event: InputEvent) -> void:
 			_hover = h
 			_name_label.visible = h >= 0
 			if h >= 0:
-				_name_label.text = PIECES[_types()[h]][1]
+				_name_label.text = PIECES[_shown()[h]][1]
 			queue_redraw()
 	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		for c in CATS.size():
 			if _tab_rect(c).has_point(event.position):
 				_cat = c
+				_page = 0
 				_hover = -1
 				_layout()
 				accept_event()
 				return
+		if _paged() and _slot_rect(PER).has_point(event.position):
+			_page = (_page + 1) % _pages()
+			_hover = -1
+			_layout()
+			accept_event()
+			return
 		var i := _slot_at(event.position)
 		if i >= 0:
-			var t: int = _types()[i]
+			var t: int = _shown()[i]
 			get_node("/root/BuildSystem")._set_build(0 if t == _current else t)
 		accept_event()
 
@@ -149,6 +179,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_TAB:
 		_cat = (_cat + 1) % CATS.size()
+		_page = 0
 		_hover = -1
 		_layout()
 		if _current != 0:
@@ -182,7 +213,17 @@ func _draw() -> void:
 			var label: String = CATS[c][0]
 			draw_string(font, r.position + Vector2(7, 13), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(0, 0, 0, 0.8))
 			draw_string(font, r.position + Vector2(6, 12), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, KEY_COL if on else KEY_COL.darkened(0.3))
-	var types := _types()
+	var types := _shown()
+	if _paged():
+		# the page arrow in the last slot
+		var r := _slot_rect(PER)
+		draw_rect(r, RIM)
+		draw_rect(r.grow(-2), DARK)
+		draw_rect(r.grow(-3), TAB_BG)
+		var c := r.get_center()
+		draw_colored_polygon(PackedVector2Array([c + Vector2(-6, -9), c + Vector2(8, 0), c + Vector2(-6, 9)]), KEY_COL)
+		if font:
+			draw_string(font, r.position + Vector2(4, r.size.y - 4), "%d/%d" % [_page + 1, _pages()], HORIZONTAL_ALIGNMENT_LEFT, -1, 12, KEY_COL)
 	for i in types.size():
 		var r := _slot_rect(i)
 		var on: bool = types[i] == _current
