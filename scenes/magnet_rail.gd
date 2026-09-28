@@ -14,22 +14,36 @@ const PULL := 26.0               # reaches this far below the bar
 const MAGNETIC := ["iron", "shot", "gear", "scrap"]
 const V_MIN := 90.0
 const V_MAX := 420.0
+const BAR_TEX := preload("res://assets/sprites/magrail_bar.png")
+const CAP_TEX := preload("res://assets/sprites/magrail_cap.png")
+const HANGER_TEX := preload("res://assets/sprites/magrail_hanger.png")
 
 @export var end_offset := Vector2(160, 20)
 
 var carried := 0                 # tests
 var _held: Array = []            # [ore, s along the bar, speed]
 var _g := 980.0
+var _art: Node2D                 # the bar, coils, caps and hangers (tiled along the bar)
 
 
 func set_end(offset: Vector2) -> void:
 	var l := clampf(offset.length(), LEN_MIN, LEN_MAX)
 	end_offset = offset.normalized() * l if offset.length() > 0.1 else Vector2(LEN_MIN, 0)
 	queue_redraw()
+	if _art:
+		_art.queue_redraw()
 
 
 func _ready() -> void:
 	z_index = 2
+	# the art first, so ghosts and build-bar icons have it; behind our own
+	# _draw (the field)
+	_art = Node2D.new()
+	_art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_art.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+	_art.show_behind_parent = true
+	_art.draw.connect(_draw_art)
+	add_child(_art)
 	if has_meta("ghost"):
 		return
 	_g = ProjectSettings.get_setting("physics/2d/default_gravity", 980.0)
@@ -87,32 +101,29 @@ func _physics_process(delta: float) -> void:
 	queue_redraw()
 
 
+## The hangers up to the ceiling, then the bar tiled along its length (a
+## coil every 24 px; flipped on leftward runs so the field side stays down),
+## capped at each end.
+func _draw_art() -> void:
+	var l := end_offset.length()
+	if l < 1.0:
+		return
+	var dir := end_offset / l
+	for p in [Vector2.ZERO, end_offset]:
+		_art.draw_texture(HANGER_TEX, p - Vector2(4, 18))
+	_art.draw_set_transform(Vector2.ZERO, dir.angle(), Vector2(1, 1.0 if dir.x >= 0 else -1.0))
+	_art.draw_texture_rect(BAR_TEX, Rect2(0, -6, l, 12), true)
+	_art.draw_texture(CAP_TEX, Vector2(-4, -6))
+	_art.draw_texture(CAP_TEX, Vector2(l - 4, -6))
+	_art.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
 func _draw() -> void:
 	var l := end_offset.length()
 	if l < 1.0:
 		return
 	var dir := end_offset / l
 	var n := _down(dir)
-	var dark := Color(0.1, 0.08, 0.07)
-	var iron := Color(0.42, 0.44, 0.5)
-	var coil := Color(0.78, 0.38, 0.2)
-	# the field it reaches with, faintly
+	# the field it reaches with, faintly (the bar itself is in the art child)
 	var pulse := 0.08 + 0.04 * sin(Time.get_ticks_msec() / 200.0)
 	draw_colored_polygon(PackedVector2Array([Vector2.ZERO, end_offset, end_offset + n * PULL, n * PULL]), Color(0.5, 0.7, 1.0, pulse))
-	# the bar, and coils wound round it
-	draw_line(Vector2.ZERO - dir * 3, end_offset + dir * 3, dark, 6.0)
-	draw_line(Vector2.ZERO - dir * 3, end_offset + dir * 3, iron, 4.0)
-	draw_line(Vector2.ZERO - dir * 3 - n, end_offset + dir * 3 - n, iron.lightened(0.3), 1.0)
-	var k := 10.0
-	while k < l - 6:
-		var c := dir * k
-		draw_line(c - n * 4 - dir * 3, c + n * 4 - dir * 3, dark, 2.0)
-		for i in 3:
-			var cc := c + dir * (i * 2 - 2)
-			draw_line(cc - n * 4, cc + n * 4, coil, 1.0)
-		k += 24.0
-	# hangers at each end
-	for p in [Vector2.ZERO, end_offset]:
-		draw_line(p, p - Vector2(0, 14), dark, 3.0)
-		draw_line(p, p - Vector2(0, 14), iron, 1.0)
-		draw_circle(p - Vector2(0, 14), 2.0, iron)
