@@ -35,6 +35,15 @@ var _anim := 0.0
 
 func _ready() -> void:
 	z_index = 2
+	# the boiler's sprite first, so ghosts and build-bar icons get it too;
+	# behind our own _draw (the firebox glow, the needle, the steam)
+	var art := Sprite2D.new()
+	art.texture = preload("res://assets/sprites/steam_jet.png")
+	art.centered = false
+	art.offset = Vector2(-11, -31)
+	art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	art.show_behind_parent = true
+	add_child(art)
 	if has_meta("ghost"):
 		return
 	add_to_group("power_users")
@@ -115,34 +124,14 @@ func trigger() -> void:
 
 func _draw() -> void:
 	var dark := Color(0.1, 0.08, 0.07)
-	var brass := Color(0.85, 0.65, 0.35)
-	var steel := Color(0.42, 0.44, 0.5)
-	# legs
-	for x in [-7.0, 7.0]:
-		draw_line(Vector2(x * 0.7, -4), Vector2(x, 0), dark, 2.0)
-	# the boiler: a riveted drum
-	draw_rect(Rect2(-8, -22, 16, 18), dark)
-	draw_rect(Rect2(-7, -21, 14, 16), steel)
-	draw_line(Vector2(-6, -20), Vector2(-6, -6), steel.lightened(0.3), 1.0)
-	for y in [-19.0, -8.0]:
-		draw_line(Vector2(-7, y), Vector2(7, y), brass, 1.5)
+	# the legs, drum, bands, door frame, gauge face and nozzle rose are art
 	# firebox door, glowing with the steam it's raising
 	var glow := Color(1.0, 0.5, 0.15).lerp(Color(0.3, 0.12, 0.05), 1.0 - clampf(rate, 0.0, 1.0))
-	draw_rect(Rect2(-3, -12, 6, 4), dark)
 	draw_rect(Rect2(-2, -11, 4, 2), glow)
-	# the gauge on its side: needle up with the pressure
+	# the gauge's needle: up with the pressure
 	var g := Vector2(8, -15)
-	draw_circle(g, 4.0, dark)
-	draw_circle(g, 3.0, Color(0.9, 0.86, 0.75))
 	var a := PI * 0.75 + pressure * PI * 1.5
 	draw_line(g, g + Vector2(cos(a), sin(a)) * 2.6, Color(0.8, 0.2, 0.15) if pressure >= 1.0 else dark, 1.0)
-	# the nozzle ring on top
-	draw_line(Vector2(0, -22), NOZZLE, dark, 3.0)
-	draw_circle(NOZZLE, 4.0, dark)
-	draw_circle(NOZZLE, 2.8, brass)
-	for i in 6:
-		var na := TAU * i / 6.0
-		draw_line(NOZZLE, NOZZLE + Vector2(cos(na), sin(na)) * 5.0, brass.darkened(0.2), 1.0)
 	# full: a wisp of steam leaking from the safety valve
 	if pressure >= 1.0:
 		var w := sin(_anim * 6.0)
