@@ -19,6 +19,29 @@ var _top := 0                    # which bucket (0 left, 1 right) is up
 var _loads: Array = [[], []]
 var _t := -1.0                   # travel progress, -1 when resting
 var _cool := {}
+var _pulley: Sprite2D            # turns as the ropes run
+var _buckets: Array[Sprite2D] = []
+
+
+func _ready() -> void:
+	# sprites (for ghosts and build-bar icons too), behind our own _draw
+	# (the ropes and the weights)
+	_sprite(preload("res://assets/sprites/counterweight_beam.png"), Vector2(-32, -13))
+	_pulley = _sprite(preload("res://assets/sprites/counterweight_pulley.png"), Vector2(-22, -22))
+	_sprite(preload("res://assets/sprites/counterweight_fork.png"), Vector2(-6, -11))
+	for k in 2:
+		_buckets.append(_sprite(preload("res://assets/sprites/counterweight_bucket.png"), Vector2(-12, -19)))
+
+
+func _sprite(tex: Texture2D, off: Vector2) -> Sprite2D:
+	var sp := Sprite2D.new()
+	sp.texture = tex
+	sp.centered = false
+	sp.offset = off
+	sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	sp.show_behind_parent = true
+	add_child(sp)
+	return sp
 
 
 func _bucket(k: int) -> Vector2:
@@ -94,21 +117,14 @@ func _release(b: RigidBody2D, v: Vector2, now: float) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var brass := Color(0.85, 0.65, 0.35)
-	# the beam and pulley
-	draw_line(Vector2(-30, -8), Vector2(30, -8), dark, 4.0)
-	draw_circle(Vector2.ZERO, GAP + 2, dark)
-	draw_circle(Vector2.ZERO, GAP, Color(0.45, 0.35, 0.22))
-	draw_circle(Vector2.ZERO, 4.0, brass)
+	# beam, pulley, fork and buckets are sprites (see _ready); the ropes are drawn
+	_pulley.rotation = -_bucket(0).y / (GAP + 1.0)
 	for k in 2:
 		var c := _bucket(k)
+		_buckets[k].position = c
 		var x := -GAP if k == 0 else GAP
-		draw_line(Vector2(x, 0), c + Vector2(0, -16), Color(0.7, 0.62, 0.45), 1.0)
-		draw_line(c + Vector2(-10, -16), c + Vector2(-8, 0), dark, 3.0)
-		draw_line(c + Vector2(8, 0), c + Vector2(10, -16), dark, 3.0)
-		draw_line(c + Vector2(-8, 0), c + Vector2(8, 0), dark, 3.0)
-		draw_line(c + Vector2(-8, -1), c + Vector2(8, -1), brass, 1.0)
+		draw_line(Vector2(x, 0), c + Vector2(0, -17), Color(0.28, 0.22, 0.15), 2.0)
+		draw_line(Vector2(x, 0), c + Vector2(0, -17), Color(0.7, 0.62, 0.45), 1.0)
 	# the top of the drop and the tip-out marks
 	var font := ThemeDB.fallback_font
 	draw_string(font, _bucket(_top) + Vector2(-12, -22), "%.1f" % _mass(_top), HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.9, 0.8, 0.55))
