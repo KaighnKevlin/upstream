@@ -40,7 +40,7 @@ var _arrow_count: Label
 var _arrow_t := 0.0
 var _game_over_panel: NinePatchRect
 
-const ENEMY_NAMES := ["titan", "scuttler", "soldier", "caster", "ornithopter", "shieldbearer", "magpie", "sapper", "bridger", "mason", "foundry", "airship", "tinker", "dreadnought", "gremlin", "mortar", "grenadier", "colossus", "roller"]
+const ENEMY_NAMES := ["titan", "scuttler", "soldier", "caster", "ornithopter", "shieldbearer", "magpie", "sapper", "bridger", "mason", "foundry", "airship", "tinker", "dreadnought", "gremlin", "mortar", "grenadier", "colossus", "roller", "burrower", "rust_mite"]
 
 @onready var _receiver: Area2D = $Receiver
 @onready var _turret: Node2D = $Turret
@@ -923,7 +923,7 @@ func _spawn_wave() -> void:
 	var bearers := (wave_number + 1) / 3   # shieldbearers from wave 2, one more every third wave
 	if bearers > 0:
 		kinds[5] = bearers
-	var sappers := wave_number / 3   # burrowers from wave 3
+	var sappers := wave_number / 3   # tunnelling sappers from wave 3 (not the machine-eating burrowers)
 	if sappers > 0:
 		kinds[7] = sappers
 	var bridgers := (wave_number + 2) / 4   # bridge engines from wave 2
@@ -950,6 +950,13 @@ func _spawn_wave() -> void:
 	var rollers := wave_number / 4 if wave_number >= 5 else 0   # rolling juggernauts from wave 5
 	if rollers > 0:
 		kinds[18] = rollers
+	var burrowers := wave_number / 4 if wave_number >= 4 else 0   # machine-eating moles from wave 4
+	if burrowers > 0:
+		kinds[19] = burrowers
+	# rust mites: from wave 6, every other wave, once there's a powered machine to drain
+	var mite_swarms := 1 if wave_number >= 6 and wave_number % 2 == 0 and not get_tree().get_nodes_in_group("power_wheels").is_empty() else 0
+	if mite_swarms > 0:
+		kinds[20] = mite_swarms
 	if wave_trait == "SIEGE":
 		mortars += 1
 		grenadiers += 1
@@ -1018,6 +1025,18 @@ func _spawn_wave() -> void:
 	for k in gremlins:
 		var gr: Node2D = preload("res://scenes/gremlin.tscn").instantiate()
 		_march_in(gr, Vector2(spawn_x, 40), 1 + k * 2)
+
+	for k in burrowers:
+		var bw: Node2D = preload("res://scenes/burrower.tscn").instantiate()
+		var left := k % 2 == 1   # alternate edges
+		bw.global_position = Vector2(30.0 if left else spawn_x, 80 + k * 24)
+		add_child(bw)
+
+	for k in mite_swarms:
+		# out of the rock beside a powered piece (from the map edge they'd take ~50 s to seep in)
+		var pw: Array = get_tree().get_nodes_in_group("power_wheels") + get_tree().get_nodes_in_group("power_users")
+		var near: Node2D = pw.pick_random()
+		preload("res://scenes/rust_mite.gd").swarm(self, near.global_position + Vector2(randf_range(160, 220) * [-1, 1].pick_random(), -40), 4 + wave_number / 4)
 
 	for k in swarm:
 		var sc := _enemy_scene.instantiate()
@@ -1384,7 +1403,7 @@ func _god_key(event: InputEventKey) -> void:
 		KEY_G:
 			if event.echo:
 				return
-			if ENEMY_NAMES[_god_type] in ["magpie", "sapper", "bridger", "mason", "foundry", "airship", "tinker", "dreadnought", "gremlin", "mortar", "grenadier", "roller"]:
+			if ENEMY_NAMES[_god_type] in ["magpie", "sapper", "bridger", "mason", "foundry", "airship", "tinker", "dreadnought", "gremlin", "mortar", "grenadier", "roller", "burrower", "rust_mite"]:
 				var mp: Node2D = load("res://scenes/%s.tscn" % ENEMY_NAMES[_god_type]).instantiate()
 				mp.global_position = at
 				add_child(mp)
