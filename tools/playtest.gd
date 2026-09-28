@@ -6318,12 +6318,17 @@ func save_marble_rec() -> void:
 		["res://scenes/dispenser.tscn", {"mode": 2, "kinds": ["copper", "iron"]}],
 		["res://scenes/brake.tscn", {"mode": 0, "end_offset": Vector2(90, 20)}],
 		["res://scenes/points.tscn", {"tilt": -1.0}],
+		["res://scenes/silo.tscn", {"mode": 3, "stored": ["copper", "ingot:iron"]}],
+		["res://scenes/ropeway.tscn", {"end_offset": Vector2(200, 60)}],
 	]
 	var x := 1000.0
 	for sp in specs:
 		var b: Node2D = load(sp[0]).instantiate()
 		for k in sp[1]:
-			b.set(k, sp[1][k])
+			if b.get(k) is Array:
+				(b.get(k) as Array).assign(sp[1][k])   # typed arrays refuse a plain one
+			else:
+				b.set(k, sp[1][k])
 		b.global_position = Vector2(x, 300)
 		main.add_child(b)
 		bs._placed_buildings.append(b)
@@ -6430,17 +6435,18 @@ func build_new_rec() -> void:
 	await preload("res://scripts/marble_works.gd").carve(main, false)
 	var bs = main.get_node("/root/BuildSystem")
 	var B = bs.BuildType
-	var drag := [B.SIEVE, B.SCREW, B.JUMP, B.FELT, B.CHIME, B.FLAPS, B.BOOSTER, B.BRAKE]
+	var drag := [B.SIEVE, B.SCREW, B.JUMP, B.FELT, B.CHIME, B.FLAPS, B.BOOSTER, B.BRAKE, B.FURNACE, B.ROPEWAY]
 	var types := [B.TAP, B.ROCKER, B.ESCAPEMENT, B.BUCKET, B.SIEVE, B.SCREW, B.ARM, B.STAIRS, B.FERRIS,
 		B.JUMP, B.BELL, B.LOOP, B.DISPENSER, B.GOAL, B.SCALE, B.CANNON, B.FELT, B.CHIME, B.PLUNGER,
 		B.VORTEX, B.FLAPS, B.OVERFLOW, B.DEFLECTOR, B.BOOSTER, B.NET, B.DRUM, B.SLUICE, B.TALLY,
-		B.POINTS, B.BRAKE, B.TEETER, B.CROSSOVER]
+		B.POINTS, B.BRAKE, B.TEETER, B.CROSSOVER, B.FLYWHEEL, B.DISTRIBUTOR, B.FLIPPER, B.COUNTERWEIGHT,
+		B.PAIR, B.FURNACE, B.SILO, B.ROPEWAY]
 	var placed := []
 	var i := 0
 	for t in types:
 		bs._set_build(t)
 		await wait(0.05)
-		var pos := Vector2(980 + (i % 8) * 85, 220 + (i / 8) * 90)
+		var pos := Vector2(980 + (i % 8) * 85, 200 + (i / 8) * 75)
 		if t in drag:
 			bs._ghost.set_end(Vector2(70, 22) if t != B.SCREW else Vector2(20, -80))
 			await wait(0.02)

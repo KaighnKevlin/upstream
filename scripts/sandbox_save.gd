@@ -100,8 +100,11 @@ static func load_into(main: Node) -> int:
 			var v = p.props[k]
 			if v is Array and b.get(k) is Vector2:
 				v = Vector2(v[0], v[1])
-			elif v is Array:
-				v = v.duplicate()          # a list setting (flap springs, dispenser kinds)
+			elif v is Array and b.get(k) is Array:
+				# a list setting (flap springs, dispenser kinds, silo contents): filled in
+				# place, since a typed array silently refuses a plain one
+				(b.get(k) as Array).assign(v)
+				continue
 			elif b.get(k) is int:
 				v = int(v)   # JSON numbers come back as floats (enums, modes)
 			b.set(k, v)
