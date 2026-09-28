@@ -132,6 +132,17 @@ static func sfx_bell() -> AudioStreamWAV:
 		return _wav(b, 0.5))
 
 
+## A struck chime bar at `freq` Hz: a bright tone with a little metal
+## overtone and a quick ring-down. Cached per pitch.
+static func sfx_chime(freq: float) -> AudioStreamWAV:
+	return _sound("chime%d" % int(freq), func(_r: RandomNumberGenerator):
+		var b := _buf(1.0)
+		_tone(b, freq, freq, 0.7, 0.55, 0.0, 0.001)
+		_tone(b, freq * 2.0, freq * 2.0, 0.18, 0.25, 0.0, 0.001)
+		_tone(b, freq * 3.99, freq * 3.99, 0.08, 0.08, 0.0, 0.001)
+		return _wav(b, 0.5))
+
+
 ## Loose ore knocking into something. surface: "ground" (a dull thud with
 ## grit), "metal" (a machine's steel: a small tink), "ore" (stone on stone:
 ## a dry click, what a filling funnel sounds like).

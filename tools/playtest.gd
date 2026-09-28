@@ -5865,6 +5865,24 @@ func clatter_rec() -> void:
 		log_line("t=%d | clatter %d heard x%d | sent %d/%d down %d leaks %d | cup %d | flip-flop %s" % [(k + 1) * 5, n.level, n.peak_steps, d.sent, d.wave, d.killed, d.leaks, cup.count, rk.sent])
 
 
+func musicbox_rec() -> void:
+	# The Music Box world: which bars have rung, every 5 s for 20 s.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await main.start_music_works()
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.5, 1.5)
+	cam.global_position = Vector2(1250, 380)
+	var bars: Array = main.get_children().filter(func(c): return c.get_script() and c.get_script().resource_path.get_file() == "chime.gd")
+	for k in 4:
+		await wait(5.0)
+		if k == 2:
+			await shot("music_%d" % k)
+		log_line("t=%d | rung per bar %s" % [(k + 1) * 5, bars.map(func(b): return b.rung)])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.
