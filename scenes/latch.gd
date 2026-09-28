@@ -43,7 +43,7 @@ var _pending := false
 var _senders: Array = []
 var _seen := {}                  # sender id -> its fire counter last frame
 var _look := 0.0
-var _last_out := -10.0
+var _cool := 0.0                 # > 0: just fired, not listening (game time)
 var _lever := 0.0                # 0 down .. 1 up, drawn
 var _flash := 0.0
 var _flash_set := 0.0
@@ -79,14 +79,10 @@ func _post(at: Vector2, is_set: bool) -> Node2D:
 	return p
 
 
-func _now() -> float:
-	return Time.get_ticks_msec() / 1000.0
-
-
 func _hit(is_set: bool) -> void:
 	if _set_post == null:
 		return
-	if _now() < _last_out + COOL:
+	if _cool > 0:
 		dropped += 1
 		return
 	_hits[is_set] = true
@@ -190,7 +186,7 @@ func set_on(v: bool) -> void:
 func fire() -> void:
 	fired += 1
 	_flash = 1.0
-	_last_out = _now()
+	_cool = COOL
 	for n in Tripwire.linked_to(get_tree(), [global_position + wire_to]):
 		if n != self and n != _set_post and n != _reset_post and n.has_method("trigger"):
 			n.trigger()
@@ -199,6 +195,7 @@ func fire() -> void:
 func _physics_process(delta: float) -> void:
 	if _set_post == null:
 		return
+	_cool -= delta
 	_look -= delta
 	if _look <= 0:
 		_look = SENDERS_EVERY

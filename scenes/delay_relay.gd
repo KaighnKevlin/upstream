@@ -31,7 +31,7 @@ var fired := 0                   # tests: outputs
 var dropped := 0                 # tests: signals ignored in the cool-down
 var waiting := false
 var _left := 0.0
-var _last_out := -10.0
+var _cool := 0.0                 # > 0: just fired, not listening (game time)
 var _flash := 0.0
 var _dragging := false
 
@@ -43,14 +43,10 @@ func _ready() -> void:
 	add_to_group("triggerable")
 
 
-func _now() -> float:
-	return Time.get_ticks_msec() / 1000.0
-
-
 func trigger() -> void:
 	if has_meta("ghost"):
 		return
-	if _now() < _last_out + COOL:
+	if _cool > 0:
 		dropped += 1
 		return
 	triggered += 1
@@ -65,7 +61,7 @@ func trigger() -> void:
 func fire() -> void:
 	fired += 1
 	_flash = 1.0
-	_last_out = _now()
+	_cool = COOL
 	SFX.play_small(self, SFX.sfx_clink(), -10.0, 1.5)
 	for n in Tripwire.linked_to(get_tree(), [global_position + wire_to]):
 		if n != self and n.has_method("trigger"):
@@ -75,6 +71,7 @@ func fire() -> void:
 func _physics_process(delta: float) -> void:
 	if has_meta("ghost"):
 		return
+	_cool -= delta
 	if waiting:
 		_left -= delta
 		if _left <= 0:

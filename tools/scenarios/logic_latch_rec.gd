@@ -89,10 +89,12 @@ static func run(t) -> void:
 	await t.wait(1.0)
 	t.log_line("latch loop (A body <-> B body): outputs in 1 s after one flip: %d (A on %s, B on %s, dropped A %d B %d)" % [la.fired + lb.fired - f0, la.on, lb.on, la.dropped, lb.dropped])
 	# and SET-to-SET: A's output on B's SET, B's on A's SET
-	la.wire_to = lb.global_position + lb.SET_AT - la.global_position
-	lb.wire_to = la.global_position + la.SET_AT - lb.global_position
+	la.wire_to = Vector2(0, -200)
+	lb.wire_to = Vector2(0, 200)
 	la.set_on(false)
 	lb.set_on(false)
+	la.wire_to = lb.global_position + lb.SET_AT - la.global_position
+	lb.wire_to = la.global_position + la.SET_AT - lb.global_position
 	await t.wait(0.3)
 	f0 = la.fired + lb.fired
 	la.set_on(true)
