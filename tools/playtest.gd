@@ -48,7 +48,17 @@ func _run() -> void:
 	if main.has_node("Fog") and not scenario.begins_with("fog"):
 		main.get_node("Fog").visible = false
 	log_line("scenario=%s  godot=%s" % [scenario, Engine.get_version_info().string])
-	await call(scenario)
+	if has_method(scenario):
+		await call(scenario)
+	else:
+		# scenarios can also live in their own files, tools/scenarios/<name>.gd,
+		# as `static func run(t)` with t this harness (t.main, t.wait, t.shot,
+		# t.log_line, t._spawn, ...): parallel work doesn't all edit this file
+		var path := "res://tools/scenarios/%s.gd" % scenario
+		if ResourceLoader.exists(path):
+			await load(path).run(self)
+		else:
+			log_line("no such scenario: %s" % scenario)
 	log_line("done")
 	quit()
 
