@@ -14,6 +14,8 @@ const HEIGHTS := [80.0, 160.0, 240.0, 320.0]
 const RISE := 70.0               # px/s
 const MAX_UP := 5
 const FILL := 0.5                # s to fill a balloon
+const BALLOON_TEX := preload("res://assets/sprites/balloon_lift_balloon.png")   # 4 frames of 16x20, COLORS order
+const PIN_TEX := preload("res://assets/sprites/balloon_lift_pin.png")
 const COLORS := [Color(0.85, 0.3, 0.25), Color(0.95, 0.75, 0.3), Color(0.35, 0.6, 0.85), Color(0.5, 0.8, 0.45)]
 
 @export var mode := 1
@@ -28,6 +30,16 @@ var _n := 0
 
 func _ready() -> void:
 	z_index = 2
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	# the sprite first, so ghosts and build-bar icons get it too; behind our
+	# own _draw (pin, balloons, the height label)
+	var sp := Sprite2D.new()
+	sp.texture = preload("res://assets/sprites/balloon_lift.png")
+	sp.centered = false
+	sp.offset = Vector2(-20, -30)
+	sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	sp.show_behind_parent = true
+	add_child(sp)
 	if has_meta("ghost"):
 		return
 
@@ -114,43 +126,32 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
+func _balloon(ci: int, at: Vector2, alpha := 1.0) -> void:
+	draw_texture_rect_region(BALLOON_TEX, Rect2(at - Vector2(8, 8), Vector2(16, 20)), Rect2(ci * 16, 0, 16, 20), Color(1, 1, 1, alpha))
+
+
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var brass := Color(0.85, 0.65, 0.35)
-	var iron := Color(0.42, 0.44, 0.5)
 	var h: float = HEIGHTS[mode]
-	# the pin it pops at: a faint line up and a little brass pin
+	# the pin it pops at: a faint line up and a little brass pin, its flag toward `side`
 	for y in range(-20, -int(h), -8):
 		draw_line(Vector2(0, y), Vector2(0, y - 3), Color(0.85, 0.65, 0.35, 0.15), 1.0)
-	draw_line(Vector2(-4, -h), Vector2(4, -h), brass, 1.0)
-	draw_line(Vector2(0, -h), Vector2(0, -h - 7), brass, 1.0)
-	draw_colored_polygon(PackedVector2Array([Vector2(0, -h - 7), Vector2(side * 6, -h - 5), Vector2(0, -h - 3)]), Color(0.85, 0.3, 0.25))
-	# the gas bottle and its nozzle, the basket
-	draw_rect(Rect2(-19, -22, 10, 22), dark)
-	draw_rect(Rect2(-18, -21, 8, 20), Color(0.3, 0.45, 0.35))
-	draw_rect(Rect2(-17, -26, 6, 5), dark)
-	draw_rect(Rect2(-16, -25, 4, 3), brass)
-	draw_line(Vector2(-14, -25), Vector2(-4, -25), dark, 2.0)
-	draw_line(Vector2(-4, -25), Vector2(-4, -20), dark, 2.0)
-	draw_line(Vector2(-14, -25), Vector2(-4, -25), iron, 1.0)
-	draw_colored_polygon(PackedVector2Array([Vector2(-10, -14), Vector2(10, -14), Vector2(7, 2), Vector2(-7, 2)]), dark)
-	draw_colored_polygon(PackedVector2Array([Vector2(-9, -13), Vector2(9, -13), Vector2(6, 1), Vector2(-6, 1)]), Color(0.55, 0.4, 0.25))
-	for x in [-5.0, 0.0, 5.0]:
-		draw_line(Vector2(x, -13), Vector2(x * 0.7, 1), dark, 1.0)
+	draw_set_transform(Vector2(0, -h), 0.0, Vector2(signf(side) if side != 0.0 else 1.0, 1))
+	draw_texture(PIN_TEX, Vector2(-3, -11))
+	draw_set_transform(Vector2.ZERO)
+	# (the gas bottle, its nozzle and the basket are the sprite)
 	var font := ThemeDB.fallback_font
-	draw_string(font, Vector2(-22, -30), "%d" % int(h), HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.9, 0.8, 0.55))
+	draw_string(font, Vector2(-22, -32), "%d" % int(h), HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.9, 0.8, 0.55))
 	# a balloon filling, then each one up with its string
 	if _fill > 0.0:
 		var r := 7.0 * _fill / FILL
-		draw_circle(Vector2(0, -20 - r), r, Color(COLORS[_n % COLORS.size()], 0.9))
+		draw_set_transform(Vector2(0, -20 - r), 0.0, Vector2(r / 7.0, r / 7.0))
+		_balloon(_n % COLORS.size(), Vector2.ZERO, 0.9)
+		draw_set_transform(Vector2.ZERO)
 	for u in _up:
 		var o = u[0]
 		if not is_instance_valid(o):
 			continue
 		var at: Vector2 = to_local(o.global_position)
 		var b := at + Vector2(sin(u[2] * 3.0) * 1.5, -18)
-		draw_line(at, b + Vector2(0, 7), Color(0.85, 0.85, 0.8, 0.8), 1.0)
-		draw_circle(b, 8.0, dark)
-		draw_circle(b, 7.0, COLORS[u[1]])
-		draw_circle(b + Vector2(-2.5, -2.5), 2.0, Color(1, 1, 1, 0.45))
-		draw_colored_polygon(PackedVector2Array([b + Vector2(-2, 7), b + Vector2(2, 7), b + Vector2(0, 9)]), COLORS[u[1]].darkened(0.3))
+		draw_line(at, b + Vector2(0, 9), Color(0.85, 0.85, 0.8, 0.8), 1.0)
+		_balloon(u[1], b.round())
