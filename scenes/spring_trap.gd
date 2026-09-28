@@ -17,14 +17,41 @@ var armed := true
 var flung := 0                   # tests
 var _load := 0
 var _spring := 0.0               # 0 cocked .. 1 sprung (the plate's tilt)
+var _plate_art: Sprite2D         # art: the plate, turned about its hinge
+var _spring_art: Sprite2D        # art: the coil, a frame per step of _spring
 
 
 func _ready() -> void:
 	z_index = 1
+	# the sprites first, so ghosts and build-bar icons get them too (see
+	# tools/art/gen_spring_trap.py); the load lights stay in _draw
+	_spr(preload("res://assets/sprites/spring_trap_base.png"), Vector2.ZERO, Vector2(-17, -3))
+	_spring_art = _spr(preload("res://assets/sprites/spring_trap_spring.png"), Vector2.ZERO, Vector2(-6, -18))
+	_spring_art.hframes = 8
+	_plate_art = _spr(preload("res://assets/sprites/spring_trap_plate.png"), Vector2(-W * 0.5, 0), Vector2(-2, -3))
+	_spr(preload("res://assets/sprites/spring_trap_hopper.png"), Vector2(W * 0.5 + 9, -8), Vector2(-8, -11))
+	_pose()
 	if has_meta("ghost"):
 		return
 	_snap_to_floor()
 	add_to_group("triggerable")
+
+
+func _spr(tex: Texture2D, at: Vector2, off: Vector2) -> Sprite2D:
+	var sp := Sprite2D.new()
+	sp.texture = tex
+	sp.centered = false
+	sp.position = at
+	sp.offset = off
+	sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(sp)
+	return sp
+
+
+## Tip the plate and stretch the spring to match _spring.
+func _pose() -> void:
+	_plate_art.rotation = -0.9 * _spring
+	_spring_art.frame = clampi(roundi(_spring * 7.0), 0, 7)
 
 
 func _snap_to_floor() -> void:
@@ -74,6 +101,7 @@ func _physics_process(delta: float) -> void:
 	if has_meta("ghost"):
 		return
 	_spring = move_toward(_spring, 0.0 if armed else 1.0, delta * (12.0 if not armed else 2.0))
+	_pose()
 	if armed:
 		for e in get_tree().get_nodes_in_group("enemies"):
 			if not is_instance_valid(e) or ("_dying" in e and e._dying):
@@ -96,31 +124,10 @@ func _physics_process(delta: float) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var iron := Color(0.42, 0.44, 0.5)
+	# the frame, plate, spring and hopper are sprites (see _ready); here just
+	# the hopper's load lights, one per piece fed in
 	var brass := Color(0.85, 0.65, 0.35)
-	var wood := Color(0.5, 0.34, 0.2)
-	# the spring under the plate: squashed when cocked, stretched when sprung
-	var h := 2.0 + 14.0 * _spring
-	var pts := PackedVector2Array()
-	for i in 7:
-		pts.append(Vector2(-4 + (i % 2) * 8, -i * h / 6.0))
-	draw_polyline(pts, dark, 3.0)
-	draw_polyline(pts, iron.lightened(0.2), 1.0)
-	# the plate, hinged at its far edge, tipped up when sprung
-	var hinge := Vector2(-W * 0.5, -1)
-	var a := -0.9 * _spring
-	var tip := hinge + Vector2(W, 0).rotated(a)
-	draw_line(hinge, tip, dark, 5.0)
-	draw_line(hinge, tip, wood if armed else wood.lightened(0.15), 3.0)
-	draw_circle(hinge, 2.0, iron)
-	# the catch, and a warning stripe on the plate edge
-	draw_line(tip, tip + Vector2(0, -2).rotated(a), Color(0.9, 0.75, 0.2), 2.0)
-	# the hopper that cocks it, and one light per load
 	var hp := _hopper() - global_position
-	draw_colored_polygon(PackedVector2Array([hp + Vector2(-6, -5), hp + Vector2(6, -5), hp + Vector2(3, 6), hp + Vector2(-3, 6)]), dark)
-	draw_colored_polygon(PackedVector2Array([hp + Vector2(-5, -4), hp + Vector2(5, -4), hp + Vector2(2, 5), hp + Vector2(-2, 5)]), iron)
-	draw_line(hp + Vector2(0, 6), Vector2(4, 0), dark, 1.0)
 	for i in LOADS:
 		var lit := armed or i < _load
 		draw_rect(Rect2(hp.x - 5 + i * 6, hp.y - 9, 4, 2), brass if lit else Color(0.25, 0.22, 0.2))
