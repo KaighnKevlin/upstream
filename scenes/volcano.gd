@@ -22,10 +22,19 @@ var _held: Array = []
 var _rumble := -1.0              # counting down to the eruption; < 0: quiet
 var _flash := 0.0
 var _cool := {}
+var _body: Sprite2D
 
 
 func _ready() -> void:
 	z_index = 0                  # under the ore: the pile shows in the cup
+	# the cone (ghosts too), behind our _draw: the crater's glow and the pips
+	_body = Sprite2D.new()
+	_body.texture = preload("res://assets/sprites/volcano.png")
+	_body.centered = false
+	_body.offset = Vector2(-31, -6)
+	_body.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_body.show_behind_parent = true
+	add_child(_body)
 	if has_meta("ghost"):
 		return
 	add_to_group("triggerable")
@@ -107,26 +116,11 @@ func _input(event: InputEvent) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var brass := Color(0.85, 0.65, 0.35)
-	var steel := Color(0.42, 0.44, 0.5)
 	var shake := Vector2(randf_range(-1, 1), 0) if _rumble >= 0 else Vector2.ZERO
-	# the cone: an iron skirt flaring down to the floor, a brass-lined crater
-	var cone := _quad(17, -3, 28, 30, shake)
-	var skin := _quad(15, -1, 26, 29, shake)
-	var crater := _quad(13, 0, 9, 21, shake)
-	draw_colored_polygon(cone, dark)
-	draw_colored_polygon(skin, steel.darkened(0.25))
-	draw_colored_polygon(crater, Color(0.2, 0.14, 0.1).lerp(Color(1.0, 0.55, 0.25), _flash * 0.8))
-	# brass bands round the cone, the rim, a steam valve on the side
-	for y in [10.0, 22.0]:
-		var hw: float = 15.0 + 11.0 * (y + 1.0) / 30.0
-		draw_line(Vector2(-hw, y) + shake, Vector2(hw, y) + shake, brass.darkened(0.2), 1.0)
-	draw_line(Vector2(-18, -2) + shake, Vector2(18, -2) + shake, dark, 4.0)
-	draw_line(Vector2(-17, -2.5) + shake, Vector2(17, -2.5) + shake, brass, 2.0)
-	draw_line(Vector2(19, 16) + shake, Vector2(25, 12) + shake, dark, 3.0)
-	draw_circle(Vector2(26, 11) + shake, 3.0, dark)
-	draw_circle(Vector2(26, 11) + shake, 2.0, Color(0.8, 0.2, 0.15))
+	_body.position = shake
+	# the crater glows as it erupts
+	if _flash > 0.0:
+		draw_colored_polygon(_quad(12, 0.5, 8.5, 20.5, shake), Color(1.0, 0.55, 0.25, _flash * 0.8))
 	# gauge pips on the base: one per piece it needs, lit as they fill
 	var nd := need()
 	for k in nd:
