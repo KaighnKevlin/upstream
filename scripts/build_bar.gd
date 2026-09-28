@@ -23,6 +23,12 @@ const ART_RECTS := {
 	"crossover.gd": Rect2(-39, -20, 78, 54),
 	"dispenser.gd": Rect2(-11, -38, 22, 50),
 	"goal_cup.gd": Rect2(-22, -69, 44, 72),
+	"stamp_press.gd": Rect2(-42, -184, 84, 188),
+	"bowling_ramp.gd": Rect2(-26, -146, 78, 150),
+	"grapeshot_mortar.gd": Rect2(-22, -48, 52, 50),
+	"grindstone.gd": Rect2(-24, -27, 48, 36),
+	"pellet_press.gd": Rect2(-20, -66, 40, 68),
+	"gear_stamp.gd": Rect2(-20, -60, 40, 62),
 }
 
 const DARK := Color(0.1, 0.09, 0.07)
@@ -366,23 +372,17 @@ func _build_icon(slot: Node2D, t: int) -> void:
 				ic.position = Vector2(0, -2)
 				ic.scale = Vector2(0.55, 0.55)
 			elif scn == "grindstone":
-				ic.position = Vector2(0, 8)
 				ic.scale = Vector2(0.9, 0.9)
 			elif scn == "pellet_press":
-				ic.position = Vector2(0, 26)
-				ic.scale = Vector2(0.6, 0.6)
+				ic.scale = Vector2(0.52, 0.52)
 			elif scn == "gear_stamp":
-				ic.position = Vector2(0, 22)
-				ic.scale = Vector2(0.7, 0.7)
+				ic.scale = Vector2(0.58, 0.58)
 			elif scn == "bowling_ramp":
-				ic.position = Vector2(0, 50)
-				ic.scale = Vector2(0.35, 0.35)
+				ic.scale = Vector2(0.24, 0.24)
 			elif scn == "grapeshot_mortar":
-				ic.position = Vector2(0, 20)
-				ic.scale = Vector2(0.8, 0.8)
+				ic.scale = Vector2(0.7, 0.7)
 			elif scn == "stamp_press":
-				ic.position = Vector2(0, 60)
-				ic.scale = Vector2(0.3, 0.3)
+				ic.scale = Vector2(0.19, 0.19)
 			elif scn == "tiptube":
 				ic.position = Vector2(-18, -2)
 				ic.scale = Vector2(0.6, 0.6)
