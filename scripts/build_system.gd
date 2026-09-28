@@ -1,6 +1,6 @@
 extends Node
 
-enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, TURRET, SPIKES, CATAPULT, CHUTE, SPLITTER, BUMPER, BELT, BELLOWS, PENDULUM, WHEEL, ASSEMBLER, LAB, TESLA, FLAMER, TRAPDOOR, CRUSHER, MAGNET, HARPOON, SEESAW, TUBE, KEG, SNARE, TRIPWIRE, PLATE, BORER, LANTERN, SENTRY, TIMER, DOCK, BARRICADE, ENGINE, DOMINOES, TAP, ROCKER, ESCAPEMENT, BUCKET, SIEVE, SCREW, ARM, STAIRS, FERRIS, JUMP, BELL, LOOP, DISPENSER, GOAL, SCALE, CANNON, FELT, CHIME, PLUNGER, VORTEX }
+enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, TURRET, SPIKES, CATAPULT, CHUTE, SPLITTER, BUMPER, BELT, BELLOWS, PENDULUM, WHEEL, ASSEMBLER, LAB, TESLA, FLAMER, TRAPDOOR, CRUSHER, MAGNET, HARPOON, SEESAW, TUBE, KEG, SNARE, TRIPWIRE, PLATE, BORER, LANTERN, SENTRY, TIMER, DOCK, BARRICADE, ENGINE, DOMINOES, TAP, ROCKER, ESCAPEMENT, BUCKET, SIEVE, SCREW, ARM, STAIRS, FERRIS, JUMP, BELL, LOOP, DISPENSER, GOAL, SCALE, CANNON, FELT, CHIME, PLUNGER, VORTEX, FLAPS }
 
 var current_build: BuildType = BuildType.NONE
 var _ghost: Node2D = null
@@ -65,6 +65,7 @@ var _scenes := {
 	BuildType.CHIME: preload("res://scenes/chime.tscn"),
 	BuildType.PLUNGER: preload("res://scenes/plunger.tscn"),
 	BuildType.VORTEX: preload("res://scenes/vortex.tscn"),
+	BuildType.FLAPS: preload("res://scenes/flap_sorter.tscn"),
 }
 
 var _ghost_colors := {
@@ -125,6 +126,7 @@ var _ghost_colors := {
 	BuildType.CHIME: Color(1.0, 0.85, 0.5, 0.8),
 	BuildType.PLUNGER: Color(1.0, 0.85, 0.5, 0.8),
 	BuildType.VORTEX: Color(1.0, 0.85, 0.5, 0.8),
+	BuildType.FLAPS: Color(1.0, 0.85, 0.5, 0.8),
 }
 
 signal build_mode_changed(build_type: BuildType)
@@ -194,7 +196,7 @@ func _input(event: InputEvent) -> void:
 		for r in ui_rects:
 			if (r.call() as Rect2).has_point(event.position):
 				return  # the HUD handles it
-		if event.button_index == MOUSE_BUTTON_LEFT and current_build in [BuildType.CHUTE, BuildType.BELT, BuildType.TUBE, BuildType.TRIPWIRE, BuildType.DOMINOES, BuildType.SIEVE, BuildType.SCREW, BuildType.JUMP, BuildType.FELT, BuildType.CHIME]:
+		if event.button_index == MOUSE_BUTTON_LEFT and current_build in [BuildType.CHUTE, BuildType.BELT, BuildType.TUBE, BuildType.TRIPWIRE, BuildType.DOMINOES, BuildType.SIEVE, BuildType.SCREW, BuildType.JUMP, BuildType.FELT, BuildType.CHIME, BuildType.FLAPS]:
 			var at := _get_world_mouse_pos()
 			if _can_place(at):
 				_drag_from = at

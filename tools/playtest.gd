@@ -5936,6 +5936,42 @@ func vortex_rec() -> void:
 	await shot("vortex_end")
 
 
+func flaps_rec() -> void:
+	# Flap sorter: one of each kind dropped on its high end, one at a time;
+	# where each went (flap 0 = springs 2.5, flap 1 = 1.2, or off the end).
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	await preload("res://scripts/marble_works.gd").carve(main, false)
+	var fs: Node2D = preload("res://scenes/flap_sorter.tscn").instantiate()
+	fs.global_position = Vector2(1150, 440)
+	fs.end_offset = Vector2(180, 45)
+	main.add_child(fs)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(3, 3)
+	cam.global_position = Vector2(1240, 470)
+	var went := []
+	for kind in ["copper", "iron", "scrap", "gear", "grit", "iron"]:
+		var before: Array = fs.dropped.duplicate()
+		var p0: int = fs.passed
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.kind = kind
+		o.global_position = Vector2(1156, 425)
+		main.add_child(o)
+		await wait(0.7)
+		if kind == "iron" and went.size() == 1:
+			await shot("flaps_iron")
+		await wait(1.8)
+		var where := "end" if fs.passed > p0 else "?"
+		for k in before.size():
+			if fs.dropped[k] > before[k]:
+				where = "flap%d" % k
+		went.append("%s(%.1f)->%s" % [kind, o.mass if is_instance_valid(o) else 0.0, where])
+	log_line("flaps %s: %s" % [fs.springs, went])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.
