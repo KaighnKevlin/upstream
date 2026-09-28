@@ -36,6 +36,14 @@ const ART_RECTS := {
 	"bearing_mat.gd": Rect2(-48, -12, 96, 16),
 	"sluice.gd": Rect2(-8, -48, 16, 56),
 	"vortex.gd": Rect2(-60, -18, 120, 114),
+	"helix.gd": Rect2(-22, -12, 44, 102),
+	"drawbridge.gd": Rect2(-5, -48, 72, 68),
+	"transfer_arm.gd": Rect2(-38, -17, 58, 70),
+	"arm.gd": Rect2(-36, -26, 69, 28),
+	"beam_tap.gd": Rect2(-22, -10, 44, 20),
+	"loop.gd": Rect2(-72, -42, 156, 76),
+	"stair_lift.gd": Rect2(-9, -60, 66, 73),
+	"ferris_lift.gd": Rect2(-62, -62, 124, 142),
 }
 
 const DARK := Color(0.1, 0.09, 0.07)
