@@ -32,10 +32,20 @@ var dropped := 0                 # tests: signals ignored in the cool-down
 var _cool := 0.0                 # > 0: just fired, not listening (game time)
 var _flash := 0.0
 var _drag := -1                  # which wire's end is being dragged
+var _art: Sprite2D               # the box, terminal, lamp bezels and hooks; brightens as it fires
 
 
 func _ready() -> void:
 	z_index = 2
+	# the sprite first, so ghosts and build-bar icons get it too; behind our
+	# own _draw (the wires, the lamps, a parked wire's coil)
+	_art = Sprite2D.new()
+	_art.texture = preload("res://assets/sprites/relay_hub.png")
+	_art.centered = false
+	_art.offset = Vector2(-17, -12)
+	_art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_art.show_behind_parent = true
+	add_child(_art)
 	if has_meta("ghost"):
 		return
 	add_to_group("triggerable")
@@ -131,7 +141,6 @@ func _input(event: InputEvent) -> void:
 func _draw() -> void:
 	var dark := Color(0.1, 0.08, 0.07)
 	var brass := Color(0.85, 0.65, 0.35)
-	var steel := Color(0.42, 0.44, 0.5)
 	var hot := Color(1, 0.95, 0.7)
 	var ws := wires()
 	for k in 3:
@@ -142,15 +151,13 @@ func _draw() -> void:
 		draw_polyline(PackedVector2Array([HOOKS[k], mid, w]), Color(0.55, 0.5, 0.42, 0.8).lerp(hot, _flash * 0.6), 1.0)
 		draw_circle(w, 3.0, dark)
 		draw_circle(w, 2.0, brass.lerp(hot, _flash))
-	# the box: one terminal in on the left, three out on the right
-	draw_line(Vector2(-13, 0), Vector2(-9, 0), steel, 2.0)
-	draw_circle(Vector2(-13, 0), 2.5, steel)
-	draw_rect(BOX, dark)
-	draw_rect(BOX.grow(-1), brass.lerp(hot, _flash * 0.5), false, 1.0)
+	# the box, its terminal and hooks are art; it glows as it fires
+	_art.self_modulate = Color.WHITE.lerp(Color(1.3, 1.22, 1.05), _flash * 0.5)
 	# three little lamps, one per wire: lit if it's run out, dark if parked
+	# (then its wire hangs coiled on the hook)
 	for k in 3:
 		var at: Vector2 = HOOKS[k]
 		var live: bool = ws[k] != Vector2.ZERO
-		draw_circle(Vector2(-3, at.y), 2.0, (Color(1.0, 0.75, 0.3) if live else Color(0.25, 0.2, 0.16)).lerp(hot, _flash))
-		draw_line(Vector2(1, at.y), at, steel, 1.5)
-		draw_circle(at, 1.8, steel if live else brass)
+		draw_circle(Vector2(-3, at.y), 1.8, (Color(1.0, 0.75, 0.3) if live else Color(0.25, 0.2, 0.16)).lerp(hot, _flash))
+		if not live:
+			draw_arc(at + Vector2(1, 0.5), 1.8, 0, TAU, 8, brass, 1.0)
