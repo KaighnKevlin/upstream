@@ -11,6 +11,7 @@ const SFX = preload("res://scripts/sfx.gd")
 const OUTS := [Vector2(-150, -60), Vector2(0, 80), Vector2(150, -60)]
 const SPOUT := [Vector2(-14, 4), Vector2(0, 12), Vector2(14, 4)]
 const DIE := Vector2(0, -3)      # the die's window
+const FACES := [preload("res://assets/sprites/dice_face_1.png"), preload("res://assets/sprites/dice_face_2.png"), preload("res://assets/sprites/dice_face_3.png")]
 
 ## How many ways it sends: 2 (left, right) or 3 (left, down, right).
 @export var outlets := 2
@@ -22,10 +23,19 @@ var _roll := 0.0                 # tumbling time left
 var _spin := 0.0
 var _face := 1                   # pips showing
 var _rng := RandomNumberGenerator.new()   # its own die, apart from the world's dice
+var _down_art: Sprite2D          # art: the down spout, shown in 3-way mode
+var _die: Sprite2D               # the die, tumbling in its window
 
 
 func _ready() -> void:
 	z_index = 2
+	# the sprites first, so ghosts and build-bar icons get them too; behind
+	# our own _draw (the outlet lamps)
+	_down_art = _spr(preload("res://assets/sprites/dice_box_down.png"), Vector2(-5, 7))
+	_spr(preload("res://assets/sprites/dice_box.png"), Vector2(-18, -24))
+	_die = _spr(FACES[0], Vector2(-4.5, -4.5))
+	_die.position = DIE
+	_pose()
 	if has_meta("ghost"):
 		return
 	_rng.randomize()
@@ -40,6 +50,27 @@ func _ready() -> void:
 	a.add_child(cs)
 	add_child(a)
 	a.body_entered.connect(_take)
+
+
+func _spr(tex: Texture2D, off: Vector2) -> Sprite2D:
+	var sp := Sprite2D.new()
+	sp.texture = tex
+	sp.centered = false
+	sp.offset = off
+	sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	sp.show_behind_parent = true
+	add_child(sp)
+	return sp
+
+
+## The die's face and turn, and the down spout (3-way only).
+func _pose() -> void:
+	var face := _face
+	if _roll > 0.0:
+		face = 1 + int(_spin * 0.5) % maxi(outlets, 2)
+	_die.texture = FACES[clampi(face, 1, 3) - 1]
+	_die.rotation = _spin
+	_down_art.visible = outlets == 3
 
 
 ## The outlet indexes in use, into OUTS.
@@ -64,17 +95,17 @@ func _take(b) -> void:
 	_face = i + 1
 	_roll = 0.25
 	SFX.play_small(self, SFX.sfx_ratchet(), -20.0, 1.3 + 0.1 * i)
-	queue_redraw()
+	_redraw()
 
 
 func _process(delta: float) -> void:
 	if _roll > 0.0:
 		_roll = maxf(0.0, _roll - delta)
 		_spin += delta * 30.0
-		queue_redraw()
+		_redraw()
 	elif _spin != 0.0:
 		_spin = 0.0
-		queue_redraw()
+		_redraw()
 
 
 func _input(event: InputEvent) -> void:
@@ -83,7 +114,7 @@ func _input(event: InputEvent) -> void:
 	if get_global_mouse_position().distance_to(global_position) < 16:
 		outlets = 3 if outlets == 2 else 2
 		get_viewport().set_input_as_handled()
-		queue_redraw()
+		_redraw()
 
 
 ## Pip layouts for faces 1..3 (the die only ever needs as many as outlets).
@@ -98,32 +129,12 @@ func _pips(face: int) -> Array:
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var brass := Color(0.85, 0.65, 0.35)
-	var steel := Color(0.42, 0.44, 0.5)
-	# the hopper: a brass funnel on top
-	draw_colored_polygon(PackedVector2Array([Vector2(-13, -22), Vector2(13, -22), Vector2(6, -11), Vector2(-6, -11)]), dark)
-	draw_colored_polygon(PackedVector2Array([Vector2(-11, -21), Vector2(11, -21), Vector2(5, -12), Vector2(-5, -12)]), brass.darkened(0.25))
-	draw_line(Vector2(-13, -22), Vector2(13, -22), brass, 2.0)
-	# the box
-	draw_rect(Rect2(-12, -11, 24, 19), dark)
-	draw_rect(Rect2(-11, -10, 22, 17), steel.darkened(0.15))
-	draw_rect(Rect2(-11, -10, 22, 2), steel.lightened(0.15))
-	for p in [Vector2(-9, -8), Vector2(9, -8), Vector2(-9, 5), Vector2(9, 5)]:
-		draw_circle(p, 0.9, brass)
-	# the window, and the die tumbling in it
-	draw_rect(Rect2(DIE - Vector2(6, 6), Vector2(12, 12)), dark)
-	draw_rect(Rect2(DIE - Vector2(5, 5), Vector2(10, 10)), Color(0.2, 0.16, 0.13))
-	var face := _face
-	if _roll > 0.0:
-		face = 1 + int(_spin * 0.5) % maxi(outlets, 2)
-	draw_set_transform(DIE, _spin, Vector2.ONE)
-	draw_rect(Rect2(-3.5, -3.5, 7, 7), Color(0.93, 0.9, 0.82))
-	for p in _pips(face):
-		draw_circle(p, 0.9, Color(0.6, 0.12, 0.1))
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	# the outlets: little spouts, the one just used lit
+	# the outlets' lamps, in the spouts: the one just used lit
 	for k in ways():
-		var s: Vector2 = SPOUT[k]
-		draw_circle(s, 3.2, dark)
-		draw_circle(s, 2.2, Color(1.0, 0.8, 0.4) if k == last else Color(0.35, 0.3, 0.25))
+		draw_circle(SPOUT[k], 1.8, Color(1.0, 0.8, 0.4) if k == last else Color(0.35, 0.3, 0.25))
+
+
+## The die and spouts posed, and the lamps redrawn.
+func _redraw() -> void:
+	_pose()
+	queue_redraw()

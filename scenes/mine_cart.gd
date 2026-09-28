@@ -16,6 +16,11 @@ const LEN_MAX := 420.0
 const LOADS := [3, 5, 8]
 const RUN_V := 140.0             # px/s down the track (plus slope)
 const BACK_V := 220.0            # px/s winched back at full power (0.35 of it unpowered)
+const TRACK_TEX := preload("res://assets/sprites/mine_track.png")    # rails on sleepers, tiled
+const STOP_TEX := preload("res://assets/sprites/mine_stop.png")
+const HOPPER_TEX := preload("res://assets/sprites/mine_hopper.png")
+const CART_TEX := preload("res://assets/sprites/mine_cart.png")
+const WHEEL_TEX := preload("res://assets/sprites/mine_wheel.png")
 
 @export var end_offset := Vector2(200, 30)
 @export var mode := 1
@@ -29,16 +34,44 @@ var _state := 0                  # 0 loading, 1 running, 2 tipping, 3 returning
 var _t := 0.0
 var _rate := Power.UNPOWERED
 var _rate_t := 0.0
+var _art: Node2D                 # art: the track, stops and hopper (tiled along the track)
+var _cart_art: Node2D            # the cart, rolled along and tipped
+var _wheels: Array = []
 
 
 func set_end(offset: Vector2) -> void:
 	var l := clampf(offset.length(), LEN_MIN, LEN_MAX)
 	end_offset = offset.normalized() * l if offset.length() > 0.1 else Vector2(LEN_MIN, 0)
 	queue_redraw()
+	_pose()
 
 
 func _ready() -> void:
 	z_index = 2
+	# the art first, so ghosts and build-bar icons have it; behind our own
+	# _draw (the load count)
+	_art = Node2D.new()
+	_art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_art.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+	_art.show_behind_parent = true
+	_art.draw.connect(_draw_art)
+	add_child(_art)
+	_cart_art = Node2D.new()
+	_cart_art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_cart_art.show_behind_parent = true
+	add_child(_cart_art)
+	var tub := Sprite2D.new()
+	tub.texture = CART_TEX
+	tub.centered = false
+	tub.offset = Vector2(-13, -13)
+	_cart_art.add_child(tub)
+	for x in [-6.0, 6.0]:
+		var w := Sprite2D.new()
+		w.texture = WHEEL_TEX
+		w.position = Vector2(x, 1)
+		_cart_art.add_child(w)
+		_wheels.append(w)
+	_pose()
 	if has_meta("ghost"):
 		return
 	add_to_group("power_users")
@@ -111,6 +144,7 @@ func _physics_process(delta: float) -> void:
 			h.linear_velocity = (at - h.global_position) / delta
 			if "_timer" in h:
 				h._timer = 0.0
+	_pose()
 	# carry the load in the cart
 	var c := global_position + _cart()
 	for i in _load.size():
@@ -132,38 +166,44 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
-func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var steel := Color(0.42, 0.44, 0.5)
-	var brass := Color(0.85, 0.65, 0.35)
+## The cart's sprite where the cart is: along the track, tipped forward at
+## the far end, its wheels turned by how far it's rolled (flipped on
+## leftward tracks so it stays upright).
+func _pose() -> void:
+	if _cart_art == null:
+		return
 	var l := end_offset.length()
 	var dir := end_offset / maxf(l, 1.0)
-	# the track: two rails and sleepers, a stop post at each end
-	for off in [Vector2(0, 2), Vector2(0, 5)]:
-		draw_line(off, end_offset + off, dark, 2.0)
-		draw_line(off, end_offset + off, steel, 1.0)
-	var k := 6.0
-	while k < l:
-		var p := dir * k
-		draw_line(p + Vector2(-2, 7), p + Vector2(2, 1), Color(0.35, 0.25, 0.15), 2.0)
-		k += 10.0
-	for p in [Vector2.ZERO, end_offset]:
-		draw_line(p + Vector2(0, 5), p + Vector2(0, -8), dark, 3.0)
-	# the loading hopper over the near stop
-	draw_line(Vector2(-10, -40), Vector2(-5, -22), dark, 2.0)
-	draw_line(Vector2(10, -40), Vector2(5, -22), dark, 2.0)
-	# the cart, tipped forward at the far end
-	var c := _cart()
+	var flip := 1.0 if dir.x >= 0 else -1.0
 	var tip := 0.0
 	if _state == 2:
 		tip = 0.9 * signf(dir.x)
-	draw_set_transform(c, dir.angle() + tip, Vector2.ONE)
-	draw_rect(Rect2(-11, -12, 22, 12), dark)
-	draw_rect(Rect2(-10, -11, 20, 10), Color(0.55, 0.4, 0.22))
-	draw_line(Vector2(-10, -11), Vector2(10, -11), brass, 1.0)
-	for x in [-6.0, 6.0]:
-		draw_circle(Vector2(x, 1), 3.0, dark)
-		draw_circle(Vector2(x, 1), 1.8, steel)
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	_cart_art.position = _cart()
+	_cart_art.rotation = dir.angle() + tip
+	_cart_art.scale = Vector2(1, flip)
+	for w in _wheels:
+		w.rotation = _s / 3.0
+	if _art:
+		_art.queue_redraw()
+
+
+## The track tiled along its length (flipped on leftward runs so the rails
+## stay under the line), a stop at each end, the hopper over the near one.
+func _draw_art() -> void:
+	var l := end_offset.length()
+	if l < 0.1:
+		return
+	var dir := end_offset / l
+	_art.draw_set_transform(Vector2.ZERO, dir.angle(), Vector2(1, 1.0 if dir.x >= 0 else -1.0))
+	_art.draw_texture_rect(TRACK_TEX, Rect2(0, -1, l, 10), true)
+	_art.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	for p in [Vector2.ZERO, end_offset]:
+		_art.draw_texture(STOP_TEX, p + Vector2(-4, -12))
+	_art.draw_texture(HOPPER_TEX, Vector2(-14, -43))
+
+
+func _draw() -> void:
+	# the load count over the cart (the art is in the children)
+	var c := _cart()
 	var font := ThemeDB.fallback_font
 	draw_string(font, c + Vector2(-8, -16), "%d/%d" % [_load.size(), LOADS[mode]], HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.9, 0.8, 0.55))
