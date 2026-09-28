@@ -19,10 +19,16 @@ var lit := 0                     # tests
 var burst := 0
 var _fuse := {}                  # ore -> seconds left
 var _flick := 0.0
+var _flame_art: Sprite2D         # art: the flame, 3 frames stepped by _flick
 
 
 func _ready() -> void:
 	z_index = 2
+	# the sprites first, so ghosts and build-bar icons get them too; behind
+	# our own _draw (the fuse label). The flame hangs behind the basket.
+	_flame_art = _spr(preload("res://assets/sprites/igniter_flame.png"), Vector2(-5, -4))
+	_flame_art.hframes = 3
+	_spr(preload("res://assets/sprites/igniter.png"), Vector2(-9, -26))
 	if has_meta("ghost"):
 		return
 	var a := Area2D.new()
@@ -36,6 +42,17 @@ func _ready() -> void:
 	a.add_child(cs)
 	add_child(a)
 	a.body_entered.connect(_light)
+
+
+func _spr(tex: Texture2D, off: Vector2) -> Sprite2D:
+	var sp := Sprite2D.new()
+	sp.texture = tex
+	sp.centered = false
+	sp.offset = off
+	sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	sp.show_behind_parent = true
+	add_child(sp)
+	return sp
 
 
 func _light(b) -> void:
@@ -54,6 +71,7 @@ func _physics_process(delta: float) -> void:
 	_flick += delta
 	if int(_flick * 12) % 2 == 0:
 		queue_redraw()
+	_flame_art.frame = int(_flick * 12) % 3
 	if _fuse.is_empty():
 		return
 	var enemies := get_tree().get_nodes_in_group("enemies")
@@ -113,17 +131,6 @@ func _input(event: InputEvent) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var iron := Color(0.42, 0.44, 0.5)
-	# the hanger bracket, the basket, the flame licking down at the track
-	draw_line(Vector2(0, -22), Vector2(0, -12), dark, 3.0)
-	draw_line(Vector2(0, -22), Vector2(0, -12), iron, 1.0)
-	draw_colored_polygon(PackedVector2Array([Vector2(-8, -12), Vector2(8, -12), Vector2(5, -3), Vector2(-5, -3)]), dark)
-	draw_colored_polygon(PackedVector2Array([Vector2(-7, -11), Vector2(7, -11), Vector2(4, -4), Vector2(-4, -4)]), iron)
-	for x in [-4.0, 0.0, 4.0]:
-		draw_line(Vector2(x, -11), Vector2(x * 0.6, -4), dark, 1.0)
-	var fl := 1.0 + (0.25 if int(_flick * 12) % 2 == 0 else -0.1)
-	draw_colored_polygon(PackedVector2Array([Vector2(-4, -3), Vector2(4, -3), Vector2(0, 8 * fl)]), Color(1.0, 0.55, 0.15, 0.9))
-	draw_colored_polygon(PackedVector2Array([Vector2(-2, -3), Vector2(2, -3), Vector2(0, 4 * fl)]), Color(1.0, 0.95, 0.6))
+	# the brazier and its flame are sprites; only the fuse label is drawn
 	var font := ThemeDB.fallback_font
 	draw_string(font, Vector2(10, -12), "%ds" % int(FUSES[mode]), HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.9, 0.8, 0.55))
