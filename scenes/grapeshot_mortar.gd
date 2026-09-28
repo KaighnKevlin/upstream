@@ -29,6 +29,8 @@ var _aim := -0.9                   # barrel angle from straight up (toward side)
 var _cool := {}
 var _kick := 0.0
 var _t := 0.0
+var _art: Node2D                   # the sledge and loading funnel, mirrored for side -1
+var _pot: Sprite2D                 # pre-turned frames: the one nearest the aim
 
 
 func _p(v: Vector2) -> Vector2:
@@ -38,6 +40,18 @@ func _p(v: Vector2) -> Vector2:
 func _ready() -> void:
 	z_index = 2
 	_aim = 0.55 * side
+	# sprites first, so ghosts and build-bar icons get them too; behind our
+	# own _draw, which keeps the load's pips on top
+	_art = Node2D.new()
+	_art.scale = Vector2(side, 1)
+	_art.show_behind_parent = true
+	add_child(_art)
+	_art.add_child(_spr(preload("res://assets/sprites/grapeshot_funnel.png"), Vector2(-24, -48), Vector2(MOUTH.x, 0)))
+	_art.add_child(_spr(preload("res://assets/sprites/grapeshot_bed.png"), Vector2(-22, -16), Vector2.ZERO))
+	_pot = _spr(preload("res://assets/sprites/grapeshot_pot.png"), Vector2(-25, -25), Vector2(0, -12))
+	_pot.hframes = 21                # turned -50..50 degrees in 5s: frame 10 is upright
+	_pot.show_behind_parent = true
+	add_child(_pot)
 	if has_meta("ghost"):
 		return
 	add_to_group("triggerable")
@@ -55,6 +69,16 @@ func _ready() -> void:
 		cs.shape = s
 		body.add_child(cs)
 	add_child(body)
+
+
+func _spr(tex: Texture2D, off: Vector2, at: Vector2) -> Sprite2D:
+	var sp := Sprite2D.new()
+	sp.texture = tex
+	sp.centered = false
+	sp.offset = off
+	sp.position = at
+	sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	return sp
 
 
 func _physics_process(delta: float) -> void:
@@ -150,39 +174,16 @@ func _input(event: InputEvent) -> void:
 
 
 func _draw() -> void:
+	# the bed, pot and funnel are sprites (see _ready): the pot tipped toward
+	# the aim, sitting down on its bed when it fires
+	if _art.scale.x != side:
+		_art.scale = Vector2(side, 1)
+	_pot.position = Vector2(0, -12 + roundf(_kick * 3.0))
+	_pot.frame = clampi(roundi(rad_to_deg(_aim) / 5.0) + 10, 0, 20)
 	var dark := Color(0.1, 0.08, 0.07)
-	var brass := Color(0.85, 0.65, 0.35)
 	var steel := Color(0.42, 0.44, 0.5)
-	# the bed: a brass sledge with a trunnion block
-	draw_rect(Rect2(-20, -6, 40, 6), dark)
-	draw_rect(Rect2(-19, -5, 38, 4), brass.darkened(0.3))
-	draw_rect(Rect2(-9, -14, 18, 9), dark)
-	# the pot, tipped toward the aim; it sits down on its bed when it fires
-	var pivot := Vector2(0, -12 + _kick * 3.0)
-	var up := Vector2(sin(_aim), -cos(_aim))
-	var mouth := pivot + up * 20.0
-	var across := Vector2(-up.y, up.x)
-	var body := PackedVector2Array([
-		pivot - across * 10.0 - up * 4.0, pivot + across * 10.0 - up * 4.0,
-		mouth + across * 9.0, mouth - across * 9.0])
-	draw_colored_polygon(body, dark)
-	var inner := PackedVector2Array([
-		pivot - across * 8.0 - up * 2.0, pivot + across * 8.0 - up * 2.0,
-		mouth + across * 7.0 - up * 1.0, mouth - across * 7.0 - up * 1.0])
-	draw_colored_polygon(inner, steel)
-	# brass hoops and the muzzle rim
-	for f in [0.3, 0.7]:
-		var c := pivot.lerp(mouth, f)
-		draw_line(c - across * 9.5, c + across * 9.5, brass, 2.0)
-	draw_line(mouth - across * 10.0, mouth + across * 10.0, dark, 4.0)
-	draw_line(mouth - across * 9.0, mouth + across * 9.0, brass, 2.0)
-	draw_circle(pivot, 3.0, brass)
-	# the loading funnel over the mouth's fixed catch point
-	var m := Vector2(MOUTH.x * side, 0)
-	for x in [-1.0, 1.0]:
-		draw_line(m + Vector2(14 * x, -44), m + Vector2(7 * x, -30), dark, 3.0)
-		draw_line(m + Vector2(14 * x, -44), m + Vector2(7 * x, -30), Color(0.6, 0.62, 0.66), 1.0)
-	# the load, as pips round the bed: iron dark, copper orange
+	# the load, as pips along the bed: iron dark, copper orange
 	for i in loaded.size():
 		var col := steel.lightened(0.15) if loaded[i] == "iron" else Color(0.85, 0.55, 0.3)
+		draw_circle(Vector2(-17 + (i % 8) * 4.8, -3), 2.3, dark)
 		draw_circle(Vector2(-17 + (i % 8) * 4.8, -3), 1.8, col)
