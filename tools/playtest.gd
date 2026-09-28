@@ -6983,6 +6983,30 @@ func mat_rec() -> void:
 	log_line("bearing mat with %d ore: the soldier made %d px in 8 s (slowed %.1f s)" % [stock, int(x0 - e.global_position.x) if is_instance_valid(e) else -1, mt.slowed])
 
 
+func kicker_rec() -> void:
+	# Kicker on iron over a chute: a mixed stream; iron should be punched off
+	# partway, copper run on to the end.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	var MW = preload("res://scripts/marble_works.gd")
+	await MW.carve(main, false)
+	MW._piece(main, "res://scenes/dispenser.tscn", Vector2(1110, 330), {"mode": 0, "limit": 6, "kinds": ["copper", "iron"]})
+	MW._chute(main, Vector2(1095, 360), Vector2(1400, 440))
+	var kk: Node2D = MW._piece(main, "res://scenes/kicker.tscn", Vector2(1240, 390), {"mode": 1, "side": -1.0})
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.0, 2.0)
+	cam.global_position = Vector2(1250, 420)
+	await wait(4.0)
+	await shot("kicker")
+	await wait(4.0)
+	var cu := get_nodes_in_group("ore").filter(func(o): return o.kind == "copper").map(func(o): return int(o.global_position.x))
+	var fe := get_nodes_in_group("ore").filter(func(o): return o.kind == "iron").map(func(o): return int(o.global_position.x))
+	log_line("kicker (iron): kicked %d | copper ended at x %s, iron at x %s" % [kk.kicked, cu, fe])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.
