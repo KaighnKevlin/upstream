@@ -134,6 +134,7 @@ const TABS := [
 		["", "Tally wheel", "over a chute: every 3/5/10 pieces (click) fires the traps at its wire's end (drag it)"],
 		["", "Load cell", "when the ore in its pan weighs 2/5/10 (click), fires the traps at its wire's end (drag it)"],
 		["", "Spinner", "vane hung just over a track: pieces rolling under spin it (and lose a little speed); powers machines in reach"],
+		["", "Spring trap", "plate in the ground: flings the first walker up and back the way it came; 2 pieces dropped in its hopper re-cock it"],
 		["", "Wrecking ball", "hung from the ceiling, cocked by a latch: a trigger or click lets it swing through the walkers; 4 pieces in its winch bucket wind it back"],
 		["", "Rope bridge", "drag post to post: walkers, you and pieces cross; a trigger or a click on the near post cuts it, dropping what's on it; knits back in 5 s"],
 		["", "Flail", "post with a spiked ball on a chain: a wheel in reach whirls it, battering walkers and knocking them back; it only lolls round unpowered"],
