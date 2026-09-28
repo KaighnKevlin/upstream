@@ -6234,6 +6234,38 @@ func tally_rec() -> void:
 		log_line("t=%d | tally count %d fired %d | sluice opened %d" % [(k + 1) * 5, ty.count, ty.fired, sl.opened])
 
 
+func points_rec() -> void:
+	# Points switch thrown by a tally wheel (every 3) on the feed: the stream
+	# should go in batches of three, one way then the other.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	var MW = preload("res://scripts/marble_works.gd")
+	await MW.carve(main, false)
+	MW._piece(main, "res://scenes/dispenser.tscn", Vector2(1010, 300), {"mode": 0, "limit": 12})
+	MW._chute(main, Vector2(995, 330), Vector2(1180, 380))
+	var ty: Node2D = MW._piece(main, "res://scenes/tally.tscn", Vector2(1080, 346), {"mode": 0})
+	var pt: Node2D = MW._piece(main, "res://scenes/points.tscn", Vector2(1196, 408))
+	ty.wire_to = pt.global_position - ty.global_position
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.0, 2.0)
+	cam.global_position = Vector2(1120, 380)
+	var seq := []
+	var last := [0, 0]
+	for t in 150:
+		await wait(0.1)
+		if pt.sent[0] > last[0]:
+			seq.append("L")
+		if pt.sent[1] > last[1]:
+			seq.append("R")
+		last = pt.sent.duplicate()
+		if t == 80:
+			await shot("points")
+	log_line("points: %s | tally fired %d" % ["".join(seq), ty.fired])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.
