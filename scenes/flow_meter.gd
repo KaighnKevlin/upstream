@@ -31,6 +31,15 @@ var _live := false
 
 func _ready() -> void:
 	z_index = 2
+	# the sprite first, so ghosts and build-bar icons get it too; behind our
+	# own _draw (the needle, the numbers, the feeler's bob)
+	var sp := Sprite2D.new()
+	sp.texture = preload("res://assets/sprites/flow_meter.png")
+	sp.centered = false
+	sp.offset = Vector2(-15, -31)
+	sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	sp.show_behind_parent = true
+	add_child(sp)
 	if has_meta("ghost"):
 		return
 	_live = true
@@ -111,24 +120,14 @@ func _draw() -> void:
 	var dark := Color(0.1, 0.08, 0.07)
 	var brass := Color(0.85, 0.65, 0.35)
 	var steel := Color(0.42, 0.44, 0.5)
-	# the feeler: a thin steel wire down across the run, a bob at its foot
-	draw_line(Vector2(0, -4), Vector2(0, 30), Color(steel.r, steel.g, steel.b, 0.7), 1.0)
-	draw_circle(Vector2(0, 30), 1.2, brass.lightened(0.1) if _flash > 0.3 else steel)
-	# the bracket up to the gauge
-	draw_line(Vector2(-4, -4), Vector2(4, -4), dark, 3.0)
-	draw_line(Vector2(0, -4), DIAL + Vector2(0, DIAL_R), dark, 3.0)
-	draw_line(Vector2(0, -4), DIAL + Vector2(0, DIAL_R), brass.darkened(0.3), 1.0)
-	# the gauge: brass bezel, ivory face
-	draw_circle(DIAL, DIAL_R + 1.5, dark)
-	draw_circle(DIAL, DIAL_R, brass.lightened(0.1 * _flash))
-	draw_circle(DIAL, DIAL_R - 2.0, Color(0.92, 0.88, 0.76))
+	# the feeler's bob (the wire, bracket and gauge are the sprite): flashes
+	# as it counts
+	draw_circle(Vector2(0, 30), 1.4, brass.lightened(0.1) if _flash > 0.3 else steel)
+	# the bezel brightens with each count
+	if _flash > 0.0:
+		draw_arc(DIAL, DIAL_R + 0.5, 0.0, TAU, 32, Color(1.0, 0.85, 0.5, 0.35 * _flash), 2.0)
 	var full := _scale_for(maxf(_needle, per_minute()) if _live else 0.0)
 	var a0 := PI * 0.75          # the sweep starts low left, clockwise to low right
-	# ticks: every sixth of full scale
-	for i in 7:
-		var a := a0 + SWEEP * i / 6.0
-		var u := Vector2(cos(a), sin(a))
-		draw_line(DIAL + u * (DIAL_R - 2.5), DIAL + u * (DIAL_R - (4.5 if i % 3 == 0 else 3.5)), dark, 1.0)
 	# the needle
 	var f := clampf(_needle / full, 0.0, 1.0)
 	var an := a0 + SWEEP * f
