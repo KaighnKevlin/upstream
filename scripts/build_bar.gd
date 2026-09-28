@@ -397,14 +397,13 @@ func _build_icon(slot: Node2D, t: int) -> void:
 				ic.scale = Vector2(0.55, 0.55)
 			elif scn == "speed_trap":
 				ic.wire_to = Vector2.ZERO
-				ic.position = Vector2(0, 6)
-				ic.scale = Vector2(1.3, 1.3)
+				ic.position = Vector2(0, 8)
 			elif scn == "igniter":
 				ic.position = Vector2(0, 6)
 				ic.scale = Vector2(1.2, 1.2)
 			elif scn == "sling":
 				ic.position = Vector2(0, -6)
-				ic.scale = Vector2(0.55, 0.55)
+				ic.scale = Vector2(0.5, 0.5)
 			elif scn == "pop_bumper":
 				ic.scale = Vector2(1.3, 1.3)
 			elif scn == "mine_cart":
