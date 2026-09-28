@@ -18,10 +18,19 @@ var knocked := 0
 var _shape: RectangleShape2D
 var _cs: CollisionShape2D
 var _shake := 0.0
+var _front: Sprite2D             # art: the near mesh, drawn over the fill
+var _jig := 0.0                  # art: the jiggle's x offset, px
+const _CU := preload("res://assets/sprites/gabion_copper.png")
+const _FE := preload("res://assets/sprites/gabion_iron.png")
 
 
 func _ready() -> void:
 	z_index = 1
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST   # the fill textures in _draw
+	# the sprites first, so ghosts and build-bar icons get them too: the far
+	# mesh behind our _draw (the fill), the near mesh over it
+	_spr(preload("res://assets/sprites/gabion_back.png"), Vector2(-10, -48)).show_behind_parent = true
+	_front = _spr(preload("res://assets/sprites/gabion_front.png"), Vector2(-12, -50))
 	if has_meta("ghost"):
 		return
 	_snap_to_floor()
@@ -35,6 +44,16 @@ func _ready() -> void:
 	body.add_child(_cs)
 	add_child(body)
 	_fit()
+
+
+func _spr(tex: Texture2D, off: Vector2) -> Sprite2D:
+	var sp := Sprite2D.new()
+	sp.texture = tex
+	sp.centered = false
+	sp.offset = off
+	sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(sp)
+	return sp
 
 
 func _snap_to_floor() -> void:
@@ -66,6 +85,7 @@ func _physics_process(delta: float) -> void:
 	if has_meta("ghost"):
 		return
 	_shake = maxf(0.0, _shake - delta * 4.0)
+	_jiggle()
 	if kinds.size() >= CAP:
 		return
 	var top := -height()
@@ -111,23 +131,18 @@ func take_damage(d: int) -> void:
 	_fit()
 
 
+## Art: while it's shaking, the fill and the near mesh rattle side to side.
+func _jiggle() -> void:
+	var j := roundf(sin(Time.get_ticks_msec() * 0.06) * _shake * 1.4)
+	if j != _jig:
+		_jig = j
+		_front.position.x = j
+		queue_redraw()
+
+
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var wire := Color(0.55, 0.57, 0.62)
-	var jig := Vector2(randf_range(-1, 1) * _shake, 0)
-	# the fill: pieces stacked two abreast
+	# the cage is two sprites (the far mesh behind, the near one over); the
+	# fill between them: pieces stacked two abreast
 	for i in kinds.size():
-		var c := Vector2(-4.5 + (i % 2) * 9, -3.5 - (i / 2) * 8) + jig
-		var col := Color(0.62, 0.64, 0.7) if kinds[i] == "iron" else Color(0.85, 0.5, 0.25)
-		draw_circle(c, 4.0, dark)
-		draw_circle(c, 3.0, col)
-		draw_circle(c + Vector2(-1, -1), 1.0, col.lightened(0.4))
-	# the cage: posts, a wire lattice, a rim
-	var r := Rect2(-W * 0.5, -H, W, H)
-	draw_rect(r, dark, false, 2.0)
-	for y in range(int(-H) + 6, 0, 6):
-		draw_line(Vector2(-W * 0.5, y), Vector2(W * 0.5, y), Color(wire, 0.5), 1.0)
-	for x in [-W * 0.25, 0.0, W * 0.25]:
-		draw_line(Vector2(x, -H), Vector2(x, 0), Color(wire, 0.5), 1.0)
-	draw_rect(r, wire, false, 1.0)
-	draw_line(Vector2(-W * 0.5 - 1, -H), Vector2(W * 0.5 + 1, -H), wire, 2.0)
+		var c := Vector2(-9 + (i % 2) * 9 + _jig, -8 - (i / 2) * 8)
+		draw_texture(_FE if kinds[i] == "iron" else _CU, c)
