@@ -307,7 +307,7 @@ func _build_icon(slot: Node2D, t: int) -> void:
 				ic.position = Vector2(0, 6)
 			elif scn == "flywheel":
 				ic.position = Vector2(0, -4)
-				ic.scale = Vector2(0.75, 0.75)
+				ic.scale = Vector2(0.5, 0.5)
 			elif scn == "crossover":
 				ic.position = Vector2(0, -2)
 				ic.scale = Vector2(0.55, 0.55)
