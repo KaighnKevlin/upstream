@@ -84,9 +84,9 @@ func ring(dir := 1.0) -> void:
 		return
 	SFX.play(self, SFX.sfx_bell(), -8.0, 1.0)
 	preload("res://scenes/noise_meter.gd").add(get_tree(), 15.0)   # a bell carries: it's heard
-	var points := [global_position]
-	if wire_to != Vector2.ZERO:
-		points.append(global_position + wire_to)
+	# wired, it fires only at the wire's end (not whatever happens to stand
+	# beside it too); unwired, around itself
+	var points := [global_position + wire_to] if wire_to != Vector2.ZERO else [global_position]
 	for n in Tripwire.linked_to(get_tree(), points):
 		if n != self and n.has_method("trigger"):
 			n.trigger()
