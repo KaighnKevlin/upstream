@@ -46,7 +46,31 @@ func _ready() -> void:
 	cool.tween_property(trail, "modulate", Color(0.95, 0.85, 0.6, 0.6), 2.0)
 
 
+## On track (the ore-only layer) a bar rolls on like a marble: the default
+## spin damping would brake it (the spin is tied to the roll); on terrain it
+## gets it back so bars settle as before. Same rule as ore._roll_on_track.
+const TRACK_LAYER := 64
+const TRACK_ANGULAR_DAMP := 0.1
+var _on_track := false
+
+
+func _roll_on_track() -> void:
+	var want := _on_track
+	for b in get_colliding_bodies():
+		if b is TileMapLayer or (b is CollisionObject2D and b.collision_layer & 1):
+			want = false
+			break
+		elif b is CollisionObject2D and b.collision_layer & TRACK_LAYER:
+			want = true
+	if want == _on_track:
+		return
+	_on_track = want
+	angular_damp_mode = RigidBody2D.DAMP_MODE_REPLACE if want else RigidBody2D.DAMP_MODE_COMBINE
+	angular_damp = TRACK_ANGULAR_DAMP if want else 0.0
+
+
 func _physics_process(delta: float) -> void:
+	_roll_on_track()
 	_timer += delta
 	if _timer >= lifetime:
 		queue_free()

@@ -37,9 +37,15 @@ static func _lane(t, i: int, cfg: Dictionary, lanes: Array) -> void:
 			m.absorbent = cfg.get("absorb", true)
 			m.friction = cfg.get("fric", 1.0)
 			c._body.physics_material_override = m
-	var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
-	o.kind = cfg.get("kind", "copper")
-	var r: float = o.KINDS[o.kind].radius
+	var o: RigidBody2D
+	var r := 8.0
+	if cfg.get("ingot", false):
+		o = preload("res://scenes/ingot.tscn").instantiate()
+		o.kind = cfg.get("kind", "copper")
+	else:
+		o = preload("res://scenes/ore.tscn").instantiate()
+		o.kind = cfg.get("kind", "copper")
+		r = o.KINDS[o.kind].radius
 	o.global_position = origin + Vector2(12, -r - 0.3)
 	t.main.add_child(o)
 	if cfg.has("adamp"):
@@ -73,6 +79,9 @@ static func run(t) -> void:
 		cfgs.append({"name": "stock copper 2px drop", "v0": v0, "drop": 2.0})
 		cfgs.append({"name": "stock copper TERRAIN", "v0": v0, "terrain": true})
 		cfgs.append({"name": "stock iron TERRAIN", "v0": v0, "terrain": true, "kind": "iron"})
+		cfgs.append({"name": "ingot copper", "v0": v0, "ingot": true})
+		cfgs.append({"name": "ingot iron", "v0": v0, "ingot": true, "kind": "iron"})
+		cfgs.append({"name": "ingot copper TERRAIN", "v0": v0, "ingot": true, "terrain": true})
 		if variants:
 			cfgs.append({"name": "adamp=0 (replace)", "v0": v0, "adamp": 0.0})
 			cfgs.append({"name": "adamp=0 ldamp=0", "v0": v0, "adamp": 0.0, "ldamp": 0.0})
