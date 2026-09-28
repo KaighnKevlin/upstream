@@ -404,8 +404,8 @@ func _build_icon(slot: Node2D, t: int) -> void:
 				ic.scale = Vector2(0.5, 0.5)
 			elif scn == "gabion":
 				ic.kinds.assign(["copper", "iron", "copper", "copper", "iron", "copper", "copper", "copper"])
-				ic.position = Vector2(0, 22)
-				ic.scale = Vector2(0.8, 0.8)
+				ic.position = Vector2(0, 12)
+				ic.scale = Vector2(0.5, 0.5)
 			elif scn == "spinner":
 				ic.position = Vector2(0, 4)
 			elif scn == "igniter":
