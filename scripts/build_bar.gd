@@ -1,12 +1,13 @@
 extends Control
-## Build toolbar: pieces grouped into tabs (Transport, Production, Defence),
+## Build toolbar: pieces grouped into tabs (Transport, Production, Defence,
+## Traps, Marble, Lifts, Logic),
 ## one slot per piece drawn from its own sprites, with its hotkey. Click a
 ## tab to switch; click a slot (or press its key, from any tab) to build it;
 ## click the selected slot again to cancel. Pressing a piece's key flips to
 ## its tab. Hovering a slot names it beside the tabs.
 
 const TAB_H := 16.0
-const TAB_W := 112.0
+const TAB_W := 100.0           # seven tabs across the panel
 const SLOT := Vector2(48, 44)          # 13 to a tab fit the panel
 const GAP := 5.0
 const ICON_BOX := Vector2(43, 36)
@@ -32,9 +33,11 @@ const CATS := [
 	["Transport", [1, 60, 62, 9, 67, 12, 25, 10, 8, 24, 4, 13, 31]],
 	["Production", [2, 30, 3, 15, 36, 16, 21, 17, 34]],
 	["Defence", [32, 6, 53, 18, 23, 19, 5, 22, 26]],
-	["Traps", [7, 27, 20, 11, 14, 28, 29, 65, 64, 33, 35, 37]],
-	["Marble", [38, 39, 66, 52, 58, 63, 59, 40, 41, 42, 54, 47]],
-	["Lifts", [61, 43, 44, 45, 46, 56, 57, 49, 55, 48, 50, 51]],
+	["Traps", [7, 27, 20, 11, 14, 28, 29, 33, 35, 37]],
+	["Marble", [38, 52, 58, 63, 41, 42, 54, 47, 49]],
+	["Lifts", [61, 43, 44, 45, 46, 56, 57, 55, 50, 51]],
+	# what reacts to signals and routes by them
+	["Logic", [39, 66, 59, 40, 65, 64, 48]],
 ]
 
 var font: Font
