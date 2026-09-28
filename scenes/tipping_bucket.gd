@@ -23,10 +23,30 @@ var _wall: CollisionShape2D
 var _inside: Area2D
 var _angle := 0.0
 var _busy := false
+var _cup: Sprite2D
 
 
 func _ready() -> void:
 	z_index = 1
+	# post and cup sprites (ghosts too), mirrored to pour the other way;
+	# the cup turns about its back corner in _draw
+	var post := Sprite2D.new()
+	post.texture = preload("res://assets/sprites/tipping_bucket_post.png")
+	post.centered = false
+	post.offset = Vector2(-7, -2)
+	post.position = Vector2(-side * W * 0.5, 0)
+	post.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	post.show_behind_parent = true
+	add_child(post)
+	_cup = Sprite2D.new()
+	_cup.texture = preload("res://assets/sprites/tipping_bucket.png")
+	_cup.centered = false
+	_cup.offset = Vector2(-4, -28)
+	_cup.position = Vector2(-side * W * 0.5, 0)
+	_cup.scale = Vector2(side, 1)
+	_cup.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_cup.show_behind_parent = true
+	add_child(_cup)
 	if has_meta("ghost"):
 		return
 	_body = StaticBody2D.new()
@@ -100,18 +120,16 @@ func _process(_delta: float) -> void:
 
 
 func _draw() -> void:
-	# pivot stand, then the cup drawn tipped by _angle about its pivot
-	draw_line(Vector2(-side * W * 0.5, 0), Vector2(-side * W * 0.5, 14), Color(0.16, 0.13, 0.1), 3.0)
+	# the post and cup are sprites (see _ready): tip the cup, then mark its
+	# capacity along the floor
+	if _cup:
+		_cup.rotation = _angle
 	draw_set_transform(Vector2(-side * W * 0.5, 0), _angle, Vector2.ONE)
 	var o := Vector2(side * W * 0.5, 0)
-	var pts := PackedVector2Array([o + Vector2(-W * 0.5, -D), o + Vector2(-W * 0.5, 0), o + Vector2(W * 0.5, 0), o + Vector2(W * 0.5, -D)])
-	draw_polyline(pts, Color(0.1, 0.08, 0.07), 4.0)
-	draw_polyline(pts, Color(0.85, 0.65, 0.35), 2.0)
 	for k in HOLDS[mode]:
 		var x: float = o.x - W * 0.5 + 3 + k * (W - 6) / maxf(1, HOLDS[mode] - 1)
 		draw_rect(Rect2(Vector2(x - 0.5, -3), Vector2(1, 1)), Color(0.2, 0.16, 0.12))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	draw_circle(Vector2(-side * W * 0.5, 0), 2.5, Color(0.42, 0.45, 0.5))
 
 
 func _input(event: InputEvent) -> void:
