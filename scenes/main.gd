@@ -1267,6 +1267,7 @@ var _build_names := {
 	77: "Build: ROPEWAY (drag from the high post down to the low one: ore on its landing zips across overhead)",
 	78: "Build: LOAD CELL (when the ore in its pan weighs 2/5/10, it fires traps at its wire's end; click the dial)",
 	79: "Build: BANKED TURN (at a chute's end: pieces swing round and come back the other way a level down, keeping their speed)",
+	80: "Build: GAUSS CANNON (roll pieces into its magnet end: each shoots the waiting one out the far end, fast)",
 	44: "Build: ROBOTIC ARM (picks from one spot, drops at another)",
 	37: "Build: DOMINO ROW (drag start to end; click an end to reset)",
 	36: "Build: STEAM ENGINE (feed it ore: powers machines in reach)",

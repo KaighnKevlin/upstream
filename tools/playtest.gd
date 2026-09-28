@@ -6816,6 +6816,43 @@ func turn_rec() -> void:
 	log_line("banked turn: %s | turned %d" % [out, bt.turned])
 
 
+func gauss_rec() -> void:
+	# Gauss cannon: pieces rolled gently into it down a short chute; each
+	# after the first fires the one waiting. Speed in, speed out, how far.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	var MW = preload("res://scripts/marble_works.gd")
+	await MW.carve(main, false)
+	var gc: Node2D = MW._piece(main, "res://scenes/gauss.tscn", Vector2(1150, 500), {"side": 1.0})
+	MW._chute(main, Vector2(1060, 470), Vector2(1116, 494))
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.6, 1.6)
+	cam.global_position = Vector2(1300, 460)
+	var out := []
+	for kind in ["copper", "copper", "iron", "copper"]:
+		var n0: int = gc.fired
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.kind = kind
+		o.lifetime = 1.0e9
+		o.global_position = Vector2(1068, 458)
+		main.add_child(o)
+		var v_in := 0
+		for t in 60:
+			await wait(0.03)
+			if o.global_position.x < 1127:
+				v_in = int(absf(o.linear_velocity.x))
+			if kind == "iron" and t == 20:
+				await shot("gauss")
+		out.append("%s in %d -> %s" % [kind, v_in, ("shot out at %d" % int(gc.last_speed)) if gc.fired > n0 else "loaded"])
+	await wait(1.0)
+	var xs: Array = get_nodes_in_group("ore").map(func(o): return int(o.global_position.x))
+	xs.sort()
+	log_line("gauss: %s | pieces at x %s" % [out, xs])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.
