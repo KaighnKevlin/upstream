@@ -8,13 +8,14 @@ extends Node2D
 
 const SFX = preload("res://scripts/sfx.gd")
 const ORE := preload("res://scenes/ore.tscn")
+const INGOT := preload("res://scenes/ingot.tscn")
 const CAP := 40
 const MODES := [0.5, 1.0, 2.0, 0.0]      # 0: on trigger only
 const H := 60.0
 
 @export var mode := 1
 
-var stored: Array[String] = []   # kinds, first in first out
+var stored: Array[String] = []   # kinds, first in first out ("ingot:iron" for ingots)
 var let_out := 0                 # tests
 var _t := 0.0
 var _mouth: Area2D
@@ -41,9 +42,9 @@ func _ready() -> void:
 func _take(b) -> void:
 	if not is_instance_valid(b) or not (b is RigidBody2D) or b.is_queued_for_deletion() or stored.size() >= CAP:
 		return
-	if b.is_in_group("ingots") or b.get("kind") == null:
+	if b.get("kind") == null:
 		return
-	stored.append(str(b.kind))
+	stored.append(("ingot:" if b.is_in_group("ingots") else "") + str(b.kind))
 	b.queue_free()
 	SFX.play_small(self, SFX.sfx_ore_knock("ore"), -18.0, 0.9)
 	queue_redraw()
@@ -56,9 +57,11 @@ func trigger() -> void:
 func _release() -> void:
 	if stored.is_empty():
 		return
-	var o: RigidBody2D = ORE.instantiate()
-	o.kind = stored.pop_front()
-	o.lifetime = 1.0e9
+	var k: String = stored.pop_front()
+	var o: RigidBody2D = (INGOT if k.begins_with("ingot:") else ORE).instantiate()
+	o.kind = k.trim_prefix("ingot:")
+	if "lifetime" in o:
+		o.lifetime = 1.0e9
 	o.global_position = global_position + Vector2(0, 10)
 	get_parent().add_child(o)
 	o.linear_velocity = Vector2(0, 60)

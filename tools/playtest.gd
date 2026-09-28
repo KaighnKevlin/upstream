@@ -6717,6 +6717,35 @@ func silo_rec() -> void:
 	log_line("silo stored/let out each second: %s" % [counts])
 
 
+func ropeway_rec() -> void:
+	# Ropeway: four pieces (ore and an ingot) dropped on its landing; each
+	# should ride the cable and come down past the low post (x ~1360).
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	await preload("res://scripts/marble_works.gd").carve(main, false)
+	var rw: Node2D = preload("res://scenes/ropeway.tscn").instantiate()
+	rw.end_offset = Vector2(300, 90)
+	rw.global_position = Vector2(1060, 400)
+	main.add_child(rw)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.8, 1.8)
+	cam.global_position = Vector2(1220, 430)
+	var pcs := []
+	for k in 4:
+		var o: RigidBody2D = (preload("res://scenes/ingot.tscn") if k == 3 else preload("res://scenes/ore.tscn")).instantiate()
+		o.global_position = Vector2(1060, 360)
+		main.add_child(o)
+		pcs.append(o)
+		await wait(0.7)
+		if k == 2:
+			await shot("ropeway")
+	await wait(2.0)
+	log_line("ropeway: carried %d | landed x %s" % [rw.carried, pcs.map(func(o): return int(o.global_position.x) if is_instance_valid(o) else -1)])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.

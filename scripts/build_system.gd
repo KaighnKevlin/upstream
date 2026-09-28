@@ -1,6 +1,6 @@
 extends Node
 
-enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, TURRET, SPIKES, CATAPULT, CHUTE, SPLITTER, BUMPER, BELT, BELLOWS, PENDULUM, WHEEL, ASSEMBLER, LAB, TESLA, FLAMER, TRAPDOOR, CRUSHER, MAGNET, HARPOON, SEESAW, TUBE, KEG, SNARE, TRIPWIRE, PLATE, BORER, LANTERN, SENTRY, TIMER, DOCK, BARRICADE, ENGINE, DOMINOES, TAP, ROCKER, ESCAPEMENT, BUCKET, SIEVE, SCREW, ARM, STAIRS, FERRIS, JUMP, BELL, LOOP, DISPENSER, GOAL, SCALE, CANNON, FELT, CHIME, PLUNGER, VORTEX, FLAPS, OVERFLOW, DEFLECTOR, BOOSTER, NET, DRUM, SLUICE, TALLY, POINTS, BRAKE, TEETER, CROSSOVER, FLYWHEEL, DISTRIBUTOR, FLIPPER, COUNTERWEIGHT, PAIR, FURNACE, SILO }
+enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, TURRET, SPIKES, CATAPULT, CHUTE, SPLITTER, BUMPER, BELT, BELLOWS, PENDULUM, WHEEL, ASSEMBLER, LAB, TESLA, FLAMER, TRAPDOOR, CRUSHER, MAGNET, HARPOON, SEESAW, TUBE, KEG, SNARE, TRIPWIRE, PLATE, BORER, LANTERN, SENTRY, TIMER, DOCK, BARRICADE, ENGINE, DOMINOES, TAP, ROCKER, ESCAPEMENT, BUCKET, SIEVE, SCREW, ARM, STAIRS, FERRIS, JUMP, BELL, LOOP, DISPENSER, GOAL, SCALE, CANNON, FELT, CHIME, PLUNGER, VORTEX, FLAPS, OVERFLOW, DEFLECTOR, BOOSTER, NET, DRUM, SLUICE, TALLY, POINTS, BRAKE, TEETER, CROSSOVER, FLYWHEEL, DISTRIBUTOR, FLIPPER, COUNTERWEIGHT, PAIR, FURNACE, SILO, ROPEWAY }
 
 var current_build: BuildType = BuildType.NONE
 var _ghost: Node2D = null
@@ -84,6 +84,7 @@ var _scenes := {
 	BuildType.PAIR: preload("res://scenes/pair_gate.tscn"),
 	BuildType.FURNACE: preload("res://scenes/furnace_rail.tscn"),
 	BuildType.SILO: preload("res://scenes/silo.tscn"),
+	BuildType.ROPEWAY: preload("res://scenes/ropeway.tscn"),
 }
 
 var _ghost_colors := {
@@ -163,6 +164,7 @@ var _ghost_colors := {
 	BuildType.PAIR: Color(1.0, 0.85, 0.5, 0.8),
 	BuildType.FURNACE: Color(1.0, 0.7, 0.4, 0.8),
 	BuildType.SILO: Color(1.0, 0.85, 0.5, 0.8),
+	BuildType.ROPEWAY: Color(1.0, 0.85, 0.5, 0.8),
 }
 
 signal build_mode_changed(build_type: BuildType)
@@ -232,7 +234,7 @@ func _input(event: InputEvent) -> void:
 		for r in ui_rects:
 			if (r.call() as Rect2).has_point(event.position):
 				return  # the HUD handles it
-		if event.button_index == MOUSE_BUTTON_LEFT and current_build in [BuildType.CHUTE, BuildType.BELT, BuildType.TUBE, BuildType.TRIPWIRE, BuildType.DOMINOES, BuildType.SIEVE, BuildType.SCREW, BuildType.JUMP, BuildType.FELT, BuildType.CHIME, BuildType.FLAPS, BuildType.BOOSTER, BuildType.BRAKE, BuildType.FURNACE]:
+		if event.button_index == MOUSE_BUTTON_LEFT and current_build in [BuildType.CHUTE, BuildType.BELT, BuildType.TUBE, BuildType.TRIPWIRE, BuildType.DOMINOES, BuildType.SIEVE, BuildType.SCREW, BuildType.JUMP, BuildType.FELT, BuildType.CHIME, BuildType.FLAPS, BuildType.BOOSTER, BuildType.BRAKE, BuildType.FURNACE, BuildType.ROPEWAY]:
 			var at := _get_world_mouse_pos()
 			if _can_place(at):
 				_drag_from = at
