@@ -24,10 +24,19 @@ var _glow := 0.0
 var _spoil := 0.0
 var _inside: Area2D
 var spoiled := 0                 # tests
+var _art: Array[Sprite2D] = []   # floor and walls, pixel art
 
 
 func _ready() -> void:
 	z_index = 1
+	# the bin: sprites behind our _draw (glow, tally); ghosts too. A wall
+	# each side, the tall backboard on the `backboard` side
+	_art.append(_sprite(preload("res://assets/sprites/goal_cup_floor.png"), Vector2(-22, -3), Vector2.ZERO))
+	for s in [-1.0, 1.0]:
+		if backboard == s:
+			_art.append(_sprite(preload("res://assets/sprites/goal_cup_board.png"), Vector2(-5, -69), Vector2(s * W * 0.5, 0)))
+		else:
+			_art.append(_sprite(preload("res://assets/sprites/goal_cup_wall.png"), Vector2(-4, -33), Vector2(s * W * 0.5, 0)))
 	if has_meta("ghost"):
 		return
 	add_to_group("goal_cups")
@@ -58,6 +67,18 @@ func _ready() -> void:
 	add_child(a)
 	a.body_entered.connect(_on_enter)
 	_inside = a
+
+
+func _sprite(tex: Texture2D, off: Vector2, at: Vector2) -> Sprite2D:
+	var sp := Sprite2D.new()
+	sp.texture = tex
+	sp.centered = false
+	sp.offset = off
+	sp.position = at
+	sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	sp.show_behind_parent = true
+	add_child(sp)
+	return sp
 
 
 func _walls() -> Array:
@@ -114,15 +135,13 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var brass := Color(0.85, 0.65, 0.35)
 	if done:
 		draw_rect(Rect2(-W * 0.5 - 6, -D - 6, W + 12, D + 10), Color(1.0, 0.85, 0.4, 0.15 + 0.2 * _glow))
 	if _spoil > 0:
 		draw_rect(Rect2(-W * 0.5 - 6, -D - 6, W + 12, D + 10), Color(1.0, 0.25, 0.15, 0.35 * _spoil))
-	for seg in _walls():
-		draw_line(seg[0], seg[1], dark, 5.0)
-		draw_line(seg[0], seg[1], brass if not done else Color(1.0, 0.9, 0.5), 3.0)
+	# the bin is sprites (see _ready): lit up when full
+	for sp in _art:
+		sp.modulate = Color(1.35, 1.25, 1.0) if done else Color.WHITE
 	# the tally
 	var font := ThemeDB.fallback_font
 	var label := "%d / %d" % [count, target] + (" " + accept if accept != "" else "")

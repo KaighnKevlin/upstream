@@ -24,6 +24,17 @@ var _pass_t := 0.0
 var _cool := {}
 
 
+func _ready() -> void:
+	# the rail, magnet and balls: one sprite, drawn firing to +x (ghosts too)
+	var art := Sprite2D.new()
+	art.texture = preload("res://assets/sprites/gauss.png")
+	art.centered = false
+	art.offset = Vector2(-40, -16)
+	art.scale = Vector2(side, 1)
+	art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(art)
+
+
 func _near() -> Vector2:
 	return Vector2(-side * (LEN * 0.5 + 6), -7)
 
@@ -75,21 +86,3 @@ func _arrive(o: RigidBody2D, now: float) -> void:
 		_loaded = null
 	_pass = o
 	_pass_t = 0.0
-
-
-func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	# the rail
-	draw_line(Vector2(-LEN * 0.5 - 14, 0), Vector2(LEN * 0.5 + 14, 0), dark, 5.0)
-	draw_line(Vector2(-LEN * 0.5 - 14, -1), Vector2(LEN * 0.5 + 14, -1), Color(0.42, 0.44, 0.5), 2.0)
-	# the magnet block at the near end
-	var m := Vector2(-side * LEN * 0.5, -7)
-	draw_rect(Rect2(m - Vector2(4, 7), Vector2(8, 14)), dark)
-	draw_rect(Rect2(m - Vector2(3, 6), Vector2(3, 12)), Color(0.8, 0.2, 0.15))
-	draw_rect(Rect2(m - Vector2(0, 6), Vector2(3, 12)), Color(0.55, 0.6, 0.7))
-	# the steel balls
-	for k in 4:
-		var c := Vector2(-side * LEN * 0.5 + side * (8 + k * 9), -7)
-		draw_circle(c, 4.5, dark)
-		draw_circle(c, 3.5, Color(0.72, 0.74, 0.8))
-		draw_circle(c + Vector2(-1, -1), 1.0, Color(1, 1, 1, 0.7))

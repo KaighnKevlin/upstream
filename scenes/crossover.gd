@@ -16,6 +16,14 @@ var _riders := {}                # id -> [body, from(-1/1), s(0..1), speed]
 
 func _ready() -> void:
 	z_index = 2
+	# the rails and boss: a sprite, behind our _draw (the entry marks); ghosts too
+	var art := Sprite2D.new()
+	art.texture = preload("res://assets/sprites/crossover.png")
+	art.centered = false
+	art.offset = Vector2(-39, -20)
+	art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	art.show_behind_parent = true
+	add_child(art)
 
 
 func _path(from: float) -> Array:
@@ -67,18 +75,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.09, 0.07, 0.1)
-	var steel := Color(0.42, 0.44, 0.5)
-	for from in [-1.0, 1.0]:
-		var p := _path(from)
-		# the rail runs under the marble's centre line
-		var off := Vector2(0, 7)
-		draw_line(p[0] + off, p[1] + off, dark, 6.0)
-		draw_line(p[0] + off, p[1] + off, steel, 3.0)
-	# a brass plate over the crossing
-	draw_circle(Vector2(0, 7), 5.0, dark)
-	draw_circle(Vector2(0, 7), 3.5, Color(0.85, 0.65, 0.35))
-	# entry and exit arrows
+	# the rails and boss are a sprite (see _ready); entry marks
 	for from in [-1.0, 1.0]:
 		var p := _path(from)
 		draw_circle(p[0], 2.0, Color(0.9, 0.8, 0.55, 0.7))

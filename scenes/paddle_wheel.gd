@@ -15,10 +15,24 @@ var omega := 0.0
 var knocks := 0                  # tests
 var _angle := 0.0
 var _seen := {}
+var _wheel: Sprite2D
 
 
 func _ready() -> void:
 	z_index = 2
+	# sprites first, so ghosts and build-bar icons get them too
+	var frame := Sprite2D.new()
+	frame.texture = preload("res://assets/sprites/paddle_wheel_frame.png")
+	frame.centered = false
+	frame.offset = Vector2(-14, -4)
+	frame.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	frame.show_behind_parent = true
+	add_child(frame)
+	_wheel = Sprite2D.new()
+	_wheel.texture = preload("res://assets/sprites/paddle_wheel.png")
+	_wheel.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_wheel.show_behind_parent = true
+	add_child(_wheel)
 	if has_meta("ghost"):
 		return
 	add_to_group("power_wheels")
@@ -49,16 +63,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.16, 0.12, 0.08)
-	var wood := Color(0.55, 0.4, 0.22)
-	draw_line(Vector2(0, 0), Vector2(-10, R + 16), dark, 3.0)
-	draw_line(Vector2(0, 0), Vector2(10, R + 16), dark, 3.0)
-	for k in 8:
-		var a := _angle + k * TAU / 8.0
-		var d := Vector2(cos(a), sin(a))
-		draw_line(d * 4.0, d * R, dark, 2.0)
-		draw_line(d * (R - 8), d * R, wood, 5.0)
-	draw_circle(Vector2.ZERO, 4.0, Color(0.85, 0.65, 0.35))
+	_wheel.rotation = _angle   # the trestle and wheel are sprites (see _ready)
 	var p := power()
 	if p > 0.01:
 		draw_arc(Vector2.ZERO, R + 4, -PI * 0.5, -PI * 0.5 + TAU * p, 24, Color(1.0, 0.8, 0.35, 0.8), 2.0)

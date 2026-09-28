@@ -22,11 +22,20 @@ var _loaded: RigidBody2D = null
 var _incoming: RigidBody2D = null
 var _angle := 0.0                # + : the drop cup is down
 var _settle := 0.0               # the new one rolling across
+var _beam: Sprite2D
+var _cups: Array[Sprite2D] = []
 
 
 func _ready() -> void:
 	z_index = 2
 	_angle = -TILT * side
+	# sprites first, so ghosts and build-bar icons get them too
+	var fulcrum := _sprite(preload("res://assets/sprites/teeter_fulcrum.png"), Vector2(-11, -3))
+	fulcrum.show_behind_parent = true
+	_beam = _sprite(preload("res://assets/sprites/teeter_beam.png"), Vector2(-34, -5))
+	for k in 2:
+		_cups.append(_sprite(preload("res://assets/sprites/teeter_cup.png"), Vector2(-11, -11)))
+	_place_art()
 	if has_meta("ghost"):
 		return
 	var a := Area2D.new()
@@ -40,6 +49,23 @@ func _ready() -> void:
 	a.add_child(cs)
 	add_child(a)
 	a.body_entered.connect(_drop_in)
+
+
+func _sprite(tex: Texture2D, off: Vector2) -> Sprite2D:
+	var sp := Sprite2D.new()
+	sp.texture = tex
+	sp.centered = false
+	sp.offset = off
+	sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(sp)
+	return sp
+
+
+func _place_art() -> void:
+	# the beam follows the tilt; the cups hang upright from its ends
+	_beam.rotation = atan2(sin(_angle) * side, cos(_angle))
+	for i in 2:
+		_cups[i].position = _cup(-1.0 + i * 2.0) + Vector2(0, 7)
 
 
 func _cup(s: float) -> Vector2:
@@ -95,20 +121,4 @@ func _physics_process(delta: float) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var wood := Color(0.55, 0.4, 0.22)
-	# the fulcrum
-	draw_colored_polygon(PackedVector2Array([Vector2(-8, 16), Vector2(8, 16), Vector2(0, 0)]), dark)
-	draw_colored_polygon(PackedVector2Array([Vector2(-6, 15), Vector2(6, 15), Vector2(0, 2)]), Color(0.4, 0.3, 0.2))
-	# the beam
-	var d := Vector2(cos(_angle), sin(_angle) * side) * ARM
-	draw_line(-d, d, dark, 6.0)
-	draw_line(-d, d, wood, 4.0)
-	# cups at the ends
-	for s in [-1.0, 1.0]:
-		var c := _cup(s) + Vector2(0, 7)
-		draw_line(c + Vector2(-8, -9), c + Vector2(-6, 0), dark, 3.0)
-		draw_line(c + Vector2(6, 0), c + Vector2(8, -9), dark, 3.0)
-		draw_line(c + Vector2(-6, 0), c + Vector2(6, 0), dark, 3.0)
-		draw_line(c + Vector2(-6, -1), c + Vector2(6, -1), Color(0.85, 0.65, 0.35), 1.0)
-	draw_circle(Vector2.ZERO, 3.0, Color(0.85, 0.65, 0.35))
+	_place_art()   # fulcrum, beam and cups are sprites (see _ready)
