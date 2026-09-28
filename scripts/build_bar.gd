@@ -36,6 +36,11 @@ const ART_RECTS := {
 	"bearing_mat.gd": Rect2(-48, -12, 96, 16),
 	"sluice.gd": Rect2(-8, -48, 16, 56),
 	"vortex.gd": Rect2(-60, -18, 120, 114),
+	"latch.gd": Rect2(-28, -14, 56, 34),
+	"delay_relay.gd": Rect2(-14, -18, 28, 36),
+	"relay_hub.gd": Rect2(-17, -12, 30, 24),
+	"ground_listener.gd": Rect2(-14, -23, 32, 25),
+	"steam_jet.gd": Rect2(-11, -31, 26, 33),
 }
 
 const DARK := Color(0.1, 0.09, 0.07)
@@ -381,21 +386,19 @@ func _build_icon(slot: Node2D, t: int) -> void:
 				ic.scale = Vector2(0.55, 0.55)
 			elif scn == "ground_listener":
 				ic.wire_to = Vector2.ZERO
-				ic.position = Vector2(0, 10)
-				ic.scale = Vector2(1.4, 1.4)
-			elif scn == "iron_plating":
-				ic.end_offset = Vector2(20, 20)
-				ic.position = Vector2(-10, -10)
-				ic.scale = Vector2(0.8, 0.8)
-			elif scn == "steam_jet":
-				ic.position = Vector2(0, 12)
 				ic.scale = Vector2(1.3, 1.3)
+			elif scn == "iron_plating":
+				ic.end_offset = Vector2(48, 16)
+				ic.position = Vector2(-24, -8)
+				ic.scale = Vector2.ONE
+			elif scn == "steam_jet":
+				ic.scale = Vector2.ONE
 			elif scn == "latch":
 				ic.wire_to = Vector2.ZERO
-				ic.scale = Vector2(0.85, 0.85)
+				ic.scale = Vector2.ONE
 			elif scn == "delay_relay":
 				ic.wire_to = Vector2.ZERO
-				ic.scale = Vector2(1.3, 1.3)
+				ic.scale = Vector2.ONE
 			elif scn == "relay_hub":
 				ic.wire_1 = Vector2.ZERO
 				ic.wire_2 = Vector2.ZERO
