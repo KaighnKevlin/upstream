@@ -93,6 +93,7 @@ const TABS := [
 		["", "Trommel", "drag from its mouth: grit drops out the holes, the rest rolls out the end; faster powered"],
 		["", "Dice box", "drop a stream in: each piece out a random side (2 or 3 ways: click); fair over a long run, never a pattern"],
 		["", "Flow meter", "over a chute: reads pieces a minute going by (last 10 s); click for all / copper / iron; touches nothing"],
+		["", "Check valve", "a flap across a track: through the way its arrow points, a wall the other way; click: turn it"],
 		["", "Jump", "flicks pieces across a gap; drag to set the landing; slow ones drop short (sorts by speed)"],
 		["", "Loop-the-loop", "a hoop on a rail: fast marbles go round and on, slow ones fall off; feed it off a steep drop"],
 		["", "Teeter launcher", "a piece dropped in its high cup flings the one waiting in the low cup up"],
