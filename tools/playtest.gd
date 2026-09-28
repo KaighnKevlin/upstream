@@ -5841,6 +5841,28 @@ func defence_rec() -> void:
 		log_line("t=%d | sent %d down %d leaks %d over %s | cannon fired %d loaded %s | ore %d" % [(k + 1) * 5, d.sent, d.killed, d.leaks, d.over, cn[0].fired if cn.size() > 0 else -1, cn[0].loaded if cn.size() > 0 else [], get_nodes_in_group("ore").size()])
 
 
+func clatter_rec() -> void:
+	# The Clatter world: noise, what it's drawn and the production, every 5 s.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await main.start_clatter_works()
+	var find := func(file: String): return main.get_children().filter(func(c): return c.get_script() and c.get_script().resource_path.get_file() == file)[0]
+	var n = find.call("noise_meter.gd")
+	var d = find.call("defence_director.gd")
+	var cup = get_nodes_in_group("goal_cups")[0]
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.4, 1.4)
+	cam.global_position = Vector2(1270, 400)
+	for k in (int(OS.get_environment("SECS")) / 5 if OS.has_environment("SECS") else 5):
+		await wait(5.0)
+		if k == 3:
+			await shot("clatter_%d" % k)
+		var rk = find.call("rocker.gd")
+		log_line("t=%d | clatter %d heard x%d | sent %d/%d down %d leaks %d | cup %d | flip-flop %s" % [(k + 1) * 5, n.level, n.peak_steps, d.sent, d.wave, d.killed, d.leaks, cup.count, rk.sent])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.

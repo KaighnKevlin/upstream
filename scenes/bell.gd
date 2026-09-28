@@ -56,6 +56,7 @@ func ring(dir := 1.0) -> void:
 	_swing_v += 3.0 * dir
 	_flash = 1.0
 	SFX.play(self, SFX.sfx_bell(), -8.0, 1.0)
+	preload("res://scenes/noise_meter.gd").add(get_tree(), 15.0)   # a bell carries: it's heard
 	for n in Tripwire.linked_to(get_tree(), [global_position]):
 		if n != self and n.has_method("trigger"):
 			n.trigger()

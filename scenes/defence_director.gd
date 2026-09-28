@@ -13,6 +13,7 @@ const Enemy = preload("res://scenes/enemy.gd")
 @export var max_leaks := 3
 ## the wave, in order, repeating: enemy type names
 @export var types: Array = ["SCUTTLER", "SCUTTLER", "SOLDIER"]
+@export var endless := false     # no winning: waves are added from outside (clatter)
 
 var sent := 0
 var leaks := 0
@@ -50,7 +51,7 @@ func _physics_process(delta: float) -> void:
 	if leaks > max_leaks:
 		over = true
 		finished.emit(false)
-	elif sent >= wave and _live.is_empty():
+	elif not endless and sent >= wave and _live.is_empty():
 		over = true
 		finished.emit(true)
 	queue_redraw()

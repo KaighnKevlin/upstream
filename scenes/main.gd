@@ -239,7 +239,7 @@ func _show_title() -> void:
 	sub.position = Vector2(0, 150 + sz.y + 18)
 	root.add_child(sub)
 	# two ways in: the sandbox (showcase + god tools) or survival (waves)
-	for i in 8:
+	for i in 9:
 		var spec: Array = [["1  SANDBOX", "a working showcase, god tools, no waves until you ask"],
 			["2  SURVIVAL", "a bare world: get an ingot into the dome and the waves begin"],
 			["3  MARBLE WORKS", "the Beam and a marble machine, under the dome"],
@@ -247,19 +247,20 @@ func _show_title() -> void:
 			["5  GALTON", "a bell curve out of pegs and chance"],
 			["6  COASTER", "a drop, a loop-the-loop, a jump and a bell"],
 			["7  PUZZLE", "build a way for five marbles into the cup"],
-			["8  DEFENCE", "marbles feed the turrets: hold the vault"]][i]
-		# two rows of four
-		var x := 40.0 + (i % 4) * 305.0
-		var y := 380.0 + (i / 4) * 78.0
-		var opt := _hud_label(spec[0], 22, Color(0.55, 0.88, 0.92))
+			["8  DEFENCE", "marbles feed the turrets: hold the vault"],
+			["9  CLATTER", "the busier the machine, the more it draws in"]][i]
+		# three rows of three
+		var x := 60.0 + (i % 3) * 400.0
+		var y := 382.0 + (i / 3) * 54.0
+		var opt := _hud_label(spec[0], 20, Color(0.55, 0.88, 0.92))
 		opt.size = Vector2(290, 40)
 		opt.position = Vector2(x, y + 5)
 		root.add_child(opt)
 		var d := _hud_label(spec[1], 10, Color(0.85, 0.75, 0.55))
 		d.size = Vector2(290, 20)
-		d.position = Vector2(x, y + 44)
+		d.position = Vector2(x, y + 36)
 		root.add_child(d)
-		_title_opts.append(Rect2(Vector2(x, y), Vector2(290, 70)))
+		_title_opts.append(Rect2(Vector2(x, y), Vector2(290, 52)))
 		var blink := opt.create_tween().set_loops()
 		blink.tween_interval(i * 0.6)
 		blink.tween_property(opt, "modulate:a", 0.45, 0.6)
@@ -305,6 +306,8 @@ func _on_title_input(event: InputEvent) -> void:
 		or (event is InputEventMouseButton and _title_opts.size() > 6 and _title_opts[6].has_point(event.position))
 	var defence: bool = (event is InputEventKey and event.keycode == KEY_8) \
 		or (event is InputEventMouseButton and _title_opts.size() > 7 and _title_opts[7].has_point(event.position))
+	var clatter: bool = (event is InputEventKey and event.keycode == KEY_9) \
+		or (event is InputEventMouseButton and _title_opts.size() > 8 and _title_opts[8].has_point(event.position))
 	if survival:
 		start_survival()
 	elif marble:
@@ -319,6 +322,8 @@ func _on_title_input(event: InputEvent) -> void:
 		start_puzzle_works()
 	elif defence:
 		start_defence_works()
+	elif clatter:
+		start_clatter_works()
 	_title.accept_event()
 	var title := _title
 	_title = null
@@ -429,6 +434,17 @@ func start_defence_works(sorted := false) -> void:
 	d.finished.connect(func(won: bool): _show_banner("VAULT HELD" if won else "VAULT BROKEN", "the machine kept the turrets fed" if won else "too many got through"))
 	_player.global_position = Vector2(1050, 540)
 	_show_banner("MARBLE DEFENCE", "the machine feeds the turrets: hold the vault")
+
+
+## Noise draws enemies: the machine's clatter sends walkers for the vault
+## (scripts/clatter_works.gd).
+func start_clatter_works() -> void:
+	preload("res://scripts/sandbox_showcase.gd").clear(self)
+	var parts: Array = await preload("res://scripts/clatter_works.gd").build(self)
+	parts[1].finished.connect(func(_won: bool): _show_banner("VAULT BROKEN", "the racket drew too many"))
+	parts[0].attract.connect(func(n: int): _show_banner("HEARD", "the clatter carries: %d coming" % (n + 1)))
+	_player.global_position = Vector2(1050, 540)
+	_show_banner("CLATTER", "every knock is heard: the busier, the more come")
 
 
 func start_survival() -> void:
