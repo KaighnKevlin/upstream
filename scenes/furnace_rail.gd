@@ -11,6 +11,8 @@ const FX = preload("res://scripts/fx.gd")
 const INGOT := preload("res://scenes/ingot.tscn")
 const DWELL := 1.2
 const SMELTS := ["copper", "iron", "grit", "shot", "gear", "scrap"]
+const RAIL_TEX := preload("res://assets/sprites/furnace_rail.png")
+const CAP_TEX := preload("res://assets/sprites/furnace_cap.png")
 
 var smelted := 0                 # tests
 var _heat: Area2D
@@ -18,10 +20,18 @@ var _dwell := {}                 # id -> seconds on the grate
 var _rate := Power.UNPOWERED
 var _rate_t := 0.0
 var _t := 0.0
+var _art: Node2D                 # the grate and firebox, pixel art tiled along the rail
 
 
 func _ready() -> void:
 	has_lip = false
+	# art first, so ghosts and build-bar icons have it; behind our _draw (the glow)
+	_art = Node2D.new()
+	_art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_art.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+	_art.show_behind_parent = true
+	_art.draw.connect(_draw_art)
+	add_child(_art)
 	super._ready()
 	if not has_meta("ghost"):
 		add_to_group("power_users")
@@ -77,14 +87,48 @@ func _physics_process(delta: float) -> void:
 	queue_redraw()
 
 
-func _draw_surface(a: Vector2, b: Vector2, t: Vector2, n: Vector2, l: float) -> void:
-	# the firebox under the rail, and a glowing grate on it
+## The chute's own look is replaced by the art; the fire's glow and the
+## selection handle are drawn over it.
+func _draw() -> void:
+	if _art:
+		_art.queue_redraw()
+	var e := _ends()
+	var a: Vector2 = e[0]
+	var b: Vector2 = e[1]
+	var l := (b - a).length()
+	if l < 1:
+		return
+	var t := (b - a) / l
+	_draw_surface(a, b, t, Vector2(t.y, -t.x), l)
+	_draw_selected()
+
+
+## The grate (a tiled strip, row 3 on the rail line) and a cap at each end.
+func _draw_art() -> void:
+	var e := _ends()
+	var a: Vector2 = e[0]
+	var b: Vector2 = e[1]
+	var l := (b - a).length()
+	if l < 1:
+		return
+	_art.draw_set_transform(a, (b - a).angle())
+	_art.draw_texture_rect(RAIL_TEX, Rect2(0, -3, l, 14), true)
+	_art.draw_texture(CAP_TEX, Vector2(-3, -4))
+	_art.draw_texture(CAP_TEX, Vector2(l - 3, -4))
+	_art.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+func _draw_surface(a: Vector2, b: Vector2, _dir: Vector2, _n: Vector2, l: float) -> void:
+	# the fire's glow in the firebox vents and between the grate's bars
 	var glow := 0.6 + 0.4 * sin(_t * 5.0)
 	var hot := Color(1.0, 0.45, 0.12).lerp(Color(1.0, 0.8, 0.3), glow * 0.5)
-	draw_line(a - n * 6, b - n * 6, Color(0.18, 0.1, 0.08), 7.0)
-	draw_line(a - n * 6, b - n * 6, Color(hot, 0.5 * glow), 3.0)
-	var k := 4.0
-	while k < l - 2:
-		var p := a + t * k
-		draw_line(p - n * 1, p + n * 1.5, hot, 1.5)
-		k += 6.0
+	draw_set_transform(a, (b - a).angle())
+	var k := 2.0
+	while k + 4.0 < l - 2:
+		draw_rect(Rect2(k, 4, 4, 3), Color(hot, 0.35 + 0.4 * glow))
+		k += 8.0
+	k = 2.0
+	while k < l - 3:
+		draw_rect(Rect2(k - 0.5, -0.5, 1, 2), hot)
+		k += 4.0
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
