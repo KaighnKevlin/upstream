@@ -6,7 +6,7 @@ extends RefCounted
 
 const PATH := "user://sandbox_save.json"
 ## Settings worth keeping, on whichever pieces have them.
-const PROPS := ["bounce_angle", "bounce_force", "eject_angle", "eject_force", "aim_angle", "aim",
+const PROPS := ["bounce_angle", "bounce_force", "eject_angle", "eject_force", "aim_angle", "aim", "wire_l", "wire_r",
 	"throw_speed", "end_offset", "mode", "plate_offset_x", "lift_speed", "wind_speed", "mirrored", "recipe", "research", "segments", "spill",
 	"fuel", "charge", "ammo",   # what's loaded: flamer / steam engine fuel, tesla charge, harpoon ammo
 	# the marble pieces: which way they face or lean, springs, notes, wires, targets

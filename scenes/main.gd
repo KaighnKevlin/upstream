@@ -1330,6 +1330,7 @@ var _build_names := {
 	121: "Build: SPRING TRAP (on the ground: flings the first walker up and back the way it came; 2 pieces in its hopper re-cock it)",
 	122: "Build: BOWL FEEDER (on the ground: pieces in its mouth buzz up the spiral and out single file toward the lip; grit is rejected; click to flip)",
 	123: "Build: WATER WHEEL (set it over a flume so its paddles dip in: the current turns it and it powers machines in reach)",
+	124: "Build: BALANCE (on the ground: pieces in each pan are weighed, iron 3 copper; the side ahead by 1/2/3 (click the post) fires its own wire, then both pans empty; drag the wire ends)",
 	44: "Build: ROBOTIC ARM (picks from one spot, drops at another)",
 	37: "Build: DOMINO ROW (drag start to end; click an end to reset)",
 	36: "Build: STEAM ENGINE (feed it ore: powers machines in reach)",
