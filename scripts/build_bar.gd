@@ -11,6 +11,19 @@ const TAB_W := 100.0           # seven tabs across the panel
 const SLOT := Vector2(48, 44)          # 13 to a tab fit the panel
 const GAP := 5.0
 const ICON_BOX := Vector2(43, 36)
+# pieces whose sprites fill a known box (x, y, w, h about their origin),
+# so their icons centre on the art rather than a guess
+const ART_RECTS := {
+	"teeter.gd": Rect2(-38, -24, 76, 42),
+	"trebuchet.gd": Rect2(-38, -58, 86, 70),
+	"treadwheel.gd": Rect2(-40, -40, 80, 82),
+	"paddle_wheel.gd": Rect2(-24, -24, 48, 62),
+	"gauss.gd": Rect2(-40, -16, 80, 22),
+	"banked_turn.gd": Rect2(-6, -12, 50, 68),
+	"crossover.gd": Rect2(-39, -20, 78, 54),
+	"dispenser.gd": Rect2(-11, -38, 22, 50),
+	"goal_cup.gd": Rect2(-22, -69, 44, 72),
+}
 
 const DARK := Color(0.1, 0.09, 0.07)
 const WELL := Color(0.16, 0.13, 0.1)
@@ -475,6 +488,9 @@ func _bounds(art: Node2D) -> Rect2:
 			cr = Rect2(c.position + Vector2(-21, -77) * c.scale, Vector2(42, 88) * c.scale)   # its sprite: tall
 		elif c.get_script() and c.get_script().resource_path.ends_with("/deflector.gd"):
 			cr = Rect2(c.position + Vector2(-20, -20) * c.scale, Vector2(40, 50) * c.scale)   # plate and post
+		elif c.get_script() and ART_RECTS.has(c.get_script().resource_path.get_file()):
+			var ar: Rect2 = ART_RECTS[c.get_script().resource_path.get_file()]
+			cr = Rect2(c.position + ar.position * c.scale, ar.size * c.scale)
 		else:
 			cr = Rect2(c.position + Vector2(-18, -18), Vector2(36, 26))
 		r = cr if first else r.merge(cr)

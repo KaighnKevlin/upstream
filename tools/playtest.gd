@@ -5744,7 +5744,7 @@ func buildbar_rec() -> void:
 	main._wave_timer = -9999.0
 	await wait(0.3)
 	var bar: Control = main.get_node("CanvasLayer").get_children().filter(func(c): return c.get_script() and c.get_script().resource_path.get_file() == "build_bar.gd")[0]
-	for c in [0, 4, 5, 6]:
+	for c in [0, 1, 2, 4, 5, 6]:
 		bar._cat = c
 		bar._layout()
 		bar._name_label.text = bar.PIECES[bar._types()[0]][1]
