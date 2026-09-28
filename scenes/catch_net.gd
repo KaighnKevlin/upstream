@@ -10,15 +10,22 @@ const ORE_ONLY := 64
 const HALF := 44.0
 const SAG := 14.0
 const HOLE := 9.0                # half-width of the ring: a marble (6.5) drops through
+const POST_TEX := preload("res://assets/sprites/catch_net_post.png")
+const RING_TEX := preload("res://assets/sprites/catch_net_ring.png")
 
 var caught := 0                  # tests: dropped out through the ring
 var _throat: Area2D
 var _wobble := 0.0
 var _t := 0.0
+var _art: Node2D                 # posts, hoop and cords (pixel art, nearest)
 
 
 func _ready() -> void:
 	z_index = 1
+	_art = Node2D.new()          # before the ghost return: ghosts and icons draw too
+	_art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_art.draw.connect(_draw_art)
+	add_child(_art)
 	if has_meta("ghost"):
 		return
 	var body := StaticBody2D.new()
@@ -95,23 +102,33 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
+	if _art:
+		_art.queue_redraw()
+
+
+## Posts (sprites), a diamond mesh between the net's front and back cords
+## sagging to the hoop (sprite), the front cord last.
+func _draw_art() -> void:
 	var dark := Color(0.16, 0.13, 0.1)
 	var cord := Color(0.78, 0.7, 0.52)
 	var sag := SAG + sin(_t * 18.0) * 4.0 * _wobble
-	# posts
 	for s in [-1.0, 1.0]:
-		draw_line(Vector2(s * HALF, -26), Vector2(s * HALF, 26), dark, 3.0)
-	# the net: a mesh sagging to the ring
-	var rows := 4
-	for i in rows + 1:
-		var f := float(i) / rows
-		for s in [-1.0, 1.0]:
-			var a := Vector2(s * HALF, 0).lerp(Vector2(s * HOLE, sag), f)
-			var b := Vector2(s * HALF, -8).lerp(Vector2(s * HOLE, sag - 4), f)
-			draw_line(a, b, cord, 1.0)
+		_art.draw_set_transform(Vector2(s * HALF, 0), 0.0, Vector2(-s, 1))
+		_art.draw_texture(POST_TEX, Vector2(-6, -29))
+	_art.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	var rows := 6
 	for s in [-1.0, 1.0]:
-		draw_line(Vector2(s * HALF, 0), Vector2(s * HOLE, sag), cord, 1.5)
-		draw_line(Vector2(s * HALF, -8), Vector2(s * HOLE, sag - 4), Color(cord, 0.6), 1.0)
-	# the ring
-	draw_arc(Vector2(0, sag + 1), HOLE, 0, TAU, 16, Color(0.1, 0.08, 0.07), 3.0)
-	draw_arc(Vector2(0, sag + 1), HOLE, 0, TAU, 16, Color(0.85, 0.65, 0.35), 1.5)
+		var f0 := Vector2(s * HALF, 0)
+		var f1 := Vector2(s * HOLE, sag)
+		var b0 := Vector2(s * HALF, -8)
+		var b1 := Vector2(s * HOLE, sag - 4)
+		_art.draw_line(b0, b1, Color(cord, 0.55), 1.0)
+		for i in rows:
+			var a := float(i) / rows
+			var b := float(i + 1) / rows
+			_art.draw_line(f0.lerp(f1, a), b0.lerp(b1, b), Color(cord, 0.75), 1.0)
+			_art.draw_line(b0.lerp(b1, a), f0.lerp(f1, b), Color(cord, 0.75), 1.0)
+	_art.draw_texture(RING_TEX, Vector2(-12, sag - 2 - 6))
+	for s in [-1.0, 1.0]:
+		_art.draw_line(Vector2(s * HALF, 0), Vector2(s * HOLE, sag), dark, 3.0)
+		_art.draw_line(Vector2(s * HALF, 0), Vector2(s * HOLE, sag), cord, 1.5)
