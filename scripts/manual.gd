@@ -131,6 +131,7 @@ const TABS := [
 		["", "Escapement", "at a track's end: lets one marble through per beat; click: 0.6/1.2/2.4 s"],
 		["", "Tally wheel", "over a chute: every 3/5/10 pieces (click) fires the traps at its wire's end (drag it)"],
 		["", "Load cell", "when the ore in its pan weighs 2/5/10 (click), fires the traps at its wire's end (drag it)"],
+		["", "Spinner", "vane hung just over a track: pieces rolling under spin it (and lose a little speed); powers machines in reach"],
 		["", "Igniter", "brazier over a track: lights what rolls under it; it bursts on a walker, or when its fuse (1/2/3 s, click) runs out"],
 		["", "Sling", "whirligig: catches a piece, whirls it twice, throws it where the arrow points (click the hub); twice as hard powered"],
 		["", "Speed trap", "over a line: fires its wire for pieces faster than 150/250/350 (click); shows the last speed"],
