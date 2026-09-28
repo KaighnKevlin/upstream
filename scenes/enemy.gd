@@ -967,7 +967,9 @@ func _melee_target(m: Dictionary) -> Node2D:
 			and absf(player.global_position.y - global_position.y) < 60:
 		return player
 	var dome := scene.get_node_or_null("DomeZone") as Node2D
-	if dome and absf(dome.global_position.x - global_position.x) < m.reach_dome:
+	# the dome only from up on the surface beside it, not from a cave beneath
+	if dome and absf(dome.global_position.x - global_position.x) < m.reach_dome \
+			and absf(dome.global_position.y - global_position.y) < 100:
 		return dome
 	return null
 
