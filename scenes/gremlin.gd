@@ -17,7 +17,12 @@ const MAX_HP := 5
 const WRENCH := 3.5            # seconds to take a machine apart
 const REACH := Vector2(34, 70) # close enough to work on it (x, y)
 const HOP := -330.0
-const GIVE_UP := 6.0           # stuck this long: pick another target
+const GIVE_UP := 6.0           # stuck (or no nearer) this long: pick another target
+const PROGRESS := 24.0         # px nearer it must get within GIVE_UP
+const FORGET := 20.0           # a target given up on is tried again after this
+const LURE_WHEEL := 0.25       # distance scale for power sources: goes for them first
+const LURE_USER := 0.5         # ... and for machines a wheel is driving
+const SWITCH := 0.5            # only drops its target for one this much more tempting
 
 var hp := MAX_HP
 var damage := 4
@@ -30,7 +35,10 @@ var _work := 0.0
 var _clank := 0.0
 var _stuck := 0.0
 var _retarget := 0.0
-var _skip := {}                # targets it gave up on
+var _skip := {}                # targets it gave up on -> seconds until it retries
+var _best_d := INF             # nearest it has got to the current target
+var _progress_t := 0.0
+var targets_picked := {}       # tests: target name -> times picked
 var _spr: AnimatedSprite2D
 
 
@@ -87,15 +95,37 @@ func _machines() -> Array:
 	return bs._placed_buildings.filter(func(b): return is_instance_valid(b) and not b.is_queued_for_deletion() and not _skip.has(b))
 
 
+## How much it wants a machine: power sources first, then what they drive.
+static func lure(b: Node) -> float:
+	if b.is_in_group("power_wheels"):
+		return LURE_WHEEL
+	if b.is_in_group("power_users"):
+		return LURE_USER
+	return 1.0
+
+
 func _pick() -> void:
+	var was := _target
 	_target = null
 	var best := INF
+	var keep := INF
 	for b in _machines():
-		var d: float = absf(b.global_position.x - global_position.x) + absf(b.global_position.y - global_position.y) * 2.0
+		var d: float = (absf(b.global_position.x - global_position.x) + absf(b.global_position.y - global_position.y) * 2.0) * lure(b)
+		if b == was:
+			keep = d
 		if d < best:
 			best = d
 			_target = b
+	# set on one: passing a lesser machine on the way doesn't distract it
+	if keep < INF and best > keep * SWITCH:
+		_target = was
+	if _target == was:
+		return
 	_stuck = 0.0
+	_best_d = INF
+	_progress_t = 0.0
+	if _target:
+		targets_picked[_target.name] = targets_picked.get(_target.name, 0) + 1
 
 
 func _physics_process(delta: float) -> void:
@@ -109,6 +139,13 @@ func _physics_process(delta: float) -> void:
 			velocity.x = move_toward(velocity.x, 0, 600 * delta)
 		move_and_slide()
 		return
+	for k in _skip.keys():
+		if not is_instance_valid(k):
+			_skip.erase(k)
+			continue
+		_skip[k] -= delta
+		if _skip[k] <= 0:
+			_skip.erase(k)
 	_retarget -= delta
 	if _target == null or not is_instance_valid(_target) or _retarget <= 0:
 		_retarget = 1.5
@@ -137,11 +174,18 @@ func _physics_process(delta: float) -> void:
 	# stuck (a wall too high, a pit it can't leave): try another machine
 	if absf(get_real_velocity().x) < 10:
 		_stuck += delta
-		if _stuck > GIVE_UP and _target:
-			_skip[_target] = true
-			_pick()
 	else:
 		_stuck = maxf(0.0, _stuck - delta)
+	# or running about without getting nearer (a machine in the rock below)
+	if _target and is_instance_valid(_target):
+		if d.length() < _best_d - PROGRESS:
+			_best_d = d.length()
+			_progress_t = 0.0
+		else:
+			_progress_t += delta
+	if _target and (_stuck > GIVE_UP or _progress_t > GIVE_UP):
+		_skip[_target] = FORGET
+		_pick()
 	_spr.flip_h = direction < 0
 	move_and_slide()
 	queue_redraw()
