@@ -5910,6 +5910,32 @@ func pachinko_rec() -> void:
 	log_line("powers %s | score %d | pocket hits %s | ammo %d" % [outs, b.score, b.hits, pl.ammo])
 
 
+func vortex_rec() -> void:
+	# Vortex funnel: five marbles rolled in over the rim off a chute.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	await preload("res://scripts/marble_works.gd").carve(main, false)
+	var vx: Node2D = preload("res://scenes/vortex.tscn").instantiate()
+	vx.global_position = Vector2(1300, 440)
+	main.add_child(vx)
+	preload("res://scripts/marble_works.gd")._chute(main, Vector2(1160, 400), Vector2(1246, 436))
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.5, 2.5)
+	cam.global_position = Vector2(1270, 460)
+	for k in 5:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.global_position = Vector2(1170, 385)
+		main.add_child(o)
+		await wait(0.5)
+	await shot("vortex_spin")
+	await wait(6.0)
+	log_line("vortex: swirled %d of 5, riding %d" % [vx.swirled, vx._riders.size()])
+	await shot("vortex_end")
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.

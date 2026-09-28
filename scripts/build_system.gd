@@ -1,6 +1,6 @@
 extends Node
 
-enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, TURRET, SPIKES, CATAPULT, CHUTE, SPLITTER, BUMPER, BELT, BELLOWS, PENDULUM, WHEEL, ASSEMBLER, LAB, TESLA, FLAMER, TRAPDOOR, CRUSHER, MAGNET, HARPOON, SEESAW, TUBE, KEG, SNARE, TRIPWIRE, PLATE, BORER, LANTERN, SENTRY, TIMER, DOCK, BARRICADE, ENGINE, DOMINOES, TAP, ROCKER, ESCAPEMENT, BUCKET, SIEVE, SCREW, ARM, STAIRS, FERRIS, JUMP, BELL, LOOP, DISPENSER, GOAL, SCALE, CANNON, FELT, CHIME, PLUNGER }
+enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, TURRET, SPIKES, CATAPULT, CHUTE, SPLITTER, BUMPER, BELT, BELLOWS, PENDULUM, WHEEL, ASSEMBLER, LAB, TESLA, FLAMER, TRAPDOOR, CRUSHER, MAGNET, HARPOON, SEESAW, TUBE, KEG, SNARE, TRIPWIRE, PLATE, BORER, LANTERN, SENTRY, TIMER, DOCK, BARRICADE, ENGINE, DOMINOES, TAP, ROCKER, ESCAPEMENT, BUCKET, SIEVE, SCREW, ARM, STAIRS, FERRIS, JUMP, BELL, LOOP, DISPENSER, GOAL, SCALE, CANNON, FELT, CHIME, PLUNGER, VORTEX }
 
 var current_build: BuildType = BuildType.NONE
 var _ghost: Node2D = null
@@ -64,6 +64,7 @@ var _scenes := {
 	BuildType.FELT: preload("res://scenes/felt_chute.tscn"),
 	BuildType.CHIME: preload("res://scenes/chime.tscn"),
 	BuildType.PLUNGER: preload("res://scenes/plunger.tscn"),
+	BuildType.VORTEX: preload("res://scenes/vortex.tscn"),
 }
 
 var _ghost_colors := {
@@ -123,6 +124,7 @@ var _ghost_colors := {
 	BuildType.FELT: Color(0.6, 1.0, 0.7, 0.8),
 	BuildType.CHIME: Color(1.0, 0.85, 0.5, 0.8),
 	BuildType.PLUNGER: Color(1.0, 0.85, 0.5, 0.8),
+	BuildType.VORTEX: Color(1.0, 0.85, 0.5, 0.8),
 }
 
 signal build_mode_changed(build_type: BuildType)
