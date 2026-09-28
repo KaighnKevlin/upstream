@@ -6032,6 +6032,52 @@ func deflector_rec() -> void:
 	log_line("deflector: %s" % [out])
 
 
+func airsort_rec() -> void:
+	# Trampoline + deflector, sorting by weight in the air: copper and iron
+	# dropped on the same trampoline fly different arcs. PLATE=1 adds a plate
+	# on the copper's arc. Logs each piece's peak and where it comes down.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	await preload("res://scripts/marble_works.gd").carve(main, false)
+	var tr: Node2D = preload("res://scenes/trampoline.tscn").instantiate()
+	tr.bounce_angle = 35.0
+	tr.global_position = Vector2(1060, 560)
+	main.add_child(tr)
+	if OS.get_environment("PLATE") != "":
+		var parts: PackedStringArray = OS.get_environment("PLATE").split(",")
+		var d: Node2D = preload("res://scenes/deflector.tscn").instantiate()
+		d.angle_deg = int(parts[2])
+		d.global_position = Vector2(float(parts[0]), float(parts[1]))
+		main.add_child(d)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.2, 1.2)
+	cam.global_position = Vector2(1290, 380)
+	var out := []
+	for kind in ["copper", "iron", "copper", "iron"]:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.kind = kind
+		o.lifetime = 1.0e9
+		o.global_position = Vector2(1060, 300)
+		main.add_child(o)
+		var peak := Vector2(0, 9999)
+		var at_x := -1
+		for t in 150:
+			await wait(0.02)
+			if not is_instance_valid(o):
+				break
+			if t > 15 and o.global_position.y < peak.y:
+				peak = o.global_position
+			if at_x < 0 and o.global_position.x > 1300:
+				at_x = int(o.global_position.y)
+		if kind == "iron" and out.size() == 1:
+			await shot("airsort")
+		out.append("%s peak %s, y %d at x 1300, lands x %d" % [kind, Vector2i(peak), at_x, int(o.global_position.x) if is_instance_valid(o) else -1])
+	log_line("airsort: %s" % [out])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.
