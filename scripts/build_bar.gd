@@ -23,6 +23,13 @@ const ART_RECTS := {
 	"crossover.gd": Rect2(-39, -20, 78, 54),
 	"dispenser.gd": Rect2(-11, -38, 22, 50),
 	"goal_cup.gd": Rect2(-22, -69, 44, 72),
+	"tiptube.gd": Rect2(-4, -10, 56, 34),
+	"hammer.gd": Rect2(-33, -19, 68, 62),
+	"volcano.gd": Rect2(-30, -5, 60, 37),
+	"kicker.gd": Rect2(-26, -10, 30, 20),
+	"bearing_mat.gd": Rect2(-48, -12, 96, 16),
+	"sluice.gd": Rect2(-8, -48, 16, 56),
+	"vortex.gd": Rect2(-60, -18, 120, 114),
 }
 
 const DARK := Color(0.1, 0.09, 0.07)
