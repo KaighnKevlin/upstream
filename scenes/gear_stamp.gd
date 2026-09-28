@@ -37,10 +37,22 @@ var _rate := Power.UNPOWERED
 var _rate_t := 0.0
 var _flash := 0.0
 var _pushed := {}
+var _hammer: Sprite2D
+var _rod: Sprite2D
 
 
 func _ready() -> void:
 	z_index = 1
+	# sprites first, so ghosts and build-bar icons get them too; behind our
+	# own _draw, which keeps the blank, the chevron, the queue and progress on top
+	add_child(_spr(preload("res://assets/sprites/gear_stamp_frame.png"), Vector2(-20, -60)))
+	_rod = _spr(preload("res://assets/sprites/gear_stamp_rod.png"), Vector2(-2, 0))
+	_rod.region_enabled = true
+	_rod.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+	_rod.position = Vector2(0, FACE - LIFT - 12.0 + 2.0)
+	add_child(_rod)
+	_hammer = _spr(preload("res://assets/sprites/gear_stamp_hammer.png"), Vector2(-9, -10))
+	add_child(_hammer)
 	queue_redraw()
 	if has_meta("ghost"):
 		return
@@ -66,6 +78,16 @@ func _ready() -> void:
 	ic.position = Vector2(0, FACE - 6)
 	_intake.add_child(ic)
 	add_child(_intake)
+
+
+func _spr(tex: Texture2D, off: Vector2) -> Sprite2D:
+	var sp := Sprite2D.new()
+	sp.texture = tex
+	sp.centered = false
+	sp.offset = off
+	sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	sp.show_behind_parent = true
+	return sp
 
 
 func _physics_process(delta: float) -> void:
@@ -140,35 +162,17 @@ func _input(event: InputEvent) -> void:
 func _draw() -> void:
 	var dark := Color(0.1, 0.08, 0.07)
 	var brass := Color(0.85, 0.65, 0.35).lerp(Color(1, 0.95, 0.7), _flash)
-	var steel := Color(0.42, 0.44, 0.5)
 	var top := FACE - LIFT - 12.0
-	# the frame: two posts and a crossbeam
-	for s in [-1.0, 1.0]:
-		draw_line(Vector2(s * (HALF + 2), -2), Vector2(s * (HALF + 2), top), dark, 4.0)
-		draw_line(Vector2(s * (HALF + 2), -2), Vector2(s * (HALF + 2), top), steel.darkened(0.2), 2.0)
-	draw_rect(Rect2(-HALF - 4, top - 3, HALF * 2 + 8, 5), dark)
-	draw_rect(Rect2(-HALF - 3, top - 2, HALF * 2 + 6, 3), brass.darkened(0.15))
-	# the anvil: a waisted block on a foot
-	draw_colored_polygon(PackedVector2Array([Vector2(-HALF, FACE), Vector2(HALF, FACE), Vector2(HALF - 2, FACE + 5),
-		Vector2(5, FACE + 7), Vector2(5, -4), Vector2(-5, -4), Vector2(-5, FACE + 7), Vector2(-HALF + 2, FACE + 5)]), dark)
-	draw_rect(Rect2(-HALF + 1, FACE + 1, HALF * 2 - 2, 3), steel)
-	draw_rect(Rect2(-4, FACE + 5, 8, 10), steel.darkened(0.2))
-	draw_rect(Rect2(-9, -4, 18, 4), dark)
-	draw_rect(Rect2(-8, -3, 16, 2), steel.darkened(0.1))
-	draw_line(Vector2(-HALF + 1, FACE + 0.5), Vector2(HALF - 1, FACE + 0.5), steel.lightened(0.35), 1.0)
-	# the die in the face: a little gear outline
-	draw_arc(Vector2(0, FACE + 2.5), 2.5, 0, TAU, 8, brass.darkened(0.3), 1.0)
+	# the frame, anvil, rod and hammer are sprites (see _ready): the hammer
+	# at its height, the rod down to it, flaring with the brass as it lands
+	var hy := roundf(_hammer_y())
+	_hammer.position = Vector2(0, hy)
+	_rod.region_rect = Rect2(0, 0, 4, maxf(1.0, hy - 9.0 - _rod.position.y))
+	_hammer.modulate = Color(1, 1, 1).lerp(Color(1.35, 1.3, 1.1), _flash)
 	# a blank on the anvil while a stroke runs
 	if _work >= 0:
 		draw_rect(Rect2(-5, FACE - 3, 10, 3), dark)
 		draw_rect(Rect2(-4, FACE - 2.5, 8, 2), Color(0.62, 0.64, 0.7).lerp(Color(1.0, 0.6, 0.3), clampf(_work / STROKE, 0.0, 1.0) * 0.6))
-	# the hammer: rod from the beam, a heavy steel head
-	var hy := _hammer_y()
-	draw_line(Vector2(0, top), Vector2(0, hy - 7), Color(0.7, 0.72, 0.76), 2.0)
-	draw_rect(Rect2(-7, hy - 8, 14, 8), dark)
-	draw_rect(Rect2(-6, hy - 7, 12, 6), steel)
-	draw_rect(Rect2(-6, hy - 7, 12, 1), steel.lightened(0.3))
-	draw_rect(Rect2(-2, hy - 5, 4, 2), brass)
 	# the out end: a chevron
 	var o := Vector2(side * (HALF - 2), FACE + 9)
 	draw_line(o + Vector2(-side * 3, -3), o, brass, 1.0)
