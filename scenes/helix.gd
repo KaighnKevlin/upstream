@@ -23,6 +23,13 @@ var last_out := Vector2.ZERO     # tests: velocity of the last one out
 var _riders := {}                # id -> [body, theta, v]
 var _cool := {}
 var _front: Node2D
+var _back_sp: Sprite2D           # pixel art: the post and the coil's far strands
+var _front_sp: Sprite2D          # the near strands, over the riders
+const ART := {
+	2: [preload("res://assets/sprites/helix_back_2.png"), preload("res://assets/sprites/helix_front_2.png")],
+	3: [preload("res://assets/sprites/helix_back_3.png"), preload("res://assets/sprites/helix_front_3.png")],
+	4: [preload("res://assets/sprites/helix_back_4.png"), preload("res://assets/sprites/helix_front_4.png")],
+}
 
 
 func _ready() -> void:
@@ -32,6 +39,29 @@ func _ready() -> void:
 	_front.z_index = 2
 	_front.draw.connect(_draw_front)
 	add_child(_front)
+	# sprites (ghosts too): the far half behind the riders, the near half over them
+	_back_sp = _sprite(self)
+	_front_sp = _sprite(_front)
+	_sync_art()
+
+
+func _sprite(parent: Node2D) -> Sprite2D:
+	var sp := Sprite2D.new()
+	sp.centered = false
+	sp.offset = Vector2(-22, -12)
+	sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	parent.add_child(sp)
+	return sp
+
+
+func _sync_art() -> void:
+	if not _back_sp:
+		return
+	var tex: Array = ART.get(turns, ART[3])
+	_back_sp.texture = tex[0]
+	_front_sp.texture = tex[1]
+	_back_sp.flip_h = side < 0
+	_front_sp.flip_h = side < 0
 
 
 func depth() -> float:
@@ -120,34 +150,12 @@ func _strands(front: bool) -> Array:
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var brass := Color(0.85, 0.65, 0.35)
-	var steel := Color(0.42, 0.44, 0.5)
+	_sync_art()                  # the turn count (click) and side pick the sprites
+	# the turn count, brass pips under the foot
 	var d := depth()
-	# the central post, capped top and bottom, a bracket back to the wall
-	draw_line(Vector2(0, -8), Vector2(0, d + 6), dark, 5.0)
-	draw_line(Vector2(0, -7), Vector2(0, d + 5), steel.darkened(0.2), 3.0)
-	draw_line(Vector2(-R - 5, d + 7), Vector2(R + 5, d + 7), dark, 4.0)
-	draw_line(Vector2(-R - 4, d + 6.5), Vector2(R + 4, d + 6.5), brass.darkened(0.2), 2.0)
-	draw_line(Vector2(-7, -9), Vector2(7, -9), dark, 4.0)
-	draw_line(Vector2(-6, -9.5), Vector2(6, -9.5), brass, 2.0)
-	# the coil's far strands, in shadow behind the riders
-	for run in _strands(false):
-		draw_polyline(run, dark, 5.0)
-		draw_polyline(run, steel.darkened(0.45), 3.0)
-	# the mouths: a lip in at the top, a spout out at the bottom
-	draw_line(Vector2(-side * 6, 0), Vector2(side * 2, 0), dark, 4.0)
-	draw_line(Vector2(0, d), Vector2(side * (R + 4), d), dark, 4.0)
-	draw_line(Vector2(0, d - 0.5), Vector2(side * (R + 3), d - 0.5), steel, 2.0)
-	# the turn count, brass pips on the cap
 	for k in turns:
 		draw_circle(Vector2((k - (turns - 1) * 0.5) * 5.0, d + 12), 1.6, Color(1.0, 0.8, 0.4))
 
 
 func _draw_front() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var steel := Color(0.42, 0.44, 0.5)
-	for run in _strands(true):
-		_front.draw_polyline(run, dark, 5.0)
-		_front.draw_polyline(run, steel, 3.0)
-		_front.draw_polyline(run, Color(0.78, 0.82, 0.86), 1.0)
+	pass                         # the near strands are _front_sp, a child
