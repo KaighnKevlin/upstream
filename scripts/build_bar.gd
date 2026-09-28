@@ -403,8 +403,8 @@ func _build_icon(slot: Node2D, t: int) -> void:
 				ic.position = Vector2(-20, 6)
 				ic.scale = Vector2(0.5, 0.5)
 			elif scn == "magnet_rail":
-				ic.end_offset = Vector2(90, 16)
-				ic.position = Vector2(-22, -6)
+				ic.end_offset = Vector2(80, 14)
+				ic.position = Vector2(-20, -5)
 				ic.scale = Vector2(0.5, 0.5)
 			elif scn == "gabion":
 				ic.kinds.assign(["copper", "iron", "copper", "copper", "iron", "copper", "copper", "copper"])
