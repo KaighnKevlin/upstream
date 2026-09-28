@@ -12,12 +12,17 @@ extends Node2D
 ## veins it cuts spill into the tunnel). Fragile: fast ore hurts it (a
 ## gauss shot, a stamp, anything dropped on it), and a knock shakes it off
 ## its meal. Dust puffs from the ground above give it away while it digs.
+## Iron plating (scenes/iron_plating.gd) turns its drill: it digs round
+## whichever end of the run is quicker going (the rock in the way), never
+## gnaws at a piece through a plate, and gives a piece walled in all round
+## up after a few tries. Come up through a cave floor, it scrambles out.
 ## Art: drawn in _draw (a riveted brass body, a spinning steel drill cone).
 
 const FX = preload("res://scripts/fx.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const WorldGen = preload("res://scripts/world_gen.gd")
 const Gremlin = preload("res://scenes/gremlin.gd")
+const Plating = preload("res://scenes/iron_plating.gd")
 
 enum State { DIG, CHEW, LEAVE, DYING }
 
@@ -37,6 +42,10 @@ const PROGRESS := 16.0
 const FORGET := 20.0
 const RUMBLE_EVERY := 0.5
 const BODY := 8.0                # half its height: stands this far over a floor
+const ROUND := 32.0              # how far clear of a plate's end it digs round it
+const ROUND_TIME := 10.0         # gives up on a way round after this
+const SPILL_SAFE := 12.0         # s its own spilled vein ore can't hurt it (it falls down the shaft onto it)
+const MAX_ROUNDS := 6            # turned by plating this often for one piece: walled in, try another
 
 var hp := MAX_HP
 var damage := 5                  # a bite if the prospector gets in its way
@@ -62,6 +71,14 @@ var _knock := Vector2.ZERO
 var _anim := 0.0
 var _flash := 0.0
 var _judder := Vector2.ZERO
+var _round: Array = []           # waypoints round iron plating, next first
+var _round_t := 0.0
+var _round_plate: Node2D = null
+var _round_pad := 0.0
+var detours := 0                 # tests: times it had to go round plating
+var _rounds_here := 0
+var _step_t := 0.0
+var _spill: Array = []           # [ore, s]: what it spilled from a vein, tumbling down its own tunnel
 
 
 func _ready() -> void:
@@ -107,7 +124,7 @@ func _machines() -> Array:
 	var bs := get_node_or_null("/root/BuildSystem")
 	if bs == null:
 		return []
-	return bs._placed_buildings.filter(func(b): return is_instance_valid(b) and not b.is_queued_for_deletion() and not _skip.has(b))
+	return bs._placed_buildings.filter(func(b): return is_instance_valid(b) and not b.is_queued_for_deletion() and not _skip.has(b) and not b.is_in_group("iron_plating"))
 
 
 func _pick() -> void:
@@ -122,6 +139,9 @@ func _pick() -> void:
 	if _target != was:
 		_best_d = INF
 		_progress_t = 0.0
+		_round.clear()
+		_round_plate = null
+		_rounds_here = 0
 
 
 ## In an open cave rather than its own tunnel: the rock above it is clear
@@ -142,6 +162,12 @@ func _physics_process(delta: float) -> void:
 	var tm := _tm()
 	if tm == null:
 		return
+	for i in range(_spill.size() - 1, -1, -1):
+		_spill[i][1] -= delta
+		if _spill[i][1] <= 0.0 or not is_instance_valid(_spill[i][0]):
+			_spill.remove_at(i)
+		else:
+			_spill[i][0]._hurt_cooldown = 0.1
 	for k in _skip.keys():
 		if not is_instance_valid(k):
 			_skip.erase(k)
@@ -184,7 +210,9 @@ func _physics_process(delta: float) -> void:
 			_seek(tm, delta, cave, floored)
 		State.LEAVE:
 			direction = signf(global_position.x - WorldGen.WORLD_WIDTH * WorldGen.TILE_SIZE * 0.5)   # the nearer edge
-			_heading = Vector2(direction, 0)
+			_heading = _going_round(Vector2(direction, 0), cave, delta)
+			if _heading == Vector2.ZERO:
+				_heading = Vector2(direction, 0)
 			var moved := _advance(tm, delta)
 			velocity = _heading * SPEED if moved else Vector2.ZERO
 			if global_position.x < 10 or global_position.x > WorldGen.WORLD_WIDTH * WorldGen.TILE_SIZE - 10:
@@ -199,7 +227,7 @@ func _physics_process(delta: float) -> void:
 func _seek(tm: TileMapLayer, delta: float, cave: bool, floored: bool) -> void:
 	var goal := _target.global_position
 	var d := goal - global_position
-	if absf(d.x) < REACH.x and absf(d.y) < REACH.y:
+	if absf(d.x) < REACH.x and absf(d.y) < REACH.y and not Plating.crosses(get_tree(), global_position, goal):
 		_state = State.CHEW
 		_work = 0.0
 		direction = signf(d.x) if absf(d.x) > 2 else direction
@@ -228,12 +256,18 @@ func _seek(tm: TileMapLayer, delta: float, cave: bool, floored: bool) -> void:
 			want = Vector2(signf(d.x) * 0.5, 0.85).normalized()
 		else:
 			want = Vector2(signf(d.x), 0)
+	want = _going_round(want, cave, delta)
 	if want == Vector2.ZERO:
 		velocity = Vector2.ZERO
 		return
 	_heading = want
 	if absf(_heading.x) > 0.05:
 		direction = signf(_heading.x)
+	_step_t -= delta
+	if d.y < -4.0 and absf(_heading.x) > 0.2 and _step_t <= 0.0 and _step_up(tm):
+		_step_t = 0.25
+		velocity = _heading * SPEED
+		return
 	var moved := _advance(tm, delta)
 	velocity = _heading * SPEED if moved else Vector2.ZERO
 
@@ -243,6 +277,15 @@ func _seek(tm: TileMapLayer, delta: float, cave: bool, floored: bool) -> void:
 func _advance(tm: TileMapLayer, delta: float) -> bool:
 	var ahead := global_position + _heading * 12.0
 	var side := _heading.orthogonal()
+	# iron plating: the drill skids off it, so it plans a way round
+	for o in [-8.0, 0.0, 8.0]:
+		var plate := Plating.at(get_tree(), ahead + side * o, Plating.GUARD)
+		if plate:
+			plate.scraped(ahead + side * o)
+			_plan_round(plate)
+			_dig = 0.0
+			_judder = Vector2(randf_range(-1.2, 1.2), randf_range(-1.2, 1.2))
+			return false
 	var cells := {}
 	for o in [-8.0, 0.0, 8.0]:
 		var c := tm.local_to_map(tm.to_local(ahead + side * o))
@@ -267,6 +310,120 @@ func _advance(tm: TileMapLayer, delta: float) -> bool:
 	return false
 
 
+## Its piece is higher up and there's a one-tile lip ahead with air over
+## it and over itself (come up through a cave floor from below, into a
+## trench of its own digging): it scrambles up onto it rather than grinding
+## along inside the floor, falling back into its own hole.
+func _step_up(tm: TileMapLayer) -> bool:
+	var ahead := Vector2(direction * 12.0, 0.0)
+	var up := Vector2(0, -WorldGen.TILE_SIZE)
+	if not _solid_at(tm, global_position + ahead) or _solid_at(tm, global_position + ahead + up) \
+			or _solid_at(tm, global_position + up) or _solid_at(tm, global_position + ahead + up * 1.5):
+		return false
+	global_position += Vector2(direction * 4.0, -WorldGen.TILE_SIZE)
+	return true
+
+
+## Following a way round iron plating: the heading to the next waypoint
+## (on a cave floor it can't climb the air), or `want` when it isn't.
+func _going_round(want: Vector2, cave: bool, delta: float) -> Vector2:
+	if _round.is_empty():
+		return want
+	_round_t -= delta
+	if _round_t <= 0.0:
+		_round.clear()
+		_round_plate = null
+		return want
+	var to: Vector2 = _round[0] - global_position
+	# a waypoint up in the air over a cave floor it has come out onto: as near as it gets
+	if to.length() < 10.0 or (not buried and to.y < -8.0 and absf(to.x) < 20.0):
+		_round.pop_front()
+		_best_d = INF             # a leg of the way round done: that's progress
+		_progress_t = 0.0
+		if _round.is_empty():
+			_round_plate = null
+			_round_pad = 0.0
+			return want
+		to = _round[0] - global_position
+	var h := to.normalized()
+	if cave and h.y < 0.0:
+		h = Vector2(signf(h.x) if absf(h.x) > 0.01 else direction, 0.0)
+	return h
+
+
+## Turned by a plate: round whichever end of its run is the shorter way to
+## the piece (down and under, if it's standing on a cave floor): out past
+## the end on its own side, across, and then on for the piece.
+func _plan_round(plate: Node2D) -> void:
+	if plate == _round_plate and not _round.is_empty():
+		if ROUND_TIME - _round_t < 0.4:
+			return              # only just planned: grinding its nose on it a moment
+		# scraped it again on the way: give it a wider berth, up to a point
+		_round_pad = _round_pad + 12.0 if _round_pad < 36.0 else 0.0
+	elif plate != _round_plate:
+		_round_pad = 0.0
+		detours += 1
+	_rounds_here += 1
+	if _rounds_here > MAX_ROUNDS and _target:
+		# walled in all round: leave that piece be for a while
+		_skip[_target] = FORGET
+		_target = null
+		_retarget = 0.0
+		_round.clear()
+		_round_plate = null
+		return
+	_round_plate = plate
+	var goal: Vector2 = _target.global_position if _target and is_instance_valid(_target) else global_position + _heading * 200.0
+	var pad := ROUND + _round_pad
+	var best := []
+	var best_cost := INF
+	var cave := not buried
+	var re: Array = plate.run_ends()
+	for k in 2:
+		var end_at: Vector2 = re[k][0]
+		var out: Vector2 = re[k][1]
+		# out past the end on its own side of the run, then across
+		var m := out.orthogonal()
+		var s := signf(m.dot(global_position - end_at))
+		if s == 0.0:
+			s = 1.0
+		var w1: Vector2 = end_at + out * pad + m * s * pad
+		var w2: Vector2 = end_at + out * pad - m * s * pad
+		# seconds: the rock it would have to grind through on the way, and the going
+		var cost := _leg_cost(global_position, w1) + _leg_cost(w1, w2) + _leg_cost(w2, goal)
+		if w2.y > goal.y + 20.0:
+			cost *= 1.3         # and it comes up at the piece through its floor, clumsily
+		if cave:
+			cost -= end_at.y * 10.0        # on a cave floor: under, never over (it can't climb the air)
+		if cost < best_cost:
+			best_cost = cost
+			best = [w1, w2]
+	_round = best
+	_round_t = ROUND_TIME
+
+
+## Rough seconds to get from a to b: the rock in the way (a swathe three
+## tiles wide, like its drill), then the distance; through plating, no go.
+func _leg_cost(a: Vector2, b: Vector2) -> float:
+	var tm := _tm()
+	var t := a.distance_to(b) / SPEED
+	if Plating.crosses(get_tree(), a, b):
+		t += 30.0               # straight through more plating: no way at all
+	if tm == null:
+		return t
+	var cells := {}
+	var n := int(a.distance_to(b) / 8.0) + 1
+	var side := (b - a).normalized().orthogonal() * 8.0
+	for i in n + 1:
+		var p := a.lerp(b, float(i) / n)
+		for o in [-1.0, 0.0, 1.0]:
+			var c := tm.local_to_map(tm.to_local(p + side * o))
+			if not cells.has(c) and tm.get_cell_source_id(c) != -1:
+				cells[c] = true
+				t += DIG_TIME.get(tm.get_cell_atlas_coords(c).x, 0.3) / 3.0   # it grinds three at once
+	return t
+
+
 func _carve(tm: TileMapLayer, c: Vector2i) -> void:
 	var src := tm.get_cell_source_id(c)
 	var atlas := tm.get_cell_atlas_coords(c)
@@ -282,6 +439,7 @@ func _carve(tm: TileMapLayer, c: Vector2i) -> void:
 		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
 		o.kind = "iron" if atlas.x == WorldGen.TILE_IRON else "copper"
 		o.global_position = at
+		_spill.append([o, SPILL_SAFE])
 		get_tree().current_scene.add_child.call_deferred(o)
 	if dug % 3 == 0:
 		SFX.play_small(self, SFX.sfx_mine_hit(), -14.0, randf_range(0.8, 1.0))
