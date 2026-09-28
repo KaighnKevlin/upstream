@@ -6301,7 +6301,7 @@ func brake_rec() -> void:
 		main.add_child(o)
 		o.linear_velocity = Vector2(520, 0)
 		var v_out := -1
-		for t in 40:
+		for t in 130:                   # long enough for the 80 limit to cross the rail
 			await wait(0.02)
 			if o.global_position.x > 1305 and v_out < 0:
 				v_out = int(o.linear_velocity.length())
