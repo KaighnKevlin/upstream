@@ -23,7 +23,7 @@ const HOLD := 4
 const BED := 20.0            # half-width of the bed
 const STONE := Vector2(0, -13)
 const STONE_R := 10.0
-const EJECT := Vector2(110, -40)
+const EJECT := Vector2(90, -15)    # a low toss: small grit dropped far can slip through a rail
 
 ## Which end the grit leaves by: 1 right, -1 left.
 @export var side := 1.0
@@ -106,13 +106,13 @@ func _physics_process(delta: float) -> void:
 
 func _spit(k: String) -> void:
 	ground += 1
-	var at := global_position + Vector2(side * (BED + 4), -6)
+	var at := global_position + Vector2(side * (BED + 4), -4)
 	for n in GRIT_PER:
 		var g: RigidBody2D = ORE.instantiate()
 		g.kind = "grit"
 		g.global_position = at + Vector2(side * n * 3.0, randf_range(-1.5, 1.5))
 		get_tree().current_scene.add_child(g)
-		g.linear_velocity = Vector2(EJECT.x * side, EJECT.y) + Vector2(randf_range(-20, 20), randf_range(-20, 15))
+		g.linear_velocity = Vector2(EJECT.x * side, EJECT.y) + Vector2(randf_range(-15, 15), randf_range(-10, 10))
 		grit_out += 1
 	FX.burst(get_parent(), at, Color(0.62, 0.55, 0.5, 0.8), 5, 45.0, 0.4, 1.6)
 	SFX.play_small(self, SFX.sfx_mine_hit(), -12.0, 1.3 if k == "copper" else 1.0)
