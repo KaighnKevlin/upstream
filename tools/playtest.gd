@@ -6619,6 +6619,41 @@ func counterweight_rec() -> void:
 	log_line("then an iron: trips %d, lifted %d, the bottom copper now at y %d (was %d)" % [cw.trips, cw.lifted, int(cu.global_position.y), int(bottom.y)])
 
 
+func pair_rec() -> void:
+	# Pair gate: 4 copper into the left cup, then 2 iron into the right;
+	# nothing should come out until the iron arrives, then 2 pairs, and 2
+	# copper stay waiting.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	await preload("res://scripts/marble_works.gd").carve(main, false)
+	var pg: Node2D = preload("res://scenes/pair_gate.tscn").instantiate()
+	pg.global_position = Vector2(1300, 460)
+	main.add_child(pg)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(3, 3)
+	cam.global_position = Vector2(1300, 440)
+	var drop := func(kind: String, x: float):
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.kind = kind
+		o.lifetime = 1.0e9
+		o.global_position = Vector2(x, 400)
+		main.add_child(o)
+	for k in 4:
+		drop.call("copper", 1278)
+		await wait(0.5)
+	await wait(0.5)
+	await shot("pair_waiting")
+	log_line("4 copper in, no iron: pairs %d, held %d / %d" % [pg.pairs, pg._held[0].size(), pg._held[1].size()])
+	for k in 2:
+		drop.call("iron", 1322)
+		await wait(0.6)
+	await wait(0.5)
+	log_line("then 2 iron: pairs %d, held %d / %d" % [pg.pairs, pg._held[0].size(), pg._held[1].size()])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.

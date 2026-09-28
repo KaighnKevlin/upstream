@@ -1261,6 +1261,7 @@ var _build_names := {
 	71: "Build: ROTARY DISTRIBUTOR (drop a stream in: out left, down, right in turn; click to skip one)",
 	72: "Build: FLIPPER (pieces rest on it; a trigger, like a tally wheel or plate, or a click bats them high)",
 	73: "Build: COUNTERWEIGHT LIFT (drop ore in the top bucket: once it outweighs the bottom one, that load rides up)",
+	74: "Build: PAIR GATE (holds each side's pieces; lets one from each go together only when both have one)",
 	44: "Build: ROBOTIC ARM (picks from one spot, drops at another)",
 	37: "Build: DOMINO ROW (drag start to end; click an end to reset)",
 	36: "Build: STEAM ENGINE (feed it ore: powers machines in reach)",
