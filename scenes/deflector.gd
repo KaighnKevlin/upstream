@@ -12,7 +12,7 @@ const ORE_ONLY := 64
 const HALF := 22.0
 const STEP := 15
 
-@export var angle_deg := -45     # the plate's tilt: 0 flat, -45 like "\", 45 like "/"
+@export var angle_deg := -45     # the plate's tilt: 0 flat, -45 like "/", 45 like "\" (y is down)
 
 var hits := 0                    # tests
 var _body: StaticBody2D

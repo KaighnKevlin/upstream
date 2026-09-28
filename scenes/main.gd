@@ -1247,6 +1247,7 @@ var _build_names := {
 	57: "Build: VORTEX FUNNEL (roll marbles in over the rim: they spiral down and drop out one at a time)",
 	58: "Build: FLAP SORTER (drag; spring flaps drop pieces heavier than their spring: click a flap to change it)",
 	59: "Build: OVERFLOW GATE (feeds its first side until the spot it watches is full: drag the ring there)",
+	60: "Build: DEFLECTOR PLATE (flying ore ricochets off it: bank trampoline shots; click to turn 15 degrees)",
 	44: "Build: ROBOTIC ARM (picks from one spot, drops at another)",
 	37: "Build: DOMINO ROW (drag start to end; click an end to reset)",
 	36: "Build: STEAM ENGINE (feed it ore: powers machines in reach)",
