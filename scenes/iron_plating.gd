@@ -16,12 +16,15 @@ const LEN_MAX := 240.0
 const PAD := 2.0                  # a point this close to the plate's face is on it
 const GUARD := 9.0                # a drill point this close is stopped: the rock it's bolted to is safe too
 const JOIN := 20.0                # plate ends this close count as one run
+const TILE_TEX := preload("res://assets/sprites/plating_tile.png")   # one plate, tiled along the run
+const END_TEX := preload("res://assets/sprites/plating_end.png")     # the bolted end cap
 
 @export var end_offset := Vector2(0, 96)
 
 var blocked := 0                  # tests: times a drill was turned by it
 var _body: StaticBody2D
 var _scrape := 0.0
+var _art: Node2D                  # the plates, pixel art (nearest, tiled)
 
 
 func set_end(offset: Vector2) -> void:
@@ -33,6 +36,13 @@ func set_end(offset: Vector2) -> void:
 
 func _ready() -> void:
 	z_index = 1
+	# art first, so ghosts and build-bar icons have it
+	_art = Node2D.new()
+	_art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_art.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+	_art.show_behind_parent = true
+	_art.draw.connect(_draw_art)
+	add_child(_art)
 	if has_meta("ghost"):
 		return
 	add_to_group("iron_plating")
@@ -135,28 +145,22 @@ func _physics_process(delta: float) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var brass := Color(0.85, 0.65, 0.35)
-	var steel := Color(0.42, 0.44, 0.5)
+	if _art:
+		_art.queue_redraw()
+
+
+## The plates, tiled along the run with a bolted cap over each end;
+## flipped on leftward runs so the lit edge stays on top.
+func _draw_art() -> void:
 	var l := end_offset.length()
 	if l < 0.1:
 		return
-	draw_set_transform(Vector2.ZERO, end_offset.angle(), Vector2.ONE)
-	var h := THICK * 0.5
-	draw_rect(Rect2(-h, -h, l + THICK, THICK), dark)
-	draw_rect(Rect2(-h + 1, -h + 1, l + THICK - 2, THICK - 2), steel)
-	draw_line(Vector2(-h + 1, -h + 1.5), Vector2(l + h - 1, -h + 1.5), steel.lightened(0.3), 1.0)
-	# seams between the plates, and a rivet either side of each
-	var n := maxi(1, int(round(l / 24.0)))
-	for i in n + 1:
-		var x := l * i / n
-		if i > 0 and i < n:
-			draw_line(Vector2(x, -h + 1), Vector2(x, h - 1), dark, 1.0)
-		for dx in [-3.0, 3.0]:
-			if x + dx > -h + 1 and x + dx < l + h - 1:
-				draw_circle(Vector2(x + dx, 0), 1.0, steel.lightened(0.45))
-	# brass bolts through into the rock at each end
-	for x in [0.0, l]:
-		draw_circle(Vector2(x, 0), 2.2, dark)
-		draw_circle(Vector2(x, 0), 1.4, brass)
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	var d := end_offset / l
+	var flip := 1.0 if d.x >= 0 else -1.0
+	var ang := d.angle()
+	_art.draw_set_transform(Vector2.ZERO, ang, Vector2(1, flip))
+	_art.draw_texture_rect(TILE_TEX, Rect2(0, -THICK * 0.5, l, THICK), true)
+	_art.draw_texture(END_TEX, Vector2(-4, -4))
+	_art.draw_set_transform(end_offset, ang, Vector2(-1, flip))
+	_art.draw_texture(END_TEX, Vector2(-4, -4))
+	_art.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

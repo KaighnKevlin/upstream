@@ -34,10 +34,27 @@ var _left := 0.0
 var _cool := 0.0                 # > 0: just fired, not listening (game time)
 var _flash := 0.0
 var _dragging := false
+var _clock: Sprite2D             # art: bracket, key, case and face; brightens as it fires
+var _hand: Sprite2D              # the hand, over our own _draw (the ticks, the wound arc)
 
 
 func _ready() -> void:
 	z_index = 2
+	# the sprites first, so ghosts and build-bar icons get them too
+	_clock = Sprite2D.new()
+	_clock.texture = preload("res://assets/sprites/delay_clock.png")
+	_clock.centered = false
+	_clock.offset = Vector2(-14, -19)
+	_clock.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_clock.show_behind_parent = true
+	add_child(_clock)
+	_hand = Sprite2D.new()
+	_hand.texture = preload("res://assets/sprites/delay_hand.png")
+	_hand.centered = false
+	_hand.offset = Vector2(-3, -2.5)
+	_hand.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_hand.rotation = -PI * 0.5
+	add_child(_hand)
 	if has_meta("ghost"):
 		return
 	add_to_group("triggerable")
@@ -106,7 +123,6 @@ func _input(event: InputEvent) -> void:
 func _draw() -> void:
 	var dark := Color(0.1, 0.08, 0.07)
 	var brass := Color(0.85, 0.65, 0.35)
-	var steel := Color(0.42, 0.44, 0.5)
 	var hot := Color(1, 0.95, 0.7)
 	var font := ThemeDB.fallback_font
 	if wire_to != Vector2.ZERO:
@@ -114,15 +130,8 @@ func _draw() -> void:
 		draw_polyline(PackedVector2Array([Vector2(FACE * 0.7, 0), mid, wire_to]), Color(0.55, 0.5, 0.42, 0.8), 1.0)
 		draw_circle(wire_to, 3.0, dark)
 		draw_circle(wire_to, 2.0, brass.lerp(hot, _flash))
-	# bracket and the winding key on top
-	draw_line(Vector2(0, FACE), Vector2(0, FACE + 7), dark, 3.0)
-	draw_line(Vector2(-6, FACE + 7), Vector2(6, FACE + 7), steel, 2.0)
-	draw_line(Vector2(0, -FACE - 4), Vector2(0, -FACE), steel, 2.0)
-	draw_circle(Vector2(0, -FACE - 4), 2.0, steel)
-	# the case and face
-	draw_circle(Vector2.ZERO, FACE + 1.5, dark)
-	draw_circle(Vector2.ZERO, FACE, brass.lerp(hot, _flash))
-	draw_circle(Vector2.ZERO, FACE - 2, Color(0.9, 0.86, 0.75))
+	# the case, face, key and bracket are art; it glows as it fires
+	_clock.self_modulate = Color.WHITE.lerp(Color(1.35, 1.28, 1.1), _flash)
 	var total: float = DELAYS[mode]
 	var f := 0.0
 	if waiting:
@@ -133,8 +142,6 @@ func _draw() -> void:
 		var a := -PI * 0.5 + k * TAU / total
 		var d := Vector2(cos(a), sin(a))
 		draw_line(d * (FACE - 4), d * (FACE - 2), dark, 1.0)
-	var ha := -PI * 0.5 + f * TAU
-	draw_line(Vector2.ZERO, Vector2(cos(ha), sin(ha)) * (FACE - 3), Color(0.8, 0.2, 0.15), 1.5)
-	draw_circle(Vector2.ZERO, 1.5, dark)
+	_hand.rotation = -PI * 0.5 + f * TAU
 	var label := "%.1f" % _left if waiting else "%ds" % int(total)
 	draw_string(font, Vector2(-8, -FACE - 8), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.9, 0.8, 0.55))
