@@ -131,7 +131,9 @@ static func run(t) -> void:
 	MW._chute(t.main, Vector2(945, 230), Vector2(1100, 280))
 	var ty: Node2D = MW._piece(t.main, "res://scenes/tally.tscn", Vector2(1000, 241), {"mode": 0})
 	MW._chute(t.main, Vector2(1090, 300), Vector2(1250, 350))
-	var pt: Node2D = MW._piece(t.main, POINTS, Vector2(1272, 392))
+	# where the feed lands: it leaves the chute at ~300 px/s (it was ~200
+	# before marbles rolled freely on track, when this sat at (1272, 392))
+	var pt: Node2D = MW._piece(t.main, POINTS, Vector2(1296, 400))
 	MW._piece(t.main, "res://scenes/dispenser.tscn", Vector2(1500, 180), {"mode": 0, "limit": 14, "kinds": ["iron"]})
 	MW._chute(t.main, Vector2(1485, 210), Vector2(1640, 260))
 	var sl: Node2D = MW._piece(t.main, "res://scenes/sluice.tscn", Vector2(1610, 250), {"side": 1.0})

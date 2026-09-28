@@ -38,9 +38,9 @@ static func build(main: Node) -> void:
 	# off the rail's far end over a jump (a gap before the kicker: marbles
 	# too slow to make it drop through to the floor rather than stall in a dip)...
 	var rail_end := foot + Vector2(80, 12.5)
-	MarbleWorks._piece(main, "res://scenes/jump.tscn", rail_end + Vector2(18, 3), {"end_offset": Vector2(46, 26)})
+	MarbleWorks._piece(main, "res://scenes/jump.tscn", rail_end + Vector2(18, 3), {"end_offset": Vector2(70, 26)})
 	# ...and into a bell
-	MarbleWorks._piece(main, "res://scenes/bell.tscn", rail_end + Vector2(118, 40))
+	MarbleWorks._piece(main, "res://scenes/bell.tscn", rail_end + Vector2(156, 34))
 	# the floor back into the Beam's foot
 	MarbleWorks._chute(main, Vector2(1600, 500), Vector2(984, 556))
 	for k in MARBLES:

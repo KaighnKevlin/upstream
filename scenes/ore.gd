@@ -62,7 +62,7 @@ func _ready() -> void:
 	add_to_group("ore")
 	collision_layer = 2
 	collision_mask = 1 | 64  # terrain + chutes
-	angular_damp = 1.5  # loose ore stops rolling on flat ground and can sleep
+	angular_damp = 1.5  # loose ore stops rolling on flat ground and can sleep (not on track: _roll_on_track)
 
 	contact_monitor = true
 	max_contacts_reported = 4
@@ -200,7 +200,50 @@ func _knock_sound(other: Node) -> void:
 	SFX.play_small(self, SFX.sfx_ore_knock(surface), lerpf(-26.0, -10.0, k), lerpf(1.12, 0.92, k))
 
 
+## On track (anything on the ore-only layer: chutes and the marble pieces) a
+## piece rolls on like a real marble: the heavy spin damping that lets loose
+## ore settle on the ground would brake it (the spin is tied to the roll, so
+## damping it cost the marble ~60% of its speed every second: 150 px/s was
+## down to 58 in 100 px of level chute). Touching terrain it gets that damping
+## back, so piles, veins and spills settle and sleep as before; in the air or
+## touching only other ore it keeps whichever it had.
+const TRACK_LAYER := 64
+const TRACK_ANGULAR_DAMP := 0.1   # replaces the damping (default 1.0 + own 1.5)
+var _on_track := false
+var _loose_angular_damp := 1.5
+
+
+func _roll_on_track() -> void:
+	var want := _on_track
+	if has_meta("store_material") or has_meta("spin_damped"):
+		want = false   # in a funnel or store (or a piece that wants it tumbling): it rules the damping
+	else:
+		var ground := false
+		var track := false
+		for b in get_colliding_bodies():
+			if b is TileMapLayer or (b is CollisionObject2D and b.collision_layer & 1):
+				ground = true
+			elif b is CollisionObject2D and b.collision_layer & TRACK_LAYER:
+				track = true
+		if ground:
+			want = false
+		elif track:
+			want = true
+	if want == _on_track:
+		return
+	_on_track = want
+	if want:
+		_loose_angular_damp = angular_damp
+		angular_damp_mode = RigidBody2D.DAMP_MODE_REPLACE
+		angular_damp = TRACK_ANGULAR_DAMP
+	else:
+		angular_damp_mode = RigidBody2D.DAMP_MODE_COMBINE
+		if angular_damp == TRACK_ANGULAR_DAMP:   # unless something else set its own since
+			angular_damp = _loose_angular_damp
+
+
 func _physics_process(delta: float) -> void:
+	_roll_on_track()
 	_knock_cooldown -= delta
 	_puff_cooldown -= delta
 	_hurt_cooldown -= delta

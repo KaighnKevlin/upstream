@@ -83,6 +83,7 @@ func _physics_process(delta: float) -> void:
 		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
 		o.lifetime = 1.0e9
 		o.linear_damp = 2.0            # a slow fall, so each peg knocks it just one step left or right
+		o.set_meta("spin_damped", true)  # pegs aren't track: a spin kept from peg to peg carries it sideways
 		o.global_position = global_position + Vector2(randf_range(-0.5, 0.5), -6)
 		o.add_to_group("showcase")
 		get_parent().add_child(o)
