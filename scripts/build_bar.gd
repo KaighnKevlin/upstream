@@ -14,6 +14,7 @@ const ICON_BOX := Vector2(43, 36)
 # pieces whose sprites fill a known box (x, y, w, h about their origin),
 # so their icons centre on the art rather than a guess
 const ART_RECTS := {
+	"spring_trap.gd": Rect2(-17, -19, 47, 26),
 	"balance.gd": Rect2(-50, -60, 100, 62),
 	"water_wheel.gd": Rect2(-21, -21, 42, 48),
 	"bowl_feeder.gd": Rect2(-28, -64, 66, 64),
