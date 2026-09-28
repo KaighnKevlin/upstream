@@ -35,6 +35,7 @@ var _cool := {}
 var _path := PackedVector2Array()
 var _len := PackedFloat32Array()
 var _built_side := 0.0
+var _art: Node2D                   # the slide and trestle, drawn sending to +x; mirrored for side -1
 
 
 func _p(v: Vector2) -> Vector2:
@@ -43,6 +44,17 @@ func _p(v: Vector2) -> Vector2:
 
 func _ready() -> void:
 	z_index = 1
+	# art first, so ghosts and build-bar icons get it too; behind our _draw
+	_art = Node2D.new()
+	_art.scale = Vector2(side, 1)
+	_art.show_behind_parent = true
+	add_child(_art)
+	var spr := Sprite2D.new()
+	spr.texture = preload("res://assets/sprites/bowling_ramp.png")
+	spr.centered = false
+	spr.offset = Vector2(-26, -146)
+	spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_art.add_child(spr)
 	_build_path()
 	if has_meta("ghost"):
 		return
@@ -186,45 +198,9 @@ func _bowl(o: RigidBody2D, done: Dictionary) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var brass := Color(0.85, 0.65, 0.35)
-	var steel := Color(0.42, 0.44, 0.5)
-	if _path.is_empty() or _built_side != side:
-		_build_path()
-	var s := 1.0 if side >= 0 else -1.0
-	# the slide's two walls: the outer (back, then floor) one it runs on,
-	# the inner one only down the steep drop
-	var outer := PackedVector2Array()
-	var inner := PackedVector2Array()
-	for i in _path.size():
-		var t := (_path[mini(i + 1, _path.size() - 1)] - _path[maxi(i - 1, 0)]).normalized()
-		var n := -t.orthogonal() * s
-		outer.append(_path[i] + n * 8.0)
-		if _path[i].y < -30:
-			inner.append(_path[i] - n * 8.0)
-	# the trestle behind the slide
-	var back := Vector2(-18 * s, 0)
-	draw_line(back, back + Vector2(0, -122), dark, 4.0)
-	draw_line(back, back + Vector2(0, -122), steel, 2.0)
-	for y in [-24.0, -56.0, -88.0]:
-		var k := 0
-		while k < outer.size() - 1 and outer[k].y < y:
-			k += 1
-		draw_line(back + Vector2(0, y), outer[k], dark, 2.0)
-	draw_line(back + Vector2(-4 * s, 0), Vector2(EXIT.x * s, 0), dark, 3.0)
-	draw_polyline(outer, dark, 5.0)
-	draw_polyline(outer, brass, 3.0)
-	draw_polyline(inner, dark, 3.0)
-	draw_polyline(inner, steel, 1.5)
-	# the mouth: a flared funnel
-	var m := _p(TOP)
-	for x in [-1.0, 1.0]:
-		draw_line(m + Vector2(x * 17, -20), m + Vector2(x * 9, 0), dark, 3.0)
-		draw_line(m + Vector2(x * 17, -20), m + Vector2(x * 9, 0), brass, 1.5)
-	# the exit lip, and a glint on what's riding
-	var ex := _p(EXIT)
-	draw_circle(ex + Vector2(0, 8), 2.5, dark)
-	draw_circle(ex + Vector2(0, 8), 1.5, brass)
+	# the slide, trestle, mouth and exit lip are a sprite (see _ready)
+	if _art.scale.x != side:
+		_art.scale = Vector2(side, 1)
 	for r in _riding:
 		if is_instance_valid(r[0]):
 			draw_circle(to_local(r[0].global_position), 1.5, Color(1, 0.9, 0.6, 0.6))
