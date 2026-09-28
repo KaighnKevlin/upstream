@@ -92,7 +92,9 @@ func _machines() -> Array:
 	var bs := get_node_or_null("/root/BuildSystem")
 	if bs == null:
 		return []
-	return bs._placed_buildings.filter(func(b): return is_instance_valid(b) and not b.is_queued_for_deletion() and not _skip.has(b))
+	# (armour plate isn't a machine: nothing to unscrew)
+	return bs._placed_buildings.filter(func(b): return is_instance_valid(b) and not b.is_queued_for_deletion() and not _skip.has(b) \
+			and not (b.get_script() and b.get_script().resource_path.get_file() == "iron_plating.gd"))
 
 
 ## How much it wants a machine: power sources first, then what they drive.
