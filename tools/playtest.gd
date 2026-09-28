@@ -6470,6 +6470,26 @@ func build_new_rec() -> void:
 	log_line("placed %d of %d through the build system; %d still there after 4 s" % [placed.size(), types.size(), alive])
 
 
+func wheel_mass_rec() -> void:
+	# Gravity wheel fed copper (mass 1) or iron (mass 3), KIND env: power at
+	# 3/6/9 s. Heavier ore should drive it harder.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	var MW = preload("res://scripts/marble_works.gd")
+	await MW.carve(main, false)
+	var wh: Node2D = MW._piece(main, "res://scenes/gravity_wheel.tscn", Vector2(1300, 540))
+	await wait(0.1)
+	var intake: Vector2 = wh.global_position + wh._rim(deg_to_rad(wh.INTAKE_AT), wh.R + 4.0)
+	var kind := OS.get_environment("KIND") if OS.has_environment("KIND") else "copper"
+	MW._piece(main, "res://scenes/dispenser.tscn", intake + Vector2(0, -50), {"mode": int(OS.get_environment("MODE")) if OS.has_environment("MODE") else 0, "kinds": [kind]})
+	var out := []
+	for k in 3:
+		await wait(3.0)
+		out.append("%.2f" % wh.power())
+	log_line("wheel fed %s: power at 3/6/9 s %s, omega %.2f" % [kind, out, wh.omega])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.
