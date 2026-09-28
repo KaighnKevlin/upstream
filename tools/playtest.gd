@@ -6208,6 +6208,32 @@ func sluice_rec() -> void:
 	log_line("after trigger: held %d, released %d, opened %d" % [sl.held(), sl.released, sl.opened])
 
 
+func tally_rec() -> void:
+	# Tally wheel: six pieces down a chute under it (every 3), its wire to a
+	# sluice holding back a second line; the sluice should open twice.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	var MW = preload("res://scripts/marble_works.gd")
+	await MW.carve(main, false)
+	MW._piece(main, "res://scenes/dispenser.tscn", Vector2(1010, 300), {"mode": 1, "limit": 6})
+	MW._chute(main, Vector2(995, 330), Vector2(1140, 370))
+	var ty: Node2D = MW._piece(main, "res://scenes/tally.tscn", Vector2(1080, 342), {"mode": 0})
+	MW._chute(main, Vector2(1200, 420), Vector2(1340, 460))
+	var sl: Node2D = MW._piece(main, "res://scenes/sluice.tscn", Vector2(1312, 452), {"side": 1.0})
+	ty.wire_to = sl.global_position - ty.global_position
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.0, 2.0)
+	cam.global_position = Vector2(1170, 390)
+	for k in 3:
+		await wait(5.0)
+		if k == 1:
+			await shot("tally")
+		log_line("t=%d | tally count %d fired %d | sluice opened %d" % [(k + 1) * 5, ty.count, ty.fired, sl.opened])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.
