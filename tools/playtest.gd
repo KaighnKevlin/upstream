@@ -6304,6 +6304,47 @@ func brake_rec() -> void:
 	log_line("brake: %s" % [out])
 
 
+func save_marble_rec() -> void:
+	# Save/load round trip of the new marble pieces with non-default settings.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var bs = main.get_node("/root/BuildSystem")
+	var specs := [
+		["res://scenes/flap_sorter.tscn", {"springs": [1.8, 0.8], "end_offset": Vector2(150, 30)}],
+		["res://scenes/deflector.tscn", {"angle_deg": 30}],
+		["res://scenes/overflow_gate.tscn", {"side": -1.0, "watch": Vector2(-60, 50), "full": 3}],
+		["res://scenes/tally.tscn", {"mode": 2, "wire_to": Vector2(80, 10)}],
+		["res://scenes/chime.tscn", {"note": 5, "end_offset": Vector2(60, 12)}],
+		["res://scenes/dispenser.tscn", {"mode": 2, "kinds": ["copper", "iron"]}],
+		["res://scenes/brake.tscn", {"mode": 0, "end_offset": Vector2(90, 20)}],
+		["res://scenes/points.tscn", {"tilt": -1.0}],
+	]
+	var x := 1000.0
+	for sp in specs:
+		var b: Node2D = load(sp[0]).instantiate()
+		for k in sp[1]:
+			b.set(k, sp[1][k])
+		b.global_position = Vector2(x, 300)
+		main.add_child(b)
+		bs._placed_buildings.append(b)
+		x += 60.0
+	var Save = preload("res://scripts/sandbox_save.gd")
+	log_line("saved %d pieces" % Save.save(main))
+	await Save.load_into(main)
+	await wait(0.3)
+	var bad := []
+	var i := 0
+	for b in bs._placed_buildings:
+		var sp: Array = specs[i]
+		for k in sp[1]:
+			var want = sp[1][k]
+			var got = b.get(k)
+			if str(got) != str(want) and not (want is float and absf(float(got) - want) < 0.01):
+				bad.append("%s.%s: %s != %s" % [sp[0].get_file(), k, got, want])
+		i += 1
+	log_line("reloaded %d pieces; mismatches: %s" % [bs._placed_buildings.size(), bad if bad.size() > 0 else "none"])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.

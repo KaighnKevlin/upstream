@@ -8,7 +8,10 @@ const PATH := "user://sandbox_save.json"
 ## Settings worth keeping, on whichever pieces have them.
 const PROPS := ["bounce_angle", "bounce_force", "eject_angle", "eject_force", "aim_angle",
 	"throw_speed", "end_offset", "mode", "plate_offset_x", "lift_speed", "wind_speed", "mirrored", "recipe", "research", "segments", "spill",
-	"fuel", "charge", "ammo"]   # what's loaded: flamer / steam engine fuel, tesla charge, harpoon ammo
+	"fuel", "charge", "ammo",   # what's loaded: flamer / steam engine fuel, tesla charge, harpoon ammo
+	# the marble pieces: which way they face or lean, springs, notes, wires, targets
+	"side", "heavy_side", "tilt", "springs", "angle_deg", "note", "watch", "full", "wire_to",
+	"kinds", "target", "accept", "backboard", "muffled", "steps", "limit", "depth"]
 
 
 static func has_save() -> bool:
@@ -95,8 +98,10 @@ static func load_into(main: Node) -> int:
 		var b: Node2D = scene.instantiate()
 		for k in p.props:
 			var v = p.props[k]
-			if v is Array:
+			if v is Array and b.get(k) is Vector2:
 				v = Vector2(v[0], v[1])
+			elif v is Array:
+				v = v.duplicate()          # a list setting (flap springs, dispenser kinds)
 			elif b.get(k) is int:
 				v = int(v)   # JSON numbers come back as floats (enums, modes)
 			b.set(k, v)
