@@ -5744,7 +5744,7 @@ func buildbar_rec() -> void:
 	main._wave_timer = -9999.0
 	await wait(0.3)
 	var bar: Control = main.get_node("CanvasLayer").get_children().filter(func(c): return c.get_script() and c.get_script().resource_path.get_file() == "build_bar.gd")[0]
-	for c in [4, 5]:
+	for c in [0, 4, 5]:
 		bar._cat = c
 		bar._layout()
 		bar._name_label.text = bar.PIECES[bar._types()[0]][1]
@@ -6264,6 +6264,44 @@ func points_rec() -> void:
 		if t == 80:
 			await shot("points")
 	log_line("points: %s | tally fired %d" % ["".join(seq), ty.fired])
+
+
+func brake_rec() -> void:
+	# Brake rail: marbles thrown fast onto it; their speed as they leave,
+	# at each limit.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	await preload("res://scripts/marble_works.gd").carve(main, false)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.5, 2.5)
+	cam.global_position = Vector2(1240, 440)
+	var out := []
+	for mode in 3:
+		var bk: Node2D = preload("res://scenes/brake.tscn").instantiate()
+		bk.mode = mode
+		bk.end_offset = Vector2(140, 30)
+		bk.global_position = Vector2(1160, 430)
+		main.add_child(bk)
+		await wait(0.1)
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.global_position = Vector2(1165, 418)
+		main.add_child(o)
+		o.linear_velocity = Vector2(520, 0)
+		var v_out := -1
+		for t in 40:
+			await wait(0.02)
+			if o.global_position.x > 1305 and v_out < 0:
+				v_out = int(o.linear_velocity.length())
+		if mode == 1:
+			await shot("brake")
+		out.append("limit %d: left at %d px/s" % [int(bk.LIMITS[mode]), v_out])
+		o.queue_free()
+		bk.queue_free()
+		await wait(0.1)
+	log_line("brake: %s" % [out])
 
 
 func marble_trace_rec() -> void:
