@@ -6925,6 +6925,32 @@ func trebuchet_rec() -> void:
 	log_line("trebuchet: %s | thrown %d" % [out, tb.thrown])
 
 
+func paddle_rec() -> void:
+	# Paddle wheel under a dispenser's fall (KIND copper/iron, one a second):
+	# power after 3/6 s, and whether the stream carries on below.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	var MW = preload("res://scripts/marble_works.gd")
+	await MW.carve(main, false)
+	var kind := OS.get_environment("KIND") if OS.has_environment("KIND") else "copper"
+	MW._piece(main, "res://scenes/dispenser.tscn", Vector2(1300, 250), {"mode": 0, "kinds": [kind]})
+	var pw: Node2D = MW._piece(main, "res://scenes/paddle_wheel.tscn", Vector2(1300, 420))
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.0, 2.0)
+	cam.global_position = Vector2(1300, 420)
+	var out := []
+	for k in 2:
+		await wait(3.0)
+		out.append("%.2f" % pw.power())
+		if k == 1 and kind == "iron":
+			await shot("paddle")
+	var below := get_nodes_in_group("ore").filter(func(o): return o.global_position.y > 500).size()
+	log_line("paddle wheel, %s: power at 3/6 s %s | knocks %d, pieces carried on below %d" % [kind, out, pw.knocks, below])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.
