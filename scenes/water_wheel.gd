@@ -13,13 +13,31 @@ var omega := 0.0
 var _angle := 0.0
 var _check := 0.0
 var _flow := 0.0                 # -1/0/+1: the water under it
+var _wheel_art: Sprite2D         # art: the rim, spokes and paddles, turned to _angle
 
 
 func _ready() -> void:
 	z_index = 2
+	# the sprites first, so ghosts and build-bar icons get them too; behind
+	# our own _draw (the spray)
+	_spr(preload("res://assets/sprites/water_wheel_frame.png"), Vector2(-17, -4))
+	_wheel_art = _spr(preload("res://assets/sprites/water_wheel.png"), Vector2(-22, -22))
+	_wheel_art.rotation = _angle
+	_spr(preload("res://assets/sprites/water_wheel_axle.png"), Vector2(-4, -4))
 	if has_meta("ghost"):
 		return
 	add_to_group("power_wheels")
+
+
+func _spr(tex: Texture2D, off: Vector2) -> Sprite2D:
+	var sp := Sprite2D.new()
+	sp.texture = tex
+	sp.centered = false
+	sp.offset = off
+	sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	sp.show_behind_parent = true
+	add_child(sp)
+	return sp
 
 
 func power() -> float:
@@ -42,32 +60,13 @@ func _physics_process(delta: float) -> void:
 					break
 	omega = move_toward(omega, _flow * RATED, SPIN_UP * delta)
 	_angle += omega * delta
+	_wheel_art.rotation = _angle
 	queue_redraw()
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var wood := Color(0.5, 0.34, 0.2)
-	var iron := Color(0.42, 0.44, 0.5)
-	# the A-frame it turns on, standing either side of the trough
-	for s in [-1.0, 1.0]:
-		draw_line(Vector2(0, 0), Vector2(s * 14, R + 6), dark, 4.0)
-		draw_line(Vector2(0, 0), Vector2(s * 14, R + 6), wood.darkened(0.2), 2.0)
-	# the rim, spokes and paddles
-	draw_arc(Vector2.ZERO, R - 5, 0, TAU, 24, dark, 3.0)
-	draw_arc(Vector2.ZERO, R - 5, 0, TAU, 24, wood, 1.0)
-	for i in 8:
-		var d := Vector2.RIGHT.rotated(_angle + i * TAU / 8.0)
-		draw_line(Vector2.ZERO, d * (R - 5), dark, 2.0)
-		draw_line(Vector2.ZERO, d * (R - 5), wood, 1.0)
-		var n := d.orthogonal()
-		var a := d * (R - 7)
-		var b := d * R
-		draw_colored_polygon(PackedVector2Array([a - n * 2, b - n * 2, b + n * 2, a + n * 2]), dark)
-		draw_colored_polygon(PackedVector2Array([a - n * 1, b - n * 1, b + n * 1, a + n * 1]), wood.lightened(0.1))
-	draw_circle(Vector2.ZERO, 3.5, dark)
-	draw_circle(Vector2.ZERO, 2.5, iron)
-	# spray where it bites the water
+	# the frame, the wheel and the axle cap are sprites; spray where it
+	# bites the water
 	if absf(omega) > 0.5:
 		var t := Time.get_ticks_msec() / 1000.0
 		for i in 3:
