@@ -6385,6 +6385,41 @@ func teeter_rec() -> void:
 	log_line("teeter: %s" % [out])
 
 
+func crossover_rec() -> void:
+	# Crossover: copper rolls in from the left chute, iron from the right;
+	# each should come out the far side (copper right of 1300, iron left).
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	var MW = preload("res://scripts/marble_works.gd")
+	await MW.carve(main, false)
+	var cx: Node2D = MW._piece(main, "res://scenes/crossover.tscn", Vector2(1300, 400))
+	MW._chute(main, Vector2(1180, 348), Vector2(1266, 385))
+	MW._chute(main, Vector2(1420, 348), Vector2(1334, 385))
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.5, 2.5)
+	cam.global_position = Vector2(1300, 420)
+	var out := []
+	for k in 4:
+		var kind := "copper" if k % 2 == 0 else "iron"
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.kind = kind
+		o.lifetime = 1.0e9
+		o.global_position = Vector2(1190, 336) if kind == "copper" else Vector2(1410, 336)
+		main.add_child(o)
+		var x_low := -1
+		for t in 40:
+			await wait(0.05)
+			if x_low < 0 and o.global_position.y > 470:
+				x_low = int(o.global_position.x)
+			if k == 0 and t == 12:
+				await shot("crossover")
+		out.append("%s from %s -> x %d" % [kind, "left" if kind == "copper" else "right", x_low])
+	log_line("crossover: %s | crossed %s" % [out, cx.crossed])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.
