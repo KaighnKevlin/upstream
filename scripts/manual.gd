@@ -108,6 +108,7 @@ const TABS := [
 		["", "Booster rail", "drag the way it drives: rollers push pieces along, uphill too; full speed when powered"],
 		["", "Counterweight lift", "drop heavy in the top bucket: once it outweighs the bottom one, that load rides up"],
 		["", "Ropeway", "drag high post to low: ore dropped on the high landing zips across overhead"],
+		["", "Mine cart", "drag loading end to tipping end: fills with 3/5/8 (click), runs across, tips, winched back"],
 		["", "Archimedes screw", "drag bottom to top: carries pieces rolled into its mouth up; faster powered"],
 		["", "Robotic arm", "picks matching pieces off one spot, drops them at another; click the base: filter"],
 		["", "Stair lift", "bobbing brass steps hop marbles up one at a time; faster powered"],

@@ -1314,6 +1314,7 @@ var _build_names := {
 	105: "Build: DICE BOX (drop a stream in: each piece goes out a random side, 2 or 3 ways: click)",
 	106: "Build: FLOW METER (over a chute: pieces a minute going by, last 10 s; click all / copper / iron)",
 	107: "Build: CHECK VALVE (a flap across a track: pieces pass the way the arrow points, and bounce back the other way; click to turn it)",
+	108: "Build: MINE CART (drag from the loading end to the tipping end: carries batches of 3/5/8 across, winched back; click the cart)",
 	44: "Build: ROBOTIC ARM (picks from one spot, drops at another)",
 	37: "Build: DOMINO ROW (drag start to end; click an end to reset)",
 	36: "Build: STEAM ENGINE (feed it ore: powers machines in reach)",
