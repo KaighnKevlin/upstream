@@ -20,10 +20,15 @@ var _gate: CollisionShape2D
 var _open_t := 0.0
 var _lift := 0.0
 var _held: Area2D
+var _board: Sprite2D
 
 
 func _ready() -> void:
 	z_index = 2
+	# sprites (ghosts too): the frame behind our _draw (the cable, the
+	# count), the board over it
+	_sprite(preload("res://assets/sprites/sluice_frame.png"), Vector2(-11, -47)).show_behind_parent = true
+	_board = _sprite(preload("res://assets/sprites/sluice_gate.png"), Vector2(-5, -23))
 	if has_meta("ghost"):
 		return
 	add_to_group("triggerable")
@@ -58,6 +63,16 @@ func _ready() -> void:
 	past.add_child(pc)
 	add_child(past)
 	past.body_entered.connect(func(b): if b is RigidBody2D and _open_t > 0: released += 1)
+
+
+func _sprite(tex: Texture2D, off: Vector2) -> Sprite2D:
+	var sp := Sprite2D.new()
+	sp.texture = tex
+	sp.centered = false
+	sp.offset = off
+	sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(sp)
+	return sp
 
 
 func held() -> int:
@@ -101,19 +116,13 @@ func _input(event: InputEvent) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var brass := Color(0.85, 0.65, 0.35)
-	# the frame: two uprights and a crossbar
-	for x in [-5.0, 5.0]:
-		draw_line(Vector2(x, 6), Vector2(x, -H - 18), dark, 3.0)
-	draw_line(Vector2(-7, -H - 18), Vector2(7, -H - 18), dark, 4.0)
-	# the gate board, lifted when open
+	# the board, lifted when open, on its cable up to the winch drum
 	var up := -_lift * (H + 2)
-	draw_rect(Rect2(-3, -H + up, 6, H + 4), dark)
-	draw_rect(Rect2(-2, -H + 1 + up, 4, H + 2), Color(0.55, 0.42, 0.25))
-	draw_line(Vector2(0, -H + up), Vector2(0, -H - 18), Color(0.6, 0.62, 0.66), 1.0)
+	_board.position = Vector2(0, up)
+	draw_line(Vector2(0, -H + up), Vector2(0, -H - 22), Color(0.1, 0.08, 0.07), 2.0)
+	draw_line(Vector2(0, -H + up), Vector2(0, -H - 22), Color(0.6, 0.62, 0.66), 1.0)
 	# how much it's holding back
 	var n := held()
 	if n > 0:
 		var font := ThemeDB.fallback_font
-		draw_string(font, Vector2(-side * 30 - 6, -26), "%d" % n, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, brass)
+		draw_string(font, Vector2(-side * 30 - 6, -26), "%d" % n, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.85, 0.65, 0.35))

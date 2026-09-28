@@ -29,10 +29,37 @@ var _t := 0.0
 var _rider: RigidBody2D = null
 var _waiting: Array = []         # arrived while it was busy, held in the mouth
 var _cool := {}
+var _stand: Sprite2D
+var _tube: Sprite2D
 
 
 func _ready() -> void:
 	z_index = 0                  # under the ore: the rider shows riding in it
+	# sprites (ghosts too): the stand behind our _draw (the spring), the tube over it
+	_stand = _sprite(preload("res://assets/sprites/tiptube_stand.png"), Vector2(-13, -3))
+	_stand.show_behind_parent = true
+	_tube = _sprite(preload("res://assets/sprites/tiptube_tube.png"), Vector2(-15, -10))
+	_place_art()
+
+
+func _sprite(tex: Texture2D, off: Vector2) -> Sprite2D:
+	var sp := Sprite2D.new()
+	sp.texture = tex
+	sp.centered = false
+	sp.offset = off
+	sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(sp)
+	return sp
+
+
+## Drawn for side +1; mirrored for -1 (the tube's angle mirrors with it).
+func _place_art() -> void:
+	var s := 1.0 if side >= 0 else -1.0
+	_stand.position = _pivot()
+	_stand.scale = Vector2(s, 1)
+	_tube.position = _pivot()
+	_tube.scale = Vector2(s, 1)
+	_tube.rotation = _angle * s
 
 
 func _pivot() -> Vector2:
@@ -127,15 +154,9 @@ func _pour(now: float) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var brass := Color(0.85, 0.65, 0.35)
-	var steel := Color(0.42, 0.44, 0.5)
+	_place_art()
 	var pv := _pivot()
-	# the stand: a post down from the pivot, and the spring's anchor
-	draw_line(pv, pv + Vector2(0, 18), dark, 4.0)
-	draw_line(pv, pv + Vector2(0, 17), steel, 2.0)
-	draw_line(pv + Vector2(-5, 18), pv + Vector2(5, 18), dark, 3.0)
-	# the return spring from the stand to the tube's mouth end
+	# the return spring from the stand's bracket to the tube's mouth end
 	var mouth := pv - _dir(_angle) * BACK
 	var anchor := pv + Vector2(-side * 8, 14)
 	var pts := PackedVector2Array()
@@ -143,16 +164,5 @@ func _draw() -> void:
 		var q := anchor.lerp(mouth, i / 8.0)
 		var sn := (mouth - anchor).orthogonal().normalized()
 		pts.append(q + sn * (2.5 if i % 2 else -2.5) * (0.0 if i == 0 or i == 8 else 1.0))
+	draw_polyline(pts, Color(0.1, 0.08, 0.07), 2.0)
 	draw_polyline(pts, Color(0.62, 0.64, 0.7), 1.0)
-	# the tube: a dark casing, brass body, open ends
-	var a := pv - _dir(_angle) * BACK
-	var b := pv + _dir(_angle) * REACH
-	var n := _dir(_angle).orthogonal()
-	draw_line(a, b, dark, 16.0)
-	draw_line(a, b, brass.darkened(0.35), 14.0)
-	draw_line(a + n * 4.0, b + n * 4.0, brass, 2.0)
-	for e in [a, b]:
-		draw_line(e + n * 8, e - n * 8, dark, 3.0)
-		draw_line(e + n * 7, e - n * 7, brass.lightened(0.2), 1.0)
-	draw_circle(pv, 3.5, dark)
-	draw_circle(pv, 2.0, brass)

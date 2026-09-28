@@ -18,6 +18,38 @@ const MAX_V := 380.0
 var carried := 0                 # tests
 var _riders := {}                # id -> [body, s (px along), v]
 var _cool := {}
+var _low: Sprite2D
+var _pulleys: Array[Sprite2D] = []
+var _turn := 0.0                 # the pulleys' angle, turning while it carries
+
+
+func _ready() -> void:
+	# sprites (ghosts too): the posts behind our _draw (the cable, the
+	# hooks), the pulleys over the cable
+	_sprite(preload("res://assets/sprites/ropeway_post_high.png"), Vector2(-16, -32)).show_behind_parent = true
+	_low = _sprite(preload("res://assets/sprites/ropeway_post_low.png"), Vector2(-10, -32))
+	_low.show_behind_parent = true
+	for k in 2:
+		_pulleys.append(_sprite(preload("res://assets/sprites/ropeway_pulley.png"), Vector2(-5, -5)))
+	_place_art()
+
+
+func _sprite(tex: Texture2D, off: Vector2) -> Sprite2D:
+	var sp := Sprite2D.new()
+	sp.texture = tex
+	sp.centered = false
+	sp.offset = off
+	sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(sp)
+	return sp
+
+
+func _place_art() -> void:
+	_low.position = end_offset
+	_pulleys[0].position = Vector2(0, -26)
+	_pulleys[1].position = end_offset + Vector2(0, -26)
+	for p in _pulleys:
+		p.rotation = _turn
 
 
 func set_end(offset: Vector2) -> void:
@@ -64,21 +96,15 @@ func _physics_process(delta: float) -> void:
 		o.linear_velocity = (target - o.global_position) / delta
 		if "_timer" in o:
 			o._timer = 0.0
+	if not _riders.is_empty():
+		_turn = fmod(_turn + delta * 6.0, TAU)
 	queue_redraw()
 
 
 func _draw() -> void:
-	var dark := Color(0.16, 0.13, 0.1)
+	_place_art()
 	var top := Vector2(0, -26)
 	var bot := end_offset + Vector2(0, -26)
-	# the two posts
-	draw_line(Vector2(-8, 30), top, dark, 3.0)
-	draw_line(Vector2(8, 30), top, dark, 3.0)
-	draw_line(end_offset + Vector2(-6, 30), bot, dark, 3.0)
-	draw_line(end_offset + Vector2(6, 30), bot, dark, 3.0)
-	# the landing at the high post
-	draw_line(Vector2(-12, 8), Vector2(12, 8), dark, 3.0)
-	draw_line(Vector2(-12, 7), Vector2(12, 7), Color(0.85, 0.65, 0.35), 1.0)
 	# the cable, sagging a touch
 	var pts := PackedVector2Array()
 	for i in 13:
@@ -86,10 +112,6 @@ func _draw() -> void:
 		pts.append(top.lerp(bot, f) + Vector2(0, sin(f * PI) * 6.0))
 	draw_polyline(pts, Color(0.1, 0.08, 0.07), 2.0)
 	draw_polyline(pts, Color(0.62, 0.64, 0.68), 1.0)
-	# pulley wheels at each end
-	for p in [top, bot]:
-		draw_circle(p, 4.0, Color(0.1, 0.08, 0.07))
-		draw_circle(p, 2.5, Color(0.85, 0.65, 0.35))
 	# hooks on the riders
 	for id in _riders:
 		var o = _riders[id][0]

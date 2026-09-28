@@ -22,6 +22,24 @@ var _t := 0.0
 
 func _ready() -> void:
 	z_index = 2
+	# sprites (ghosts too): the stand and the bowl (a little translucent, so
+	# the marbles circling in it show) behind our _draw (the swirl), the rim
+	# and spout over it
+	_sprite(preload("res://assets/sprites/vortex_stand.png")).show_behind_parent = true
+	var bowl := _sprite(preload("res://assets/sprites/vortex_bowl.png"))
+	bowl.show_behind_parent = true
+	bowl.self_modulate = Color(1, 1, 1, 0.85)
+	_sprite(preload("res://assets/sprites/vortex_rim.png"))
+
+
+func _sprite(tex: Texture2D) -> Sprite2D:
+	var sp := Sprite2D.new()
+	sp.texture = tex
+	sp.centered = false
+	sp.offset = Vector2(-62, -20)
+	sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(sp)
+	return sp
 
 
 func _pos(theta: float, r: float) -> Vector2:
@@ -74,17 +92,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var brass := Color(0.85, 0.65, 0.35)
-	var bowl := Color(0.32, 0.26, 0.2, 0.85)
-	# the bowl's side: from the rim down to the spout
-	var pts := PackedVector2Array([Vector2(-R, 0), Vector2(-SPOUT, DEPTH), Vector2(SPOUT, DEPTH), Vector2(R, 0)])
-	for k in range(8, 0, -1):
-		var rr := R * k / 8.0
-		var y := DEPTH * (1.0 - rr / R)
-		pts.append(Vector2(rr, y))
-	draw_colored_polygon(PackedVector2Array([Vector2(-R, 0), Vector2(-SPOUT, DEPTH), Vector2(SPOUT, DEPTH), Vector2(R, 0)]), bowl)
-	# the swirl lines (a spiral, turning)
+	# the swirl lines (a spiral, turning) over the bowl
 	var prev := _pos(_t * 2.0, R)
 	var th := _t * 2.0
 	var rr2 := R
@@ -94,17 +102,3 @@ func _draw() -> void:
 		var p := _pos(th, rr2)
 		draw_line(prev, p, Color(0.6, 0.48, 0.3, 0.35), 1.0)
 		prev = p
-	# rim (an ellipse) and spout
-	var rim := PackedVector2Array()
-	for i in 33:
-		var a := TAU * i / 32.0
-		rim.append(Vector2(cos(a) * R, sin(a) * R * TILT))
-	draw_polyline(rim, dark, 4.0)
-	draw_polyline(rim, brass, 2.0)
-	draw_line(Vector2(-R, 0), Vector2(-SPOUT, DEPTH), dark, 3.0)
-	draw_line(Vector2(R, 0), Vector2(SPOUT, DEPTH), dark, 3.0)
-	draw_rect(Rect2(-SPOUT - 1, DEPTH, SPOUT * 2 + 2, 8), dark)
-	draw_rect(Rect2(-SPOUT, DEPTH, SPOUT * 2, 7), brass)
-	# a stand
-	draw_line(Vector2(-R * 0.6, DEPTH * 0.45), Vector2(-R * 0.75, DEPTH + 30), Color(0.16, 0.13, 0.1), 2.0)
-	draw_line(Vector2(R * 0.6, DEPTH * 0.45), Vector2(R * 0.75, DEPTH + 30), Color(0.16, 0.13, 0.1), 2.0)

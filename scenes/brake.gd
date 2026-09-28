@@ -7,11 +7,27 @@ extends "res://scenes/chute.gd"
 
 const LIMITS := [80.0, 150.0, 250.0]
 const BRISTLE := Color(0.55, 0.4, 0.22)
+const RAIL_TEX := preload("res://assets/sprites/brake_rail.png")
+const TUFT_TEX := preload("res://assets/sprites/brake_tuft.png")
+const CAP_TEX := preload("res://assets/sprites/brake_cap.png")
+const STOP_TEX := preload("res://assets/sprites/flap_stop.png")
 
 @export var mode := 1
 
 var braked := 0                  # tests
 var _brush: Area2D
+var _art: Node2D                 # the rail and bristles, pixel art tiled along it
+
+
+func _ready() -> void:
+	# art first, so ghosts and build-bar icons have it; behind our own _draw
+	_art = Node2D.new()
+	_art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_art.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+	_art.show_behind_parent = true
+	_art.draw.connect(_draw_art)
+	add_child(_art)
+	super._ready()
 
 
 func _rebuilt() -> void:
@@ -66,13 +82,46 @@ func _input(event: InputEvent) -> void:
 	super._input(event)
 
 
-func _draw_surface(a: Vector2, b: Vector2, t: Vector2, n: Vector2, l: float) -> void:
-	# bristles standing up off the rail, denser for a lower limit
+## The chute's own look is replaced by the art; its limit and the selection
+## handle are drawn over it.
+func _draw() -> void:
+	if _art:
+		_art.queue_redraw()
+	var e := _ends()
+	var a: Vector2 = e[0]
+	var b: Vector2 = e[1]
+	var l := (b - a).length()
+	if l < 1:
+		return
+	var t := (b - a) / l
+	_draw_surface(a, b, t, Vector2(t.y, -t.x), l)
+	_draw_selected()
+
+
+## The rail (a tiled strip, row 3 on the rail line), bristle tufts along
+## it (closer for a lower limit), the stop at the high end and the caps.
+func _draw_art() -> void:
+	var e := _ends()
+	var a: Vector2 = e[0]
+	var b: Vector2 = e[1]
+	var l := (b - a).length()
+	if l < 1:
+		return
+	if has_lip:
+		var high := a if a.y < b.y else b
+		_art.draw_texture(STOP_TEX, high + Vector2(-3, -10))
+	_art.draw_set_transform(a, (b - a).angle())
+	_art.draw_texture_rect(RAIL_TEX, Rect2(0, -3, l, 12), true)
 	var gap := 3.0 + mode * 2.0
 	var k := 3.0
 	while k < l - 2:
-		var p := a + t * k
-		draw_line(p, p + n * 6.0 + t * 1.0, BRISTLE, 1.0)
+		_art.draw_texture(TUFT_TEX, Vector2(k - 1, -7))
 		k += gap
+	_art.draw_texture(CAP_TEX, Vector2(-3, -4))
+	_art.draw_texture(CAP_TEX, Vector2(l - 3, -4))
+	_art.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+func _draw_surface(a: Vector2, b: Vector2, _t: Vector2, n: Vector2, _l: float) -> void:
 	var font := ThemeDB.fallback_font
 	draw_string(font, (a + b) * 0.5 + n * 16.0 - Vector2(8, 0), "%d" % int(LIMITS[mode]), HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.9, 0.8, 0.55))

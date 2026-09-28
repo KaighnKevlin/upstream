@@ -18,6 +18,14 @@ var _stock := 0
 
 func _ready() -> void:
 	z_index = 0
+	# the tray (ghosts too), behind our _draw: the glint of its stock
+	var tray := Sprite2D.new()
+	tray.texture = preload("res://assets/sprites/bearing_mat.png")
+	tray.centered = false
+	tray.offset = Vector2(-50, -12)
+	tray.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	tray.show_behind_parent = true
+	add_child(tray)
 	if has_meta("ghost"):
 		return
 	var body := StaticBody2D.new()
@@ -72,12 +80,6 @@ func _physics_process(delta: float) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.09, 0.07, 0.1)
-	var steel := Color(0.42, 0.44, 0.5)
-	draw_line(Vector2(-W * 0.5, 0), Vector2(W * 0.5, 0), dark, 4.0)
-	draw_line(Vector2(-W * 0.5, -1), Vector2(W * 0.5, -1), steel, 2.0)
-	for x in [-W * 0.5, W * 0.5]:
-		draw_line(Vector2(x, -10), Vector2(x, 0), dark, 3.0)
 	# stocked: a dotted glint along the tray
 	if _stock > 0:
 		var n := 12

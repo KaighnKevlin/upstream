@@ -28,13 +28,38 @@ var _state := 0                  # 0 at rest, 1 swinging out, 2 swinging back
 var _power := 0.0
 var _loaded: RigidBody2D = null
 var _cool := {}
+var _frame: Sprite2D
+var _crank: Sprite2D
 
 
 func _ready() -> void:
 	z_index = 2
+	# sprites (ghosts too): the bracket and ledge, the crank swinging over them
+	_frame = _sprite(preload("res://assets/sprites/hammer_frame.png"), Vector2(-9, -20))
+	_crank = _sprite(preload("res://assets/sprites/hammer_crank.png"), Vector2(-34, -8))
+	_place_art()
 	if has_meta("ghost"):
 		return
 	add_to_group("triggerable")
+
+
+func _sprite(tex: Texture2D, off: Vector2) -> Sprite2D:
+	var sp := Sprite2D.new()
+	sp.texture = tex
+	sp.centered = false
+	sp.offset = off
+	sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(sp)
+	return sp
+
+
+## Drawn for side +1 (flying right); mirrored for -1. The crank turns with
+## the swing, the same way _rot() turns its points.
+func _place_art() -> void:
+	var s := 1.0 if side >= 0 else -1.0
+	_frame.scale = Vector2(s, 1)
+	_crank.scale = Vector2(s, 1)
+	_crank.rotation = -_swing * side
 
 
 ## Where a piece rests on the ledge (for layouts and tests).
@@ -118,37 +143,4 @@ func _hit(now: float) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var brass := Color(0.85, 0.65, 0.35)
-	var steel := Color(0.42, 0.44, 0.5)
-	# the bracket it hangs from, up to the wall behind
-	draw_line(Vector2(0, 0), Vector2(0, -16), dark, 4.0)
-	draw_line(Vector2(0, 0), Vector2(0, -15), steel, 2.0)
-	draw_line(Vector2(-6, -16), Vector2(6, -16), dark, 3.0)
-	# the ledge: a little shelf with a stop on the outer side
-	var lp := ledge_point()
-	var sy := lp.y + 6.5
-	draw_line(Vector2(side * 16, sy), Vector2(side * 31, sy), dark, 4.0)
-	draw_line(Vector2(side * 16, sy - 0.5), Vector2(side * 31, sy - 0.5), steel, 2.0)
-	draw_line(Vector2(side * 23, sy + 1), Vector2(side * 23, sy + 12), dark, 2.0)
-	# the crank: the paddle arm and the hammer's handle
-	var pad := _rot(Vector2(-side * PADDLE, 0))
-	var head := _rot(Vector2(0, HEAD))
-	draw_line(Vector2.ZERO, pad, dark, 5.0)
-	draw_line(Vector2.ZERO, pad, steel, 3.0)
-	draw_line(Vector2.ZERO, head, dark, 5.0)
-	draw_line(Vector2.ZERO, head, Color(0.55, 0.4, 0.22), 3.0)
-	# the paddle's plate, square to its arm
-	var t := pad.normalized()
-	var n := Vector2(-t.y, t.x) * side
-	draw_line(pad - t * 8 + n * 0, pad + t * 4, dark, 6.0)
-	draw_line(pad - t * 8 - n * 1.5, pad + t * 4 - n * 1.5, brass, 2.0)
-	# the head: a brass block across the handle's end
-	var hd := head.normalized()
-	var hn := Vector2(-hd.y, hd.x)
-	var pts := PackedVector2Array([head + hn * 6 - hd * 5, head + hn * 6 + hd * 5, head - hn * 6 + hd * 5, head - hn * 6 - hd * 5])
-	draw_colored_polygon(pts, dark)
-	var inner := PackedVector2Array([head + hn * 5 - hd * 4, head + hn * 5 + hd * 4, head - hn * 5 + hd * 4, head - hn * 5 - hd * 4])
-	draw_colored_polygon(inner, brass)
-	draw_circle(Vector2.ZERO, 3.5, dark)
-	draw_circle(Vector2.ZERO, 2.0, brass)
+	_place_art()
