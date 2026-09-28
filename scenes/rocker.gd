@@ -17,10 +17,28 @@ var _shape: CollisionShape2D
 var _sense: Area2D
 var _angle := TILT
 var _cool := 0.0
+var _bar: Sprite2D
 
 
 func _ready() -> void:
 	z_index = 1
+	# sprites first, so ghosts and build-bar icons get them too; behind the
+	# parent so the weigh scale / gate / points extras draw over them
+	var base := Sprite2D.new()
+	base.texture = preload("res://assets/sprites/rocker_base.png")
+	base.centered = false
+	base.offset = Vector2(-22, -28)
+	base.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	base.show_behind_parent = true
+	add_child(base)
+	_bar = Sprite2D.new()
+	_bar.texture = preload("res://assets/sprites/rocker_bar.png")
+	_bar.centered = false
+	_bar.offset = Vector2(-18, -4)
+	_bar.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_bar.show_behind_parent = true
+	_bar.rotation = _angle
+	add_child(_bar)
 	if has_meta("ghost"):
 		return
 	add_to_group("rockers")
@@ -64,6 +82,7 @@ func _ready() -> void:
 func _apply() -> void:
 	_angle = TILT * tilt
 	_shape.rotation = _angle
+	_bar.rotation = _angle
 	queue_redraw()
 
 
@@ -88,13 +107,4 @@ func _physics_process(delta: float) -> void:
 
 
 func _draw() -> void:
-	# stand, pivot, the rocker bar, funnel lips
-	draw_line(Vector2(0, 2), Vector2(-6, 14), Color(0.16, 0.13, 0.1), 2.0)
-	draw_line(Vector2(0, 2), Vector2(6, 14), Color(0.16, 0.13, 0.1), 2.0)
-	var d := Vector2(cos(_angle), sin(_angle)) * ARM
-	draw_line(-d, d, Color(0.1, 0.08, 0.07), 4.0)
-	draw_line(-d, d, Color(0.85, 0.65, 0.35), 2.0)
-	draw_circle(Vector2.ZERO, 2.5, Color(0.42, 0.45, 0.5))
-	for s in [-1.0, 1.0]:
-		draw_line(Vector2(s * 18, -24), Vector2(s * 10, -12), Color(0.1, 0.08, 0.07), 3.0)
-		draw_line(Vector2(s * 18, -24), Vector2(s * 10, -12), Color(0.6, 0.62, 0.66), 1.0)
+	pass   # stand, pivot, bar and funnel lips are sprites (see _ready)

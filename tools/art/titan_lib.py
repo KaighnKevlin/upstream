@@ -1,9 +1,10 @@
 """Shared pieces for building titan frames from the high-res reference
 (assets/sprites/Sprite-0009.aseprite) — see gen_titan.py."""
-import math
+import math, os
 from pixtools import *
 
-SPR = '/Users/kaighnkevlin/Documents/upstream/assets/sprites/'
+# the repo's sprites, wherever it's checked out (worktrees included)
+SPR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'assets', 'sprites') + '/'
 
 
 def load_reference():

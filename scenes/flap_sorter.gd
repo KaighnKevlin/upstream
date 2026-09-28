@@ -13,6 +13,9 @@ const LEN_MIN := 80.0
 const LEN_MAX := 260.0
 const FLAP := 18.0               # the hole under a flap: a marble (13) falls through
 const SPRINGS := [0.8, 1.2, 1.8, 2.5]
+const RAIL_TEX := preload("res://assets/sprites/flap_rail.png")
+const FLAP_TEX := preload("res://assets/sprites/flap_plate.png")
+const STOP_TEX := preload("res://assets/sprites/flap_stop.png")
 
 @export var end_offset := Vector2(160, 40)
 @export var springs: Array = [2.5, 1.2]   # one per flap, upstream first
@@ -22,6 +25,7 @@ var passed := 0                  # rolled off the end
 var _body: StaticBody2D
 var _flaps: Array = []           # [CollisionShape2D, Area2D, open_timer, angle]
 var _end_area: Area2D
+var _art: Node2D                 # the rail and flaps, pixel art (nearest, tiled)
 
 
 func set_end(offset: Vector2) -> void:
@@ -34,6 +38,14 @@ func set_end(offset: Vector2) -> void:
 
 func _ready() -> void:
 	z_index = 1
+	# art first, so ghosts and build-bar icons have it; behind our own _draw
+	# (springs, numbers)
+	_art = Node2D.new()
+	_art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_art.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+	_art.show_behind_parent = true
+	_art.draw.connect(_draw_art)
+	add_child(_art)
 	if has_meta("ghost"):
 		return
 	_body = StaticBody2D.new()
@@ -162,37 +174,47 @@ func _input(event: InputEvent) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.09, 0.07, 0.1)
-	var steel := Color(0.42, 0.44, 0.5)
-	var brass := Color(0.85, 0.65, 0.35)
+	if _art:
+		_art.queue_redraw()
 	var l := end_offset.length()
 	var d := end_offset / maxf(l, 1.0)
 	var n := Vector2(d.y, -d.x) if d.x >= 0 else Vector2(-d.y, d.x)   # up, off the rail
-	var cuts := [0.0]
-	for k in springs.size():
-		cuts.append(_flap_at(k) - FLAP * 0.5)
-		cuts.append(_flap_at(k) + FLAP * 0.5)
-	cuts.append(l)
-	for i in range(0, cuts.size(), 2):
-		var a: Vector2 = d * cuts[i]
-		var b: Vector2 = d * cuts[i + 1]
-		draw_line(a - n * 2, b - n * 2, dark, 6.0)
-		draw_line(a - n * 2, b - n * 2, steel, 3.0)
-	draw_line(Vector2.ZERO, Vector2(0, -7), dark, 3.0)
 	var font := ThemeDB.fallback_font
 	for k in springs.size():
 		var c := d * _flap_at(k)
-		var hinge := c - d * FLAP * 0.5
 		var open: float = _flaps[k][3] if k < _flaps.size() else 0.0
-		# the flap, hinged at its upstream edge, swinging down as it opens
-		var tip := hinge + d.rotated(open * 1.2 * (1.0 if d.x >= 0 else -1.0)) * FLAP
-		draw_line(hinge, tip, dark, 5.0)
-		draw_line(hinge, tip, brass, 3.0)
 		# its spring, under the free end
 		var s0 := c + d * FLAP * 0.3 - n * 3
 		var s1 := s0 - n * (10 - open * 4)
 		var zig := PackedVector2Array()
 		for i in 7:
 			zig.append(s0.lerp(s1, i / 6.0) + d * (2.5 if i % 2 == 1 else -2.5))
+		draw_polyline(zig, Color(0.1, 0.08, 0.07), 2.0)
 		draw_polyline(zig, Color(0.7, 0.72, 0.76), 1.0)
 		draw_string(font, c + n * 10 - Vector2(6, 0), "%.1f" % springs[k], HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.9, 0.8, 0.55))
+
+
+## The rail (a tiled strip, broken at the flaps), the stop and the flaps,
+## each drawn along the rail; flipped on leftward rails so tops face up.
+func _draw_art() -> void:
+	var l := end_offset.length()
+	var d := end_offset / maxf(l, 1.0)
+	var flip := 1.0 if d.x >= 0 else -1.0
+	var ang := d.angle()
+	var cuts := [0.0]
+	for k in springs.size():
+		cuts.append(_flap_at(k) - FLAP * 0.5)
+		cuts.append(_flap_at(k) + FLAP * 0.5)
+	cuts.append(l)
+	for i in range(0, cuts.size(), 2):
+		_art.draw_set_transform(d * cuts[i], ang, Vector2(1, flip))
+		_art.draw_texture_rect(RAIL_TEX, Rect2(0, -2, cuts[i + 1] - cuts[i], 8), true)
+	_art.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	_art.draw_texture(STOP_TEX, Vector2(-3, -10))
+	for k in springs.size():
+		var hinge := d * (_flap_at(k) - FLAP * 0.5)
+		var open: float = _flaps[k][3] if k < _flaps.size() else 0.0
+		# hinged at its upstream edge, swinging down as it opens
+		_art.draw_set_transform(hinge, ang + open * 1.2 * flip, Vector2(1, flip))
+		_art.draw_texture(FLAP_TEX, Vector2(-3, -3))
+	_art.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

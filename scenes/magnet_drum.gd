@@ -18,16 +18,31 @@ var pulled := 0                  # tests
 var _riders := {}                # id -> [body, angle]
 var _phase := 0.0
 var _time := 0.0
+var _drum: Sprite2D
 
 
 func _ready() -> void:
 	z_index = 2
+	# bracket and drum sprites (ghosts too); the field ring draws over them
+	var stand := Sprite2D.new()
+	stand.texture = preload("res://assets/sprites/magnet_drum_stand.png")
+	stand.centered = false
+	stand.offset = Vector2(-12, -5)
+	stand.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	stand.show_behind_parent = true
+	add_child(stand)
+	_drum = Sprite2D.new()
+	_drum.texture = preload("res://assets/sprites/magnet_drum.png")
+	_drum.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_drum.show_behind_parent = true
+	add_child(_drum)
 
 
 func _physics_process(delta: float) -> void:
 	if has_meta("ghost"):
 		return
 	_phase += delta * SPIN * side
+	_drum.rotation = _phase
 	_time += delta
 	for o in get_tree().get_nodes_in_group("ore"):
 		if not is_instance_valid(o) or o.freeze or _riders.has(o.get_instance_id()):
@@ -62,18 +77,5 @@ func _physics_process(delta: float) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	# bracket
-	draw_line(Vector2.ZERO, Vector2(-side * 6, 22), Color(0.16, 0.13, 0.1), 3.0)
-	draw_line(Vector2.ZERO, Vector2(side * 6, 22), Color(0.16, 0.13, 0.1), 3.0)
-	# the drum, banded red and steel, turning
-	draw_circle(Vector2.ZERO, R + 1, dark)
-	draw_circle(Vector2.ZERO, R, Color(0.45, 0.47, 0.52))
-	for k in 6:
-		var a := _phase + k * TAU / 6.0
-		var d := Vector2(cos(a), sin(a))
-		draw_line(d * 3.0, d * R, Color(0.75, 0.2, 0.18) if k % 2 == 0 else Color(0.62, 0.64, 0.68), 3.0)
-	draw_circle(Vector2.ZERO, 3.0, dark)
-	draw_circle(Vector2.ZERO, 1.5, Color(0.85, 0.65, 0.35))
-	# the field, faintly
+	# the bracket and the turning drum are sprites (see _ready); the field, faintly
 	draw_arc(Vector2.ZERO, R + GRAB, 0, TAU, 24, Color(0.6, 0.75, 1.0, 0.15), 1.0)
