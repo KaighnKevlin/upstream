@@ -1325,6 +1325,7 @@ var _build_names := {
 	116: "Build: ROPE BRIDGE (drag post to post: walkers, you and pieces cross; a trigger or a click on the near post cuts it, it knits back in 5 s)",
 	117: "Build: BALLOON LIFT (on the ground: pieces in its basket float up to the pin, 80/160/240/320 px (click the bottle), and are tossed off toward the flag)",
 	118: "Build: FLAIL (on the ground: a wheel in reach whirls its spiked ball, battering and knocking back walkers; slow unpowered)",
+	119: "Build: FLUME (drag, level: light pieces float over its weir, heavy ones sink and pile up until a trigger or click on the weir flushes them)",
 	44: "Build: ROBOTIC ARM (picks from one spot, drops at another)",
 	37: "Build: DOMINO ROW (drag start to end; click an end to reset)",
 	36: "Build: STEAM ENGINE (feed it ore: powers machines in reach)",
