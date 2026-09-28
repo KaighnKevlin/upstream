@@ -26,6 +26,10 @@ var toggles := 0
 var _a := 0.0                    # 0 lowered .. 1 raised
 var _span: SegmentShape2D
 var _watch := {}                 # id -> body, on the approach, until it crosses or falls
+var _art: Node2D                 # pixel art, mirrored by side
+var _span_sp: Sprite2D
+const FRAME_TEX := preload("res://assets/sprites/drawbridge_frame.png")
+const SPAN_TEX := preload("res://assets/sprites/drawbridge_span.png")
 
 
 static var _steel := _make_steel()
@@ -41,7 +45,24 @@ static func _make_steel() -> PhysicsMaterial:
 
 func _ready() -> void:
 	z_index = 1
+	# sprites first (ghosts too): the post and span under our _draw (chains,
+	# flag), drawn for side +1 and mirrored for -1
+	_art = Node2D.new()
+	_art.show_behind_parent = true
+	_art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(_art)
+	var fr := Sprite2D.new()
+	fr.texture = FRAME_TEX
+	fr.centered = false
+	fr.offset = Vector2(-5, -48)
+	_art.add_child(fr)
+	_span_sp = Sprite2D.new()
+	_span_sp.texture = SPAN_TEX
+	_span_sp.centered = false
+	_span_sp.offset = Vector2(-54, -3)
+	_art.add_child(_span_sp)
 	_a = 1.0 if raised else 0.0
+	_fit_art()
 	if has_meta("ghost"):
 		return
 	add_to_group("triggerable")
@@ -134,49 +155,37 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
+func _fit_art() -> void:
+	# the span sprite rides the swing: art space is side +1 (the _art node mirrors)
+	_art.scale = Vector2(side, 1)
+	var d := tip() - hinge()
+	_span_sp.position = Vector2(SPAN, DROP)
+	_span_sp.rotation = Vector2(d.x * side, d.y).angle() - PI
+
+
 func _draw() -> void:
+	_fit_art()
 	var dark := Color(0.1, 0.08, 0.07)
-	var brass := Color(0.85, 0.65, 0.35)
-	var steel := Color(0.42, 0.44, 0.5)
-	var wood := Color(0.55, 0.4, 0.22)
-	var h := hinge()
 	var tp := tip()
-	var post := Vector2(side * (SPAN + 5), 0)
-	var top := post + Vector2(0, -TOWER)
-	# the near bank's abutment and the far bank's gatehouse post
-	draw_line(Vector2(0, 2), Vector2(0, 16), dark, 5.0)
-	draw_line(Vector2(0, 3), Vector2(0, 15), steel.darkened(0.2), 3.0)
-	draw_line(post + Vector2(0, 16), top, dark, 6.0)
-	draw_line(post + Vector2(0, 15), top + Vector2(0, 1), wood, 4.0)
-	draw_line(top + Vector2(-6, 0), top + Vector2(6, 0), dark, 4.0)
-	draw_line(top + Vector2(-5, -0.5), top + Vector2(5, -0.5), brass, 2.0)
-	# the ramp off the far bank
-	var r := h + Vector2(side * RAMP.x, RAMP.y)
-	draw_line(h + Vector2(0, 2), r + Vector2(0, 2), dark, 5.0)
-	draw_line(h + Vector2(0, 1.5), r + Vector2(0, 1.5), steel, 2.0)
-	# the span: planks on a steel frame, a cross-plank every few px
-	var d := (tp - h).normalized()
-	var under := Vector2(d.y, -d.x) * side   # the span's underside, down when lowered
-	draw_line(h + under * 2.5, tp + under * 2.5, dark, 7.0)
-	draw_line(h + under * 2.5, tp + under * 2.5, wood, 4.0)
-	var k := 6.0
-	while k < SPAN - 2:
-		var q := h + d * k + under * 2.5
-		draw_line(q - under * 2, q + under * 2, wood.darkened(0.35), 1.0)
-		k += 7.0
-	draw_line(h + under * 0.5, tp + under * 0.5, steel.lightened(0.2), 1.0)
-	# the chains, from the top of the post to the span's free end
+	var top := Vector2(side * (SPAN + 5), 0) + Vector2(0, -TOWER + 3)
+	# the chain, from the gatehouse pulley to the span's free end: iron links
 	var chain := PackedVector2Array()
 	var sag := 6.0 * (1.0 - _ease(_a))
 	for i in 11:
 		var f := i / 10.0
 		chain.append(top.lerp(tp, f) + Vector2(0, sin(f * PI) * sag * 0.3))
 	draw_polyline(chain, dark, 2.5)
-	draw_polyline(chain, Color(0.62, 0.64, 0.7), 1.0)
-	draw_circle(h, 3.5, dark)
-	draw_circle(h, 2.0, brass)
-	draw_circle(tp, 2.0, brass)
+	draw_polyline(chain, Color(0.45, 0.5, 0.52), 1.0)
+	var run := 0.0
+	for i in 10:
+		var seg := chain[i + 1] - chain[i]
+		var k := fposmod(-run, 3.0)
+		while k < seg.length():
+			draw_rect(Rect2(chain[i] + seg.normalized() * k - Vector2(0.5, 0.5), Vector2(1, 1)), Color(0.72, 0.78, 0.76))
+			k += 3.0
+		run += seg.length()
 	# a signal flag on the post: green lowered, red raised
 	var flag := Color(0.3, 0.75, 0.35).lerp(Color(0.85, 0.2, 0.15), _ease(_a))
-	var fp := top + Vector2(0, 3)
-	draw_colored_polygon(PackedVector2Array([fp, fp + Vector2(-side * 9, 3), fp + Vector2(0, 6)]), flag)
+	var fp := Vector2(side * (SPAN + 5), -TOWER + 7)
+	draw_colored_polygon(PackedVector2Array([fp, fp + Vector2(-side * 10, 3), fp + Vector2(0, 7)]), dark)
+	draw_colored_polygon(PackedVector2Array([fp + Vector2(-side * 1, 1), fp + Vector2(-side * 8, 3.2), fp + Vector2(-side * 1, 5.6)]), flag)
