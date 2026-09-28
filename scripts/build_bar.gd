@@ -471,6 +471,10 @@ func _bounds(art: Node2D) -> Rect2:
 			cr = Rect2(c.position + Vector2(-11, -27), Vector2(22, 27))
 		elif "end_offset" in c:
 			cr = Rect2(c.position + Vector2(0, minf(0.0, c.end_offset.y) - 8), Vector2(56, absf(c.end_offset.y) + 12))
+		elif c.get_script() and c.get_script().resource_path.ends_with("/silo.gd"):
+			cr = Rect2(c.position + Vector2(-21, -77) * c.scale, Vector2(42, 88) * c.scale)   # its sprite: tall
+		elif c.get_script() and c.get_script().resource_path.ends_with("/deflector.gd"):
+			cr = Rect2(c.position + Vector2(-20, -20) * c.scale, Vector2(40, 50) * c.scale)   # plate and post
 		else:
 			cr = Rect2(c.position + Vector2(-18, -18), Vector2(36, 26))
 		r = cr if first else r.merge(cr)
