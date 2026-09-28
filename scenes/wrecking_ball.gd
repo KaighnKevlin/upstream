@@ -25,14 +25,43 @@ var _om := 0.0
 var _wind := 0
 var _seen := {}
 var _free_t := 0.0
+var _chain_art: Sprite2D         # art: the chain and ball, turned about the pivot
+var _latch: Sprite2D
 
 
 func _ready() -> void:
 	z_index = 2
 	_th = COCK * side
+	# the sprites first, so ghosts and build-bar icons get them too: the
+	# bracket and bucket behind our own _draw (the gauge lights)
+	var br := _spr(preload("res://assets/sprites/wrecking_bracket.png"), Vector2(-29, -10))
+	br.show_behind_parent = true
+	br.scale = Vector2(1.0 if side >= 0.0 else -1.0, 1)
+	_latch = _spr(preload("res://assets/sprites/wrecking_latch.png"), Vector2(-3, -3))
+	_latch.hframes = 2
+	_latch.position = Vector2(side * 10.0, -2)
+	_latch.scale = br.scale
+	_chain_art = _spr(preload("res://assets/sprites/wrecking_chain.png"), Vector2(-11, -2))
+	_spr(preload("res://assets/sprites/wrecking_cap.png"), Vector2(-3.5, -3.5))
+	_pose()
 	if has_meta("ghost"):
 		return
 	add_to_group("triggerable")
+
+
+func _spr(tex: Texture2D, off: Vector2) -> Sprite2D:
+	var sp := Sprite2D.new()
+	sp.texture = tex
+	sp.centered = false
+	sp.offset = off
+	sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(sp)
+	return sp
+
+
+func _pose() -> void:
+	_chain_art.rotation = -_th
+	_latch.frame = 0 if armed else 1
 
 
 func ball() -> Vector2:
@@ -107,6 +136,7 @@ func _physics_process(delta: float) -> void:
 				if is_instance_valid(o) and not o.freeze and o.global_position.distance_to(b) < R + 6.0:
 					o.sleeping = false
 					o.linear_velocity = v.limit_length(500.0)
+	_pose()
 	queue_redraw()
 
 
@@ -119,33 +149,10 @@ func _input(event: InputEvent) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var iron := Color(0.42, 0.44, 0.5)
+	# (the bracket, bucket, latch, chain, ball and pivot cap are sprites) the
+	# winch gauge: a quarter lit per piece in the bucket
 	var brass := Color(0.85, 0.65, 0.35)
-	var wood := Color(0.5, 0.34, 0.2)
-	# the ceiling bracket and pivot
-	draw_rect(Rect2(-14, -8, 28, 5), dark)
-	draw_rect(Rect2(-13, -7, 26, 3), iron)
-	draw_line(Vector2(0, -4), Vector2(0, 0), dark, 3.0)
-	# the winch bucket and its gauge (a quarter lit per piece)
 	var bk := _bucket() - global_position
-	draw_colored_polygon(PackedVector2Array([bk + Vector2(-6, -4), bk + Vector2(6, -4), bk + Vector2(4, 5), bk + Vector2(-4, 5)]), dark)
-	draw_colored_polygon(PackedVector2Array([bk + Vector2(-5, -3), bk + Vector2(5, -3), bk + Vector2(3, 4), bk + Vector2(-3, 4)]), wood)
 	for i in WINDS:
 		var lit := armed or i < _wind
 		draw_rect(Rect2(bk.x - 6 + i * 3.5, bk.y - 9, 2.5, 2), brass if lit else Color(0.25, 0.22, 0.2))
-	# the latch (open once it's let go)
-	var lt := Vector2(side * 10.0, -2)
-	draw_line(lt, lt + Vector2(0, 6 if armed else -1), dark, 3.0)
-	draw_line(lt, lt + Vector2(0, 6 if armed else -1), brass, 1.0)
-	# the chain and the ball
-	var b := Vector2(sin(_th), cos(_th)) * L
-	var links := 10
-	for i in links:
-		var p := b * (i + 0.5) / links
-		draw_circle(p, 1.6, dark)
-		draw_circle(p, 1.0, iron.lightened(0.2))
-	draw_circle(b, R + 1.0, dark)
-	draw_circle(b, R, iron.darkened(0.15))
-	draw_circle(b + Vector2(-3, -3), 3.0, iron.lightened(0.25))
-	draw_circle(Vector2.ZERO, 2.5, brass)

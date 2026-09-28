@@ -18,6 +18,7 @@ const CUR := 110.0               # px/s the current carries a floater
 const CREEP := 30.0              # a sinker along the bottom
 const HEAVY := ["iron", "shot", "gear", "scrap"]
 const FLUSH := 1.4
+const TROUGH_TEX := preload("res://assets/sprites/flume_trough.png")
 
 @export var end_offset := Vector2(160, 0)
 
@@ -28,17 +29,33 @@ var _weir: CollisionShape2D
 var _wet := {}                   # ore in the water
 var _flush := 0.0
 var _t := 0.0
+var _art: Node2D                 # art: the trough floor and trestles, tiled along the run
+var _wall: Sprite2D              # the head wall and the weir (over the water)
+var _weir_art: Sprite2D
 
 
 func set_end(offset: Vector2) -> void:
 	var l := clampf(absf(offset.x), LEN_MIN, LEN_MAX)
 	end_offset = Vector2(l * (1.0 if offset.x >= 0 else -1.0), 0)
 	queue_redraw()
+	_pose()
 
 
 func _ready() -> void:
 	z_index = 1
 	end_offset.y = 0.0
+	# the art first, so ghosts and build-bar icons have it: the floor behind
+	# our own _draw (the water), the wall and weir over it
+	_art = Node2D.new()
+	_art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_art.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+	_art.show_behind_parent = true
+	_art.draw.connect(_draw_art)
+	add_child(_art)
+	_wall = _spr(preload("res://assets/sprites/flume_wall.png"), Vector2(-4, -20))
+	_weir_art = _spr(preload("res://assets/sprites/flume_weir.png"), Vector2(-4, -12))
+	_weir_art.hframes = 2
+	_pose()
 	if has_meta("ghost"):
 		return
 	add_to_group("triggerable")
@@ -55,6 +72,34 @@ func _ready() -> void:
 	_seg(Vector2(0, 0), Vector2(l, 0))
 	_seg(Vector2(0, 0), Vector2(0, -WALL))
 	_weir = _seg(Vector2(l, 0), Vector2(l, -WEIR))
+
+
+func _spr(tex: Texture2D, off: Vector2) -> Sprite2D:
+	var sp := Sprite2D.new()
+	sp.texture = tex
+	sp.centered = false
+	sp.offset = off
+	sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(sp)
+	return sp
+
+
+# the art follows the run's length and direction (and set_end while dragging)
+func _pose() -> void:
+	if _art == null:
+		return
+	var side := 1.0 if end_offset.x >= 0 else -1.0
+	_wall.scale = Vector2(side, 1)
+	_weir_art.scale = Vector2(side, 1)
+	_weir_art.position = Vector2(end_offset.x, 0)
+	_art.queue_redraw()
+
+
+func _draw_art() -> void:
+	var w := absf(end_offset.x)
+	_art.draw_set_transform(Vector2.ZERO, 0.0, Vector2(1.0 if end_offset.x >= 0 else -1.0, 1))
+	_art.draw_texture_rect(TROUGH_TEX, Rect2(0, -2, w, 18), true)
+	_art.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
 func _seg(a: Vector2, b: Vector2) -> CollisionShape2D:
@@ -134,37 +179,27 @@ func _input(event: InputEvent) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var wood := Color(0.5, 0.34, 0.2)
+	# the water, rippling, with the current's streaks running along (the
+	# trough, wall and weir are sprites; the weir shows lowered while it flushes)
+	if _weir_art:
+		_weir_art.frame = 1 if _flush > 0.0 else 0
 	var l := end_offset.x
 	var side := signf(l)
 	var x0 := minf(0.0, l)
 	var w := absf(l)
-	# the water, rippling, with the current's streaks running along
-	draw_rect(Rect2(x0, -D - 1, w, D + 1), Color(0.25, 0.5, 0.8, 0.45))
+	draw_rect(Rect2(x0, -D - 1, w, D + 1), Color(0.25, 0.5, 0.8, 0.42))
+	draw_rect(Rect2(x0, -4, w, 4), Color(0.12, 0.28, 0.5, 0.35))
 	var pts := PackedVector2Array()
+	var lip := PackedVector2Array()
 	for i in int(w / 4.0) + 1:
 		var x := x0 + i * 4.0
-		pts.append(Vector2(x, -D - 1 + sin(_t * 4.0 - x * 0.15 * side) * 0.8))
-	draw_polyline(pts, Color(0.7, 0.85, 1.0, 0.7), 1.0)
+		var y := -D - 1 + sin(_t * 4.0 - x * 0.15 * side) * 0.8
+		pts.append(Vector2(x, y))
+		lip.append(Vector2(x, y + 1.0))
+	draw_polyline(lip, Color(0.45, 0.7, 0.95, 0.4), 1.0)
+	draw_polyline(pts, Color(0.8, 0.92, 1.0, 0.8), 1.0)
 	for i in 5:
 		var f := fposmod(_t * CUR * 0.5 + i * w / 5.0, w)
 		var x := (x0 + f) if side > 0 else (x0 + w - f)
-		draw_line(Vector2(x, -D * 0.5), Vector2(x - side * 6, -D * 0.5), Color(0.8, 0.9, 1.0, 0.35), 1.0)
-	# the trough: floor, back wall, weir (down while it flushes)
-	draw_line(Vector2(x0 - 2, 1), Vector2(x0 + w + 2, 1), dark, 4.0)
-	draw_line(Vector2(x0 - 2, 1), Vector2(x0 + w + 2, 1), wood, 2.0)
-	draw_line(Vector2(0, 2), Vector2(0, -WALL), dark, 4.0)
-	draw_line(Vector2(0, 2), Vector2(0, -WALL), wood, 2.0)
-	var weir_h := 1.0 if _flush > 0.0 else WEIR
-	draw_line(Vector2(l, 2), Vector2(l, -weir_h), dark, 4.0)
-	draw_line(Vector2(l, 2), Vector2(l, -weir_h), Color(0.62, 0.64, 0.7), 2.0)
-	draw_circle(Vector2(l, -8), 2.0, Color(0.85, 0.65, 0.35))
-	# trestle legs
-	var x := x0 + 10.0
-	while x < x0 + w:
-		draw_line(Vector2(x, 2), Vector2(x - 4, 14), dark, 3.0)
-		draw_line(Vector2(x, 2), Vector2(x + 4, 14), dark, 3.0)
-		draw_line(Vector2(x, 2), Vector2(x - 4, 14), wood, 1.0)
-		draw_line(Vector2(x, 2), Vector2(x + 4, 14), wood, 1.0)
-		x += 48.0
+		var y := -D * 0.5 + (i % 3 - 1) * 2.0
+		draw_line(Vector2(x, y), Vector2(x - side * 6, y), Color(0.8, 0.9, 1.0, 0.35), 1.0)
