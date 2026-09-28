@@ -1,0 +1,156 @@
+extends Node2D
+## Balloon lift: a gas bottle with a filler nozzle over a little basket.
+## A piece that rolls or drops into the basket is tied to a balloon and
+## floats straight up, bobbing, until it reaches the pin (click the bottle:
+## 80 / 160 / 240 / 320 px up) or bumps the rock above; the balloon pops
+## and the piece is tossed off toward `side` (the pin's flag) onto a
+## ledge or chute beside the rise. No track: it lifts through open air, so a
+## balloon line crosses a chasm's height where nothing can be built.
+## A few ride at once; while the air's full, arrivals wait in the basket.
+
+const SFX = preload("res://scripts/sfx.gd")
+const FX = preload("res://scripts/fx.gd")
+const HEIGHTS := [80.0, 160.0, 240.0, 320.0]
+const RISE := 70.0               # px/s
+const MAX_UP := 5
+const FILL := 0.5                # s to fill a balloon
+const COLORS := [Color(0.85, 0.3, 0.25), Color(0.95, 0.75, 0.3), Color(0.35, 0.6, 0.85), Color(0.5, 0.8, 0.45)]
+
+@export var mode := 1
+@export var side := 1.0             # the popped piece is tossed this way (onto a ledge)
+
+var lifted := 0                  # tests
+var _up: Array = []              # [ore, colour index, age]
+var _wait: Array = []            # in the basket
+var _fill := 0.0
+var _n := 0
+
+
+func _ready() -> void:
+	z_index = 2
+	if has_meta("ghost"):
+		return
+
+
+func _solid_at(p: Vector2) -> bool:
+	var tm := get_tree().current_scene.get_node_or_null("TileMapLayer") as TileMapLayer
+	if tm == null:
+		return false
+	return tm.get_cell_source_id(tm.local_to_map(tm.to_local(p))) != -1
+
+
+func _hold(o, at: Vector2, delta: float) -> void:
+	o.linear_velocity = (at - o.global_position) / delta
+	o.angular_velocity = 0.0
+	if "_timer" in o:
+		o._timer = 0.0
+
+
+func _physics_process(delta: float) -> void:
+	if has_meta("ghost"):
+		return
+	var now := Time.get_ticks_msec() / 1000.0
+	for o in get_tree().get_nodes_in_group("ore"):
+		if not is_instance_valid(o) or o.freeze or o in _wait or o.has_meta("store_material"):
+			continue
+		if o.get_meta("balloon_until", 0.0) > now:
+			continue
+		var p: Vector2 = o.global_position - global_position
+		if absf(p.x) < 10 and p.y > -18 and p.y < 2:
+			var held := false
+			for u in _up:
+				if u[0] == o:
+					held = true
+			if not held:
+				o.gravity_scale = 0.0
+				_wait.append(o)
+	_wait = _wait.filter(func(o): return is_instance_valid(o))
+	for i in _wait.size():
+		_hold(_wait[i], global_position + Vector2((i % 3) * 5 - 5, -6 - (i / 3) * 5), delta)
+	# fill the next balloon
+	if not _wait.is_empty() and _up.size() < MAX_UP:
+		_fill += delta
+		if _fill >= FILL:
+			_fill = 0.0
+			var o = _wait.pop_front()
+			_up.append([o, _n % COLORS.size(), 0.0])
+			_n += 1
+			SFX.play_small(self, SFX.sfx_roll(), -16.0, 1.6)
+	else:
+		_fill = 0.0
+	var top: float = global_position.y - HEIGHTS[mode]
+	var keep: Array = []
+	for u in _up:
+		var o = u[0]
+		if not is_instance_valid(o):
+			continue
+		u[2] += delta
+		var y: float = o.global_position.y - RISE * delta
+		var x: float = global_position.x + sin(u[2] * 2.2 + u[1]) * 4.0 * minf(1.0, u[2])
+		if y <= top or _solid_at(Vector2(x, y - 20)):
+			_pop(o, u[1])
+			continue
+		_hold(o, Vector2(x, y), delta)
+		keep.append(u)
+	_up = keep
+	queue_redraw()
+
+
+func _pop(o, ci: int) -> void:
+	o.gravity_scale = 1.0
+	o.linear_velocity = Vector2(side * 130.0, -60)
+	o.set_meta("balloon_until", Time.get_ticks_msec() / 1000.0 + 2.0)
+	lifted += 1
+	FX.burst(get_parent(), o.global_position + Vector2(0, -16), COLORS[ci], 8, 80.0, 0.25, 1.5)
+	SFX.play_small(self, SFX.sfx_clink(), -8.0, 2.4)
+
+
+func _input(event: InputEvent) -> void:
+	if has_meta("ghost") or not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
+		return
+	if get_global_mouse_position().distance_to(global_position + Vector2(-14, -10)) < 10:
+		mode = (mode + 1) % HEIGHTS.size()
+		queue_redraw()
+		get_viewport().set_input_as_handled()
+
+
+func _draw() -> void:
+	var dark := Color(0.1, 0.08, 0.07)
+	var brass := Color(0.85, 0.65, 0.35)
+	var iron := Color(0.42, 0.44, 0.5)
+	var h: float = HEIGHTS[mode]
+	# the pin it pops at: a faint line up and a little brass pin
+	for y in range(-20, -int(h), -8):
+		draw_line(Vector2(0, y), Vector2(0, y - 3), Color(0.85, 0.65, 0.35, 0.15), 1.0)
+	draw_line(Vector2(-4, -h), Vector2(4, -h), brass, 1.0)
+	draw_line(Vector2(0, -h), Vector2(0, -h - 7), brass, 1.0)
+	draw_colored_polygon(PackedVector2Array([Vector2(0, -h - 7), Vector2(side * 6, -h - 5), Vector2(0, -h - 3)]), Color(0.85, 0.3, 0.25))
+	# the gas bottle and its nozzle, the basket
+	draw_rect(Rect2(-19, -22, 10, 22), dark)
+	draw_rect(Rect2(-18, -21, 8, 20), Color(0.3, 0.45, 0.35))
+	draw_rect(Rect2(-17, -26, 6, 5), dark)
+	draw_rect(Rect2(-16, -25, 4, 3), brass)
+	draw_line(Vector2(-14, -25), Vector2(-4, -25), dark, 2.0)
+	draw_line(Vector2(-4, -25), Vector2(-4, -20), dark, 2.0)
+	draw_line(Vector2(-14, -25), Vector2(-4, -25), iron, 1.0)
+	draw_colored_polygon(PackedVector2Array([Vector2(-10, -14), Vector2(10, -14), Vector2(7, 2), Vector2(-7, 2)]), dark)
+	draw_colored_polygon(PackedVector2Array([Vector2(-9, -13), Vector2(9, -13), Vector2(6, 1), Vector2(-6, 1)]), Color(0.55, 0.4, 0.25))
+	for x in [-5.0, 0.0, 5.0]:
+		draw_line(Vector2(x, -13), Vector2(x * 0.7, 1), dark, 1.0)
+	var font := ThemeDB.fallback_font
+	draw_string(font, Vector2(-22, -30), "%d" % int(h), HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.9, 0.8, 0.55))
+	# a balloon filling, then each one up with its string
+	if _fill > 0.0:
+		var r := 7.0 * _fill / FILL
+		draw_circle(Vector2(0, -20 - r), r, Color(COLORS[_n % COLORS.size()], 0.9))
+	for u in _up:
+		var o = u[0]
+		if not is_instance_valid(o):
+			continue
+		var at: Vector2 = to_local(o.global_position)
+		var b := at + Vector2(sin(u[2] * 3.0) * 1.5, -18)
+		draw_line(at, b + Vector2(0, 7), Color(0.85, 0.85, 0.8, 0.8), 1.0)
+		draw_circle(b, 8.0, dark)
+		draw_circle(b, 7.0, COLORS[u[1]])
+		draw_circle(b + Vector2(-2.5, -2.5), 2.0, Color(1, 1, 1, 0.45))
+		draw_colored_polygon(PackedVector2Array([b + Vector2(-2, 7), b + Vector2(2, 7), b + Vector2(0, 9)]), COLORS[u[1]].darkened(0.3))

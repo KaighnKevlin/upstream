@@ -136,6 +136,7 @@ const TABS := [
 		["", "Rope bridge", "drag post to post: walkers, you and pieces cross; a trigger or a click on the near post cuts it, dropping what's on it; knits back in 5 s"],
 		["", "Gabion", "wire cage on the ground: pieces dropped in build a wall (12 = full); walkers stop and hack pieces out; a feed mends it"],
 		["", "Igniter", "brazier over a track: lights what rolls under it; it bursts on a walker, or when its fuse (1/2/3 s, click) runs out"],
+		["", "Balloon lift", "pieces in its basket float straight up to the pin (80/160/240/320 px, click the bottle) and are tossed off toward the flag: lifts through open air"],
 		["", "Sling", "whirligig: catches a piece, whirls it twice, throws it where the arrow points (click the hub); twice as hard powered"],
 		["", "Speed trap", "over a line: fires its wire for pieces faster than 150/250/350 (click); shows the last speed"],
 		["", "Sluice gate", "across a chute: holds the stream back until a trigger or a click lets the backlog go"],
