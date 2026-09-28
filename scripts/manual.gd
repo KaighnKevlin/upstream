@@ -134,6 +134,7 @@ const TABS := [
 		["", "Load cell", "when the ore in its pan weighs 2/5/10 (click), fires the traps at its wire's end (drag it)"],
 		["", "Spinner", "vane hung just over a track: pieces rolling under spin it (and lose a little speed); powers machines in reach"],
 		["", "Rope bridge", "drag post to post: walkers, you and pieces cross; a trigger or a click on the near post cuts it, dropping what's on it; knits back in 5 s"],
+		["", "Flail", "post with a spiked ball on a chain: a wheel in reach whirls it, battering walkers and knocking them back; it only lolls round unpowered"],
 		["", "Gabion", "wire cage on the ground: pieces dropped in build a wall (12 = full); walkers stop and hack pieces out; a feed mends it"],
 		["", "Igniter", "brazier over a track: lights what rolls under it; it bursts on a walker, or when its fuse (1/2/3 s, click) runs out"],
 		["", "Balloon lift", "pieces in its basket float straight up to the pin (80/160/240/320 px, click the bottle) and are tossed off toward the flag: lifts through open air"],
