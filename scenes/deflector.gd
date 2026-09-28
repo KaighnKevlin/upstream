@@ -18,10 +18,24 @@ var hits := 0                    # tests
 var _body: StaticBody2D
 var _shape: CollisionShape2D
 var _flash := 0.0
+var _plate: Sprite2D
 
 
 func _ready() -> void:
 	z_index = 1
+	# post and plate sprites (ghosts too); _draw turns and flashes the plate
+	var post := Sprite2D.new()
+	post.texture = preload("res://assets/sprites/deflector_post.png")
+	post.centered = false
+	post.offset = Vector2(-8, -2)
+	post.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(post)
+	_plate = Sprite2D.new()
+	_plate.texture = preload("res://assets/sprites/deflector_plate.png")
+	_plate.centered = false
+	_plate.offset = Vector2(-25, -4)
+	_plate.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(_plate)
 	if has_meta("ghost"):
 		return
 	_body = StaticBody2D.new()
@@ -83,13 +97,8 @@ func _input(event: InputEvent) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	# the post
-	draw_line(Vector2.ZERO, Vector2(0, 26), Color(0.16, 0.13, 0.1), 3.0)
-	draw_line(Vector2(-6, 26), Vector2(6, 26), Color(0.16, 0.13, 0.1), 3.0)
-	var d := Vector2(cos(deg_to_rad(angle_deg)), sin(deg_to_rad(angle_deg))) * HALF
-	draw_line(-d, d, dark, 6.0)
-	draw_line(-d, d, Color(0.72, 0.74, 0.78).lerp(Color(1, 1, 0.85), _flash), 3.0)
-	draw_line(-d * 0.9 + d.orthogonal().normalized() * -1.5, d * 0.9 + d.orthogonal().normalized() * -1.5, Color(1, 1, 1, 0.3), 1.0)
-	draw_circle(Vector2.ZERO, 3.0, dark)
-	draw_circle(Vector2.ZERO, 2.0, Color(0.85, 0.65, 0.35))
+	# the post and plate are sprites (see _ready): set the plate's tilt, and
+	# light it up for a moment when it's struck
+	if _plate:
+		_plate.rotation = deg_to_rad(angle_deg)
+		_plate.modulate = Color(1, 1, 1).lerp(Color(1.8, 1.8, 1.5), _flash)
