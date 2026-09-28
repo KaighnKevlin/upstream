@@ -1265,6 +1265,7 @@ var _build_names := {
 	75: "Build: FURNACE RAIL (drag; ore that lingers on it comes off as ingots: lay it shallow, or brake first)",
 	76: "Build: SILO (stores up to 40 dropped in its funnel; lets them out every 0.5/1/2 s or per trigger: click)",
 	77: "Build: ROPEWAY (drag from the high post down to the low one: ore on its landing zips across overhead)",
+	78: "Build: LOAD CELL (when the ore in its pan weighs 2/5/10, it fires traps at its wire's end; click the dial)",
 	44: "Build: ROBOTIC ARM (picks from one spot, drops at another)",
 	37: "Build: DOMINO ROW (drag start to end; click an end to reset)",
 	36: "Build: STEAM ENGINE (feed it ore: powers machines in reach)",

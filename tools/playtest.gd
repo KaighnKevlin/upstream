@@ -6752,6 +6752,33 @@ func ropeway_rec() -> void:
 	log_line("ropeway: carried %d | landed x %s" % [rw.carried, pcs.map(func(o): return int(o.global_position.x) if is_instance_valid(o) else -1)])
 
 
+func loadcell_rec() -> void:
+	# Load cell set to 2, wired to a points switch: copper drips into its
+	# pan; the switch should be thrown on the 2nd, once.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	var MW = preload("res://scripts/marble_works.gd")
+	await MW.carve(main, false)
+	MW._piece(main, "res://scenes/dispenser.tscn", Vector2(1260, 420), {"mode": 0, "limit": 4})
+	var lc: Node2D = MW._piece(main, "res://scenes/load_cell.tscn", Vector2(1260, 520))
+	var pt: Node2D = MW._piece(main, "res://scenes/points.tscn", Vector2(1360, 460))
+	lc.wire_to = pt.global_position - lc.global_position
+	var t0: float = pt.tilt
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.5, 2.5)
+	cam.global_position = Vector2(1300, 480)
+	var log := []
+	for k in 5:
+		await wait(1.0)
+		log.append("t%d w%.0f f%d %s" % [k + 1, lc.weight, lc.fired, "thrown" if pt.tilt != t0 else "-"])
+		if k == 2:
+			await shot("loadcell")
+	log_line("load cell: %s" % [log])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.
