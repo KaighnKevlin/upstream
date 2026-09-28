@@ -6582,6 +6582,43 @@ func flipper_rec() -> void:
 	log_line("flipper: rested at %s | batted %d, peak y %d, landed x %s" % [rest, fl.batted, int(peak), os.map(func(o): return int(o.global_position.x))])
 
 
+func counterweight_rec() -> void:
+	# Counterweight lift: a copper waits in the bottom bucket; a copper in
+	# the top one isn't enough (1.0 vs 1.0), an iron is: the copper rides up
+	# and tips out at the top.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	await preload("res://scripts/marble_works.gd").carve(main, false)
+	var cw: Node2D = preload("res://scenes/counterweight.tscn").instantiate()
+	cw.global_position = Vector2(1300, 330)
+	main.add_child(cw)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.0, 2.0)
+	cam.global_position = Vector2(1300, 420)
+	var drop := func(kind: String, at: Vector2) -> RigidBody2D:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.kind = kind
+		o.lifetime = 1.0e9
+		o.global_position = at
+		main.add_child(o)
+		return o
+	var bottom: Vector2 = cw.global_position + cw._bucket(1)
+	var top: Vector2 = cw.global_position + cw._bucket(0)
+	var cu: RigidBody2D = drop.call("copper", bottom + Vector2(0, -40))
+	await wait(1.0)
+	drop.call("copper", top + Vector2(0, -40))
+	await wait(1.5)
+	log_line("copper on top vs copper below: trips %d" % cw.trips)
+	drop.call("iron", top + Vector2(0, -40))
+	await wait(0.9)
+	await shot("counterweight")
+	await wait(1.5)
+	log_line("then an iron: trips %d, lifted %d, the bottom copper now at y %d (was %d)" % [cw.trips, cw.lifted, int(cu.global_position.y), int(bottom.y)])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.
