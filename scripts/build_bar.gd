@@ -399,11 +399,9 @@ func _build_icon(slot: Node2D, t: int) -> void:
 				ic.wire_to = Vector2.ZERO
 				ic.position = Vector2(0, 8)
 			elif scn == "spinner":
-				ic.position = Vector2(0, 6)
-				ic.scale = Vector2(1.2, 1.2)
+				ic.position = Vector2(0, 4)
 			elif scn == "igniter":
-				ic.position = Vector2(0, 6)
-				ic.scale = Vector2(1.2, 1.2)
+				ic.position = Vector2(0, 4)
 			elif scn == "sling":
 				ic.position = Vector2(0, -6)
 				ic.scale = Vector2(0.5, 0.5)
