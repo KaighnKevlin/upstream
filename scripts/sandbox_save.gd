@@ -11,7 +11,7 @@ const PROPS := ["bounce_angle", "bounce_force", "eject_angle", "eject_force", "a
 	"fuel", "charge", "ammo",   # what's loaded: flamer / steam engine fuel, tesla charge, harpoon ammo
 	# the marble pieces: which way they face or lean, springs, notes, wires, targets
 	"side", "heavy_side", "tilt", "springs", "angle_deg", "note", "watch", "full", "wire_to",
-	"kinds", "target", "accept", "backboard", "muffled", "steps", "limit", "depth"]
+	"kinds", "stored", "target", "accept", "backboard", "muffled", "steps", "limit", "depth"]
 
 
 static func has_save() -> bool:

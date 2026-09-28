@@ -6689,6 +6689,34 @@ func furnace_rec() -> void:
 	log_line("furnace: shallow rail smelted %d of 4, steep rail %d of 4 | ingots now %d" % [rails[0].smelted, rails[1].smelted, get_nodes_in_group("ingots").size()])
 
 
+func silo_rec() -> void:
+	# Silo: a burst of 12 dumped in at once; on the 1 s clock it should let
+	# them out steadily, one a second.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	await preload("res://scripts/marble_works.gd").carve(main, false)
+	var si: Node2D = preload("res://scenes/silo.tscn").instantiate()
+	si.global_position = Vector2(1300, 480)
+	main.add_child(si)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.2, 2.2)
+	cam.global_position = Vector2(1300, 450)
+	for k in 12:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.global_position = Vector2(1300 + randf_range(-4, 4), 360 - k * 10)
+		main.add_child(o)
+	var counts := []
+	for k in 6:
+		await wait(1.0)
+		counts.append("%d/%d" % [si.stored.size(), si.let_out])
+		if k == 2:
+			await shot("silo")
+	log_line("silo stored/let out each second: %s" % [counts])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.
