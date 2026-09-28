@@ -5998,6 +5998,40 @@ func overflow_rec() -> void:
 		log_line("t=%d | primary %d overflowed %d | leaning %s" % [(k + 1) * 3, g.primary, g.overflowed, "primary" if g.tilt == g.side else "overflow"])
 
 
+func deflector_rec() -> void:
+	# Deflector: a marble fired right at 300 px/s into a plate at -45 ("\\"),
+	# 45 ("/") and 0; its velocity after the bounce.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	await preload("res://scripts/marble_works.gd").carve(main, false)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.5, 2.5)
+	cam.global_position = Vector2(1300, 380)
+	var out := []
+	for a in [-45, 45, 0]:
+		var d: Node2D = preload("res://scenes/deflector.tscn").instantiate()
+		d.angle_deg = a
+		d.global_position = Vector2(1300, 380)
+		main.add_child(d)
+		await wait(0.1)
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.global_position = Vector2(1240, 380 - 0.0)
+		main.add_child(o)
+		o.gravity_scale = 0.0
+		o.linear_velocity = Vector2(300, 0)
+		await wait(0.35)
+		if a == -45:
+			await shot("deflector")
+		out.append("%d deg: v %s hits %d" % [a, Vector2i(o.linear_velocity), d.hits])
+		o.queue_free()
+		d.queue_free()
+		await wait(0.1)
+	log_line("deflector: %s" % [out])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.
