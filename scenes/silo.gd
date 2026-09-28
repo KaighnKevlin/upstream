@@ -23,6 +23,20 @@ var _mouth: Area2D
 
 func _ready() -> void:
 	z_index = 1
+	# the bin under our _draw (the fill), its bands over it; ghosts too
+	var body := Sprite2D.new()
+	body.texture = preload("res://assets/sprites/silo.png")
+	body.centered = false
+	body.offset = Vector2(-21, -77)
+	body.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	body.show_behind_parent = true
+	add_child(body)
+	var front := Sprite2D.new()
+	front.texture = preload("res://assets/sprites/silo_front.png")
+	front.centered = false
+	front.offset = Vector2(-21, -77)
+	front.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(front)
 	if has_meta("ghost"):
 		return
 	add_to_group("triggerable")
@@ -89,22 +103,14 @@ func _input(event: InputEvent) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var brass := Color(0.85, 0.65, 0.35)
-	# funnel
-	draw_line(Vector2(-18, -H - 14), Vector2(-9, -H), dark, 3.0)
-	draw_line(Vector2(18, -H - 14), Vector2(9, -H), dark, 3.0)
-	# the bin, filled to its level
-	draw_rect(Rect2(-10, -H, 20, H + 6), dark)
-	draw_rect(Rect2(-8, -H + 2, 16, H + 2), Color(0.22, 0.18, 0.14))
+	# the bin, funnel and gate are sprites (see _ready); the fill shows in
+	# its sight-glass (x -5..5, y -55..1)
 	var fill := float(stored.size()) / CAP
 	if fill > 0:
-		var fh := (H + 2) * fill
-		draw_rect(Rect2(-8, 4 - fh, 16, fh), Color(0.62, 0.42, 0.24))
-	for y in [-H * 0.66, -H * 0.33]:
-		draw_line(Vector2(-10, y), Vector2(10, y), brass, 1.0)
-	# gate
-	draw_rect(Rect2(-5, 6, 10, 4), brass)
+		var fh := roundf(56.0 * fill)
+		draw_rect(Rect2(-5, 1 - fh, 10, fh), Color(0.62, 0.42, 0.24))
+		draw_rect(Rect2(2, 1 - fh, 3, fh), Color(0.45, 0.3, 0.18))
+		draw_rect(Rect2(-5, 1 - fh, 10, 1), Color(0.85, 0.66, 0.4))
 	var font := ThemeDB.fallback_font
 	draw_string(font, Vector2(-9, -H - 18), str(stored.size()), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.9, 0.8, 0.55))
 	draw_string(font, Vector2(12, -4), ("%.1fs" % MODES[mode]) if MODES[mode] > 0 else "trig", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.9, 0.8, 0.55))
