@@ -41,10 +41,29 @@ var _lift_t := 0.0
 var _rate_t := 0.0
 var _cool := {}
 var _thud := 0.0
+var _frame: Sprite2D               # art: the posts, the beam (jolts), the weight on its stem, cam, latch
+var _beam: Sprite2D
+var _weight: Sprite2D
+var _rod: Sprite2D
+var _cam: Sprite2D
+var _pawl: Sprite2D
 
 
 func _ready() -> void:
 	z_index = 2
+	# sprites first, so ghosts and build-bar icons get them too; behind our
+	# own _draw, which keeps the hopper's pips and the drive pulley on top
+	_frame = _spr(preload("res://assets/sprites/stamp_frame.png"), Vector2(-42, -153))
+	_rod = _spr(preload("res://assets/sprites/stamp_rod.png"), Vector2(-2, 0))
+	_rod.region_enabled = true
+	_rod.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+	_rod.position = Vector2(0, TOP + 4)
+	_weight = _spr(preload("res://assets/sprites/stamp_weight.png"), Vector2(-25, -23))
+	_pawl = _spr(preload("res://assets/sprites/stamp_pawl.png"), Vector2(-1, -3))
+	_beam = _spr(preload("res://assets/sprites/stamp_beam.png"), Vector2(-42, -184))
+	_cam = _spr(preload("res://assets/sprites/stamp_cam.png"), Vector2(-7, -7))
+	_cam.position = Vector2(0, TOP - 1)
+	_pose()
 	if has_meta("ghost"):
 		return
 	add_to_group("triggerable")
@@ -63,6 +82,31 @@ func _ready() -> void:
 		cs.shape = s
 		body.add_child(cs)
 	add_child(body)
+
+
+func _spr(tex: Texture2D, off: Vector2) -> Sprite2D:
+	var sp := Sprite2D.new()
+	sp.texture = tex
+	sp.centered = false
+	sp.offset = off
+	sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	sp.show_behind_parent = true
+	add_child(sp)
+	return sp
+
+
+## Art: the weight at its height, the stem down to it, the cam turning
+## while it lifts, the latch out while it's held, the beam jolted by a blow.
+func _pose() -> void:
+	var head_y := -roundf(_h)
+	_weight.position = Vector2(0, head_y)
+	_rod.region_rect = Rect2(0, 0, 4, maxf(1.0, head_y - 20.0 - _rod.position.y))
+	_cam.rotation = _h / RAISE * PI
+	_pawl.visible = _state == State.UP
+	_pawl.position = Vector2(-34, head_y - 12)
+	var jolt := roundf(_thud * 1.5)
+	_beam.position = Vector2(0, jolt)
+	_cam.position = Vector2(0, TOP - 1 + jolt)
 
 
 func _physics_process(delta: float) -> void:
@@ -175,42 +219,17 @@ func _input(event: InputEvent) -> void:
 
 
 func _draw() -> void:
+	_pose()
 	var dark := Color(0.1, 0.08, 0.07)
 	var brass := Color(0.85, 0.65, 0.35)
 	var steel := Color(0.42, 0.44, 0.5)
-	var jolt := _thud * 1.5
-	# the frame: two posts and a crossbeam, braced
-	for x in [-34.0, 34.0]:
-		draw_line(Vector2(x, 0), Vector2(x, TOP), dark, 6.0)
-		draw_line(Vector2(x, 0), Vector2(x, TOP), steel, 3.0)
-		draw_line(Vector2(x, TOP + 26), Vector2(x * 0.45, TOP), dark, 2.0)
-		draw_rect(Rect2(x - 6, -4, 12, 4), dark)
-	draw_line(Vector2(-40, TOP + jolt), Vector2(40, TOP + jolt), dark, 7.0)
-	draw_line(Vector2(-40, TOP + jolt), Vector2(40, TOP + jolt), steel.lightened(0.1), 4.0)
-	# the cam on the crossbeam that lifts it, turning while it lifts
-	var cam_a := _h / RAISE * PI
-	draw_circle(Vector2(0, TOP - 1), 6.0, dark)
-	draw_circle(Vector2(0, TOP - 1), 4.5, brass)
-	draw_line(Vector2(0, TOP - 1), Vector2(0, TOP - 1) + Vector2(cos(cam_a), sin(cam_a)) * 5.0, dark, 2.0)
-	# the stem and the weight
-	var head_y := -_h
-	draw_line(Vector2(0, TOP + 3), Vector2(0, head_y - 18), dark, 5.0)
-	draw_line(Vector2(0, TOP + 3), Vector2(0, head_y - 18), steel.lightened(0.25), 2.0)
-	draw_rect(Rect2(-HALF_W - 1, head_y - 19, HALF_W * 2 + 2, 19), dark)
-	draw_rect(Rect2(-HALF_W + 1, head_y - 17, HALF_W * 2 - 2, 13), steel)
-	draw_rect(Rect2(-HALF_W + 1, head_y - 5, HALF_W * 2 - 2, 4), steel.darkened(0.35))
-	for x in [-HALF_W + 5, HALF_W - 5]:
-		draw_circle(Vector2(x, head_y - 11), 1.5, brass)
-	# the latch: brass pawl out when it's held up
-	if _state == State.UP:
-		draw_line(Vector2(-34, head_y - 12), Vector2(-HALF_W - 1, head_y - 12), brass, 3.0)
-	# the hopper, and what's waiting in it
-	for x in [-1.0, 1.0]:
-		draw_line(HOPPER + Vector2(15 * x, -20), HOPPER + Vector2(8 * x, -2), dark, 3.0)
-		draw_line(HOPPER + Vector2(15 * x, -20), HOPPER + Vector2(8 * x, -2), brass, 1.5)
+	# frame, beam, cam, stem, weight, latch and hopper are sprites (see
+	# _ready, _pose); what's waiting in the hopper is drawn over them
 	for i in loaded.size():
+		draw_circle(HOPPER + Vector2(-6 + i * 4, -3), 2.3, dark)
 		draw_circle(HOPPER + Vector2(-6 + i * 4, -3), 1.8, steel.lightened(0.2) if loaded[i] == "iron" else Color(0.85, 0.55, 0.3))
 	# powered: a drive pulley on the post that spins while it lifts
 	if rate > Power.UNPOWERED + 0.05:
 		draw_circle(Vector2(34, TOP + 14), 5.0, dark)
+		draw_circle(Vector2(34, TOP + 14), 1.5, steel)
 		draw_arc(Vector2(34, TOP + 14), 4.0, _lift_t * 8.0, _lift_t * 8.0 + 4.0, 8, brass, 1.5)

@@ -36,10 +36,31 @@ var _intake: Area2D
 var _rate := Power.UNPOWERED
 var _rate_t := 0.0
 var _flash := 0.0
+var _art: Node2D             # the press body, drawn sending to +x; mirrored for side -1
+var _front: Sprite2D         # the hopper's walls, over the grit drawn in it
+var _screw: Sprite2D
+var _ram: Sprite2D
 
 
 func _ready() -> void:
 	z_index = 1
+	# sprites first, so ghosts and build-bar icons get them too: the body,
+	# screw and ram behind our own _draw (the grit in the hopper, the count),
+	# the hopper's walls in front of it
+	_art = Node2D.new()
+	_art.scale = Vector2(side, 1)
+	_art.show_behind_parent = true
+	add_child(_art)
+	_art.add_child(_spr(preload("res://assets/sprites/pellet_body.png"), Vector2(-19, -52)))
+	_screw = _spr(preload("res://assets/sprites/pellet_screw.png"), Vector2(-2, 0))
+	_screw.region_enabled = true
+	_screw.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+	_screw.position = Vector2(0, THROAT + 3)
+	_art.add_child(_screw)
+	_ram = _spr(preload("res://assets/sprites/pellet_ram.png"), Vector2(-6, -1))
+	_art.add_child(_ram)
+	_front = _spr(preload("res://assets/sprites/pellet_front.png"), Vector2(-20, -66))
+	add_child(_front)
 	queue_redraw()
 	if has_meta("ghost"):
 		return
@@ -73,6 +94,15 @@ func _ready() -> void:
 	ic.position = Vector2(0, THROAT - 7)
 	_intake.add_child(ic)
 	add_child(_intake)
+
+
+func _spr(tex: Texture2D, off: Vector2) -> Sprite2D:
+	var sp := Sprite2D.new()
+	sp.texture = tex
+	sp.centered = false
+	sp.offset = off
+	sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	return sp
 
 
 func _physics_process(delta: float) -> void:
@@ -134,39 +164,23 @@ func _input(event: InputEvent) -> void:
 
 func _draw() -> void:
 	var dark := Color(0.1, 0.08, 0.07)
-	var brass := Color(0.85, 0.65, 0.35).lerp(Color(1, 0.95, 0.7), _flash)
-	var steel := Color(0.42, 0.44, 0.5)
-	# the press frame: two steel cheeks and a base
-	draw_rect(Rect2(-12, THROAT, 24, -THROAT), dark)
-	draw_rect(Rect2(-11, THROAT + 1, 22, -THROAT - 2), steel.darkened(0.25))
-	draw_rect(Rect2(-11, THROAT + 1, 3, -THROAT - 2), steel)
-	draw_rect(Rect2(8, THROAT + 1, 3, -THROAT - 2), steel)
-	draw_rect(Rect2(-14, -4, 28, 4), dark)
-	draw_rect(Rect2(-13, -3, 26, 2), brass.darkened(0.2))
-	# the ram, coming down on the die as the stroke runs
+	# the frame, die, spout, screw and ram are sprites (see _ready); the ram
+	# comes down on the die as the stroke runs, brass flaring as it lands
+	if _art.scale.x != side:
+		_art.scale = Vector2(side, 1)
 	var f := 0.0 if _work < 0 else sin(clampf(_work / PRESS, 0.0, 1.0) * PI)
-	var ram := THROAT + 4 + f * 14.0
-	draw_line(Vector2(0, THROAT + 1), Vector2(0, ram), Color(0.7, 0.72, 0.76), 2.0)
-	draw_rect(Rect2(-5, ram, 10, 4), dark)
-	draw_rect(Rect2(-4, ram + 1, 8, 2), brass)
-	draw_rect(Rect2(-5, -12, 10, 6), dark)                      # the die
-	draw_rect(Rect2(-4, -11, 8, 4), steel.lightened(0.15))
-	# the spout on the out side
-	draw_rect(Rect2(side * 12 - (4 if side < 0 else 0), -10, 4, 5), dark)
-	draw_rect(Rect2(side * 12 - (3 if side < 0 else 0), -9, 3, 3), brass.darkened(0.1))
-	# the hopper: a brass funnel, grit showing in its throat
-	var pts := PackedVector2Array([Vector2(-RIM, TOP), Vector2(RIM, TOP), Vector2(6, THROAT), Vector2(-6, THROAT)])
-	draw_colored_polygon(pts, Color(0.2, 0.16, 0.12))
+	var ram := roundf(THROAT + 4 + f * 14.0)
+	_ram.position = Vector2(0, ram)
+	_screw.region_rect = Rect2(0, 0, 4, maxf(1.0, ram - _screw.position.y))
+	var glow := Color(1, 1, 1).lerp(Color(1.35, 1.3, 1.1), _flash)
+	_ram.modulate = glow
+	_front.modulate = glow
+	# the hopper: grit showing in its throat (its walls are a sprite over this)
 	var g := clampf(float(held) / CAP, 0.0, 1.0)
 	if g > 0:
 		var h := (THROAT - TOP) * g
 		var w := 6.0 + (RIM - 6.0) * g
 		draw_colored_polygon(PackedVector2Array([Vector2(-w, THROAT - h), Vector2(w, THROAT - h), Vector2(6, THROAT), Vector2(-6, THROAT)]), Color(0.55, 0.5, 0.46))
-	for s in [-1.0, 1.0]:
-		draw_line(Vector2(s * RIM, TOP - COLLAR), Vector2(s * RIM, TOP), dark, 3.0)
-		draw_line(Vector2(s * RIM, TOP), Vector2(s * 6, THROAT), dark, 3.0)
-		draw_line(Vector2(s * RIM, TOP - COLLAR), Vector2(s * RIM, TOP), brass.darkened(0.15), 1.0)
-		draw_line(Vector2(s * RIM, TOP), Vector2(s * 6, THROAT), brass, 1.0)
 	if _intake == null:
 		return
 	# what it's holding: a count over the hopper, pips toward the next shot
