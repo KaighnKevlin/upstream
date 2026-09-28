@@ -239,7 +239,7 @@ func _show_title() -> void:
 	sub.position = Vector2(0, 150 + sz.y + 18)
 	root.add_child(sub)
 	# two ways in: the sandbox (showcase + god tools) or survival (waves)
-	for i in 10:
+	for i in 11:
 		var spec: Array = [["1  SANDBOX", "a working showcase, god tools, no waves until you ask"],
 			["2  SURVIVAL", "a bare world: get an ingot into the dome and the waves begin"],
 			["3  MARBLE WORKS", "the Beam and a marble machine, under the dome"],
@@ -249,10 +249,11 @@ func _show_title() -> void:
 			["7  PUZZLE", "build a way for five marbles into the cup"],
 			["8  DEFENCE", "marbles feed the turrets: hold the vault"],
 			["9  CLATTER", "the busier the machine, the more it draws in"],
-			["0  MUSIC BOX", "every marble plays the tune on the way down"]][i]
-		# two rows of five
+			["0  MUSIC BOX", "every marble plays the tune on the way down"],
+			["-  PACHINKO", "hold and release the plunger: aim for the 200"]][i]
+		# rows of five
 		var x := 20.0 + (i % 5) * 250.0
-		var y := 382.0 + (i / 5) * 70.0
+		var y := 378.0 + (i / 5) * 58.0
 		var opt := _hud_label(spec[0], 18, Color(0.55, 0.88, 0.92))
 		opt.size = Vector2(240, 40)
 		opt.position = Vector2(x, y + 5)
@@ -311,6 +312,8 @@ func _on_title_input(event: InputEvent) -> void:
 		or (event is InputEventMouseButton and _title_opts.size() > 8 and _title_opts[8].has_point(event.position))
 	var music: bool = (event is InputEventKey and event.keycode == KEY_0) \
 		or (event is InputEventMouseButton and _title_opts.size() > 9 and _title_opts[9].has_point(event.position))
+	var pachinko: bool = (event is InputEventKey and event.keycode == KEY_MINUS) \
+		or (event is InputEventMouseButton and _title_opts.size() > 10 and _title_opts[10].has_point(event.position))
 	if survival:
 		start_survival()
 	elif marble:
@@ -329,6 +332,8 @@ func _on_title_input(event: InputEvent) -> void:
 		start_clatter_works()
 	elif music:
 		start_music_works()
+	elif pachinko:
+		start_pachinko_works()
 	_title.accept_event()
 	var title := _title
 	_title = null
@@ -459,6 +464,15 @@ func start_music_works() -> void:
 	await preload("res://scripts/music_works.gd").build(self)
 	_player.global_position = Vector2(1450, 540)
 	_show_banner("MUSIC BOX", "every marble plays the tune on the way down")
+
+
+## A marble game you play: a plunger, a peg field, scoring pockets
+## (scripts/pachinko_works.gd).
+func start_pachinko_works() -> void:
+	preload("res://scripts/sandbox_showcase.gd").clear(self)
+	await preload("res://scripts/pachinko_works.gd").build(self)
+	_player.global_position = Vector2(960, 540)
+	_show_banner("PACHINKO", "click and hold the plunger (bottom right), let go to fire")
 
 
 func start_survival() -> void:
@@ -1229,6 +1243,7 @@ var _build_names := {
 	53: "Build: MARBLE CANNON (feed its hopper: fires flat at walkers in front; iron punches shields)",
 	54: "Build: FELT CHUTE (drag: marbles on it make no clatter, but it slows them)",
 	55: "Build: CHIME BAR (drag a sloped bar; a marble landing on it rings its note: click to retune)",
+	56: "Build: PLUNGER (click and hold it, let go: fires a marble straight up; reloads what falls back in)",
 	44: "Build: ROBOTIC ARM (picks from one spot, drops at another)",
 	37: "Build: DOMINO ROW (drag start to end; click an end to reset)",
 	36: "Build: STEAM ENGINE (feed it ore: powers machines in reach)",

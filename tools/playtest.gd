@@ -5883,6 +5883,33 @@ func musicbox_rec() -> void:
 		log_line("t=%d | rung per bar %s" % [(k + 1) * 5, bars.map(func(b): return b.rung)])
 
 
+func pachinko_rec() -> void:
+	# Pachinko: ten shots at rising power, then the score and the pockets.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await main.start_pachinko_works()
+	var b = main.get_children().filter(func(c): return c.get_script() and c.get_script().resource_path.get_file() == "pachinko.gd")[0]
+	var pl = b.plunger
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.05, 1.05)
+	cam.global_position = Vector2(1290, 400)
+	var outs := []
+	for k in 10:
+		var p := 0.1 + k * 0.1
+		var sc0: int = b.score
+		pl.fire(p)
+		await wait(2.2)
+		outs.append("%.1f:%d" % [p, b.score - sc0])
+		if k == 6:
+			await shot("pachinko_shot")
+	await wait(4.0)
+	await shot("pachinko_end")
+	log_line("marbles at %s" % [get_nodes_in_group("ore").map(func(o): return Vector2i(o.global_position))])
+	log_line("powers %s | score %d | pocket hits %s | ammo %d" % [outs, b.score, b.hits, pl.ammo])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.
