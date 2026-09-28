@@ -206,7 +206,7 @@ func _land() -> void:
 	FX.burst(get_parent(), global_position + Vector2(0, -2), Color(0.55, 0.45, 0.35, 0.9), 10, 90.0, 0.4, 2.0)
 	if struck > 0:
 		FX.burst(get_parent(), global_position + Vector2(0, -12), Color(1.0, 0.85, 0.5), 10, 140.0, 0.3, 1.6)
-	SFX.play(self, SFX.sfx_ore_knock("metal"), 0.0, 0.5)
+	SFX.play(self, SFX.sfx_thud(), -4.0, 1.0)
 
 
 func _input(event: InputEvent) -> void:

@@ -79,7 +79,7 @@ func _physics_process(delta: float) -> void:
 					o.gravity_scale = 0.0
 		if not _loads[_top].is_empty() and _mass(_top) > _mass(1 - _top) + MARGIN:
 			_t = 0.0
-			SFX.play_small(self, SFX.sfx_ore_knock("wood"), -12.0, 0.7)
+			SFX.play_small(self, SFX.sfx_creak(), -12.0, 0.8)
 	else:
 		_t += delta
 		if _t >= RIDE:

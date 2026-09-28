@@ -87,7 +87,7 @@ func _drop_in(b) -> void:
 		launched += 1
 		_angle = TILT * side
 		FX.burst(get_parent(), _loaded.global_position, Color(1.0, 0.85, 0.5), 5, 70.0, 0.2, 1.0)
-		SFX.play_small(self, SFX.sfx_bounce(), -6.0, 0.8)
+		SFX.play_small(self, SFX.sfx_twang(), -8.0, 0.7)
 		_loaded = null
 	# the arrival is kept and rolled across into the near cup
 	_incoming = b

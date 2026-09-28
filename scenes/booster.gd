@@ -7,6 +7,7 @@ extends "res://scenes/chute.gd"
 ## through both ends.
 
 const Power = preload("res://scripts/power.gd")
+const SFX = preload("res://scripts/sfx.gd")
 const SPEED := 420.0             # px/s along the rail at full power
 const RAIL_TEX := preload("res://assets/sprites/booster_rail.png")
 const ROLLER_TEX := preload("res://assets/sprites/booster_roller.png")
@@ -77,6 +78,7 @@ func _physics_process(delta: float) -> void:
 		if not _seen.has(o.get_instance_id()):
 			_seen[o.get_instance_id()] = true
 			boosted += 1
+			SFX.play_small(self, SFX.sfx_hiss(), -18.0, 1.4)
 	queue_redraw()
 
 

@@ -73,7 +73,7 @@ func _physics_process(delta: float) -> void:
 		if absf(p.x) < 12 and p.y > -14 and p.y < 8:
 			_riders[o.get_instance_id()] = [o, 0.0, START]
 			o.gravity_scale = 0.0
-			SFX.play_small(self, SFX.sfx_ore_knock("metal"), -18.0, 1.4)
+			SFX.play_small(self, SFX.sfx_creak(), -16.0, 1.1)
 	for id in _riders.keys():
 		var r: Array = _riders[id]
 		var o = r[0]

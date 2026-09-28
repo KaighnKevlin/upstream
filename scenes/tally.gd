@@ -62,7 +62,7 @@ func _notch(b) -> void:
 	_last[b.get_instance_id()] = now + 1.0
 	count += 1
 	_turn += TAU / 8.0
-	SFX.play_small(self, SFX.sfx_ore_knock("wood"), -20.0, 1.5)
+	SFX.play_small(self, SFX.sfx_ratchet(), -16.0, 1.0)
 	if count % EVERY[mode] == 0:
 		fire()
 	queue_redraw()

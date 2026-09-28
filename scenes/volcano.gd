@@ -103,7 +103,7 @@ func _erupt(now: float) -> void:
 	_held.clear()
 	_flash = 1.0
 	FX.burst(get_parent(), global_position + Vector2(0, -4), Color(0.92, 0.92, 0.9), 12, 110.0, 0.35, 1.5)
-	SFX.play_small(self, SFX.sfx_bounce(), -4.0, 0.6)
+	SFX.play_small(self, SFX.sfx_whoosh(), -6.0, 0.6)
 
 
 func _input(event: InputEvent) -> void:

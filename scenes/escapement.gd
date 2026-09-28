@@ -112,7 +112,7 @@ func _physics_process(delta: float) -> void:
 			front.sleeping = false
 			front.linear_velocity += Vector2(side * 45.0, -10.0)
 		released += 1
-		SFX.play_small(self, SFX.sfx_clink(), -14.0, 2.0)
+		SFX.play_small(self, SFX.sfx_ratchet(), -12.0, 1.0)
 	queue_redraw()
 
 

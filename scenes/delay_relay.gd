@@ -54,7 +54,7 @@ func trigger() -> void:
 		restarts += 1
 	waiting = true
 	_left = DELAYS[mode]
-	SFX.play_small(self, SFX.sfx_ore_knock("metal"), -20.0, 1.8)
+	SFX.play_small(self, SFX.sfx_ratchet(), -16.0, 1.3)
 	queue_redraw()
 
 

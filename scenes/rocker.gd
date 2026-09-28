@@ -99,7 +99,7 @@ func _on_leave(b) -> void:
 	tilt = -tilt
 	_cool = 0.25
 	_apply()
-	SFX.play_small(self, SFX.sfx_ore_knock("wood"), -14.0, 1.4)
+	SFX.play_small(self, SFX.sfx_latch(), -14.0, 0.75)
 
 
 func _physics_process(delta: float) -> void:

@@ -132,7 +132,7 @@ func _spit(k: String) -> void:
 		g.linear_velocity = Vector2(EJECT.x * side, EJECT.y) + Vector2(randf_range(-15, 15), randf_range(-10, 10))
 		grit_out += 1
 	FX.burst(get_parent(), at, Color(0.62, 0.55, 0.5, 0.8), 5, 45.0, 0.4, 1.6)
-	SFX.play_small(self, SFX.sfx_mine_hit(), -12.0, 1.3 if k == "copper" else 1.0)
+	SFX.play_small(self, SFX.sfx_grind(), -12.0, 1.2 if k == "copper" else 1.0)
 
 
 func _input(event: InputEvent) -> void:
