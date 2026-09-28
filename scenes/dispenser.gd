@@ -8,6 +8,7 @@ const PERIODS := [1.0, 2.0, 4.0]
 
 @export var mode := 1
 @export var limit := 0           # 0: for ever; otherwise stops after this many
+@export var kinds: Array = ["copper"]   # dropped in turn
 
 var dropped := 0                 # tests
 var _t := 0.5
@@ -16,7 +17,8 @@ var _flash := 0.0
 
 func _ready() -> void:
 	z_index = 2
-	add_to_group("dispensers")
+	if not has_meta("ghost"):
+		add_to_group("dispensers")
 
 
 func _physics_process(delta: float) -> void:
@@ -31,6 +33,7 @@ func _physics_process(delta: float) -> void:
 		dropped += 1
 		_flash = 1.0
 		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.kind = kinds[(dropped - 1) % kinds.size()]
 		o.lifetime = 1.0e9
 		o.global_position = global_position + Vector2(0, 14)
 		o.add_to_group("showcase")

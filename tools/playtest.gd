@@ -5782,6 +5782,43 @@ func scale_rec() -> void:
 	log_line("scale: %s | heavy %d light %d sent L/R %s" % [went, sc.heavy, sc.light, sc.sent])
 
 
+func puzzle2_rec() -> void:
+	# Puzzle level 2: solve level 1, see copper spoil the iron-only cup,
+	# then put a weigh scale in the route and see it fill with iron.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await main.start_puzzle_works()
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.2, 2.2)
+	cam.global_position = Vector2(1400, 470)
+	var cup = get_nodes_in_group("goal_cups")[0]
+	var MW = preload("res://scripts/marble_works.gd")
+	MW._chute(main, Vector2(985, 225), Vector2(1296, 392))
+	var c2 = MW._chute(main, Vector2(1302, 420), Vector2(1516, 548))
+	var tries := 0
+	while cup.accept == "" and tries < 40:
+		await wait(0.5)
+		tries += 1
+		if tries % 6 == 0:
+			log_line("  waiting: cup %d/%d done %s" % [cup.count, cup.target, cup.done])
+		if tries == 12:
+			await shot("puzzle2_level1")
+	log_line("level 2 began (cup %d/%d %s)" % [cup.count, cup.target, cup.accept])
+	await wait(5.0)
+	log_line("plain chutes, 5 s: cup %d, spoiled %d" % [cup.count, cup.spoiled])
+	c2.queue_free()
+	MW._piece(main, "res://scenes/weigh_scale.tscn", Vector2(1330, 440), {"heavy_side": 1.0})
+	MW._chute(main, Vector2(1330 + 14, 440 + 14), Vector2(1516, 548))
+	var sp0: int = cup.spoiled
+	for k in 3:
+		await wait(4.0)
+		if k == 1:
+			await shot("puzzle2_%d" % k)
+		log_line("with scale +%d s: cup %d/%d done %s, spoiled since %d" % [(k + 1) * 4, cup.count, cup.target, cup.done, cup.spoiled - sp0])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.

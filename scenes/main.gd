@@ -409,7 +409,7 @@ func start_coaster_works() -> void:
 func start_puzzle_works() -> void:
 	preload("res://scripts/sandbox_showcase.gd").clear(self)
 	var cup: Node2D = await preload("res://scripts/puzzle_works.gd").build(self)
-	cup.filled.connect(func(): _show_banner("SOLVED", "five in the cup"))
+	cup.filled.connect(func(): _show_banner("SOLVED", "five in the cup" if cup.accept == "" else "five iron, no copper"))
 	_player.global_position = Vector2(1400, 540)
 	_show_banner("MARBLE PUZZLE", "get five marbles into the cup: build chutes (9)")
 
