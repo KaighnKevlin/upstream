@@ -305,6 +305,7 @@ func _build_icon(slot: Node2D, t: int) -> void:
 				ic.scale = Vector2(0.65, 0.65)
 			elif scn == "distributor":
 				ic.position = Vector2(0, 6)
+				ic.scale = Vector2(0.6, 0.6)
 			elif scn == "flywheel":
 				ic.position = Vector2(0, -4)
 				ic.scale = Vector2(0.5, 0.5)
