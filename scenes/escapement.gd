@@ -22,10 +22,17 @@ var _passing := false
 var _rate := 1.0
 var _rate_t := 0.0
 var _swing := 0.0
+var _pin: Sprite2D
+var _fork: Sprite2D
+var _wheel: Sprite2D
 
 
 func _ready() -> void:
 	z_index = 2
+	# pin, fork and escape wheel sprites (ghosts too), moved in _draw
+	_pin = _sprite("escapement_pin", Vector2(-3, -16), Vector2.ZERO)
+	_fork = _sprite("escapement_fork", Vector2(-7, -3), Vector2(0, -24))
+	_wheel = _sprite("escapement_wheel", Vector2(-7, -7), Vector2(0, -24))
 	if has_meta("ghost"):
 		return
 	add_to_group("power_users")
@@ -54,6 +61,17 @@ func _ready() -> void:
 		if _open > 0:
 			_open = 0.0
 			_close())
+
+
+func _sprite(n: String, off: Vector2, at: Vector2) -> Sprite2D:
+	var sp := Sprite2D.new()
+	sp.texture = load("res://assets/sprites/%s.png" % n)
+	sp.centered = false
+	sp.offset = off
+	sp.position = at
+	sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(sp)
+	return sp
 
 
 func _close() -> void:
@@ -99,20 +117,12 @@ func _physics_process(delta: float) -> void:
 
 
 func _draw() -> void:
-	# the post and gate pin (lifted when open), the rocking fork, a little wheel
-	var up := -14.0 if _open > 0 else 0.0
-	draw_line(Vector2(0, -14 + up), Vector2(0, 4 + up), Color(0.1, 0.08, 0.07), 3.0)
-	draw_line(Vector2(0, -14 + up), Vector2(0, 4 + up), Color(0.62, 0.64, 0.68), 1.0)
-	var c := Vector2(0, -24)
-	var a := sin(_swing) * 0.35
-	var arm := Vector2(sin(a), cos(a)) * 8.0
-	draw_line(c, c + arm.rotated(0.5), Color(0.85, 0.65, 0.35), 2.0)
-	draw_line(c, c + arm.rotated(-0.5), Color(0.85, 0.65, 0.35), 2.0)
-	draw_circle(c, 5.0, Color(0.16, 0.13, 0.1))
-	draw_circle(c, 4.0, Color(0.72, 0.55, 0.3))
-	for k in 6:
-		var t := _swing * 0.5 + k * TAU / 6
-		draw_rect(Rect2(c + Vector2(cos(t), sin(t)) * 4.5 - Vector2(0.5, 0.5), Vector2(1, 1)), Color(0.2, 0.16, 0.12))
+	# the gate pin (lifted when open), the rocking fork and the escape wheel
+	# are sprites (see _ready)
+	if _pin:
+		_pin.position.y = -14.0 if _open > 0 else 0.0
+		_fork.rotation = -sin(_swing) * 0.35
+		_wheel.rotation = _swing * 0.5
 
 
 func _input(event: InputEvent) -> void:
