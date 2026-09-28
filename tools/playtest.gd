@@ -5972,6 +5972,32 @@ func flaps_rec() -> void:
 	log_line("flaps %s: %s" % [fs.springs, went])
 
 
+func overflow_rec() -> void:
+	# Overflow gate: a dispenser into it; the primary line runs into a dip
+	# and backs up; once the queue reaches the gate the rest go the other way.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	var MW = preload("res://scripts/marble_works.gd")
+	await MW.carve(main, false)
+	MW._piece(main, "res://scenes/dispenser.tscn", Vector2(1200, 346), {"mode": 0})
+	var g: Node2D = MW._piece(main, "res://scenes/overflow_gate.tscn", Vector2(1200, 400), {"side": 1.0, "watch": Vector2(100, 35)})
+	var ch = MW._chute(main, Vector2(1216, 420), Vector2(1300, 440))
+	ch.has_lip = false
+	ch._rebuild()
+	MW._chute(main, Vector2(1330, 410), Vector2(1300, 441))   # the far side of the dip
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(3, 3)
+	cam.global_position = Vector2(1250, 420)
+	for k in 4:
+		await wait(3.0)
+		if k == 3:
+			await shot("overflow")
+		log_line("t=%d | primary %d overflowed %d | leaning %s" % [(k + 1) * 3, g.primary, g.overflowed, "primary" if g.tilt == g.side else "overflow"])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.
