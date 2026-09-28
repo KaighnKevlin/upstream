@@ -12,6 +12,13 @@ const LEN_MAX := 320.0
 const SEG := 16.0
 const CUT_FOR := 5.0
 const SLACK := 1.01
+const POST_TEX := preload("res://assets/sprites/rope_bridge_post.png")
+const KNOT_TEX := preload("res://assets/sprites/rope_bridge_knot.png")
+const PLANK_TEX := [
+	preload("res://assets/sprites/rope_bridge_plank_0.png"),
+	preload("res://assets/sprites/rope_bridge_plank_1.png"),
+	preload("res://assets/sprites/rope_bridge_plank_2.png"),
+]
 
 @export var end_offset := Vector2(160, 0)
 
@@ -21,12 +28,15 @@ var _q: PackedVector2Array = []  # last frame's (verlet)
 var _planks: Array = []          # AnimatableBody2D per segment
 var _cut := 0.0                  # seconds left hanging cut
 var _knit := 1.0                 # 0..1 pulling back straight after a cut
+var _far_post: Sprite2D
 
 
 func set_end(offset: Vector2) -> void:
 	var l := clampf(offset.length(), LEN_MIN, LEN_MAX)
 	end_offset = offset.normalized() * l if offset.length() > 0.1 else Vector2(LEN_MIN, 0)
 	_reset_points()
+	if _far_post:
+		_far_post.position = end_offset
 	queue_redraw()
 
 
@@ -43,7 +53,16 @@ func _reset_points() -> void:
 
 func _ready() -> void:
 	z_index = 1
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_reset_points()
+	for at in [Vector2.ZERO, end_offset]:
+		var sp := Sprite2D.new()
+		sp.texture = POST_TEX
+		sp.centered = false
+		sp.offset = Vector2(-3, -24)
+		sp.position = at
+		add_child(sp)
+		_far_post = sp
 	if has_meta("ghost"):
 		return
 	add_to_group("triggerable")
@@ -174,32 +193,29 @@ func _input(event: InputEvent) -> void:
 
 func _draw() -> void:
 	var dark := Color(0.1, 0.08, 0.07)
-	var wood := Color(0.55, 0.38, 0.22)
 	var rope := Color(0.75, 0.65, 0.45)
-	# the posts
-	for p in [Vector2.ZERO, end_offset]:
-		draw_line(p + Vector2(0, 6), p + Vector2(0, -20), dark, 5.0)
-		draw_line(p + Vector2(0, 6), p + Vector2(0, -20), wood, 3.0)
-		draw_circle(p + Vector2(0, -20), 2.5, rope)
 	if _p.size() < 2:
 		return
-	# planks, then the hand ropes (post tops down to the deck and along)
+	# the deck rope under the planks, then the planks along the chain
+	draw_polyline(_p, dark, 3.0)
+	draw_polyline(_p, rope.darkened(0.2), 1.5)
 	for i in _p.size() - 1:
 		var a := _p[i]
 		var b := _p[i + 1]
-		var d := (b - a).normalized()
-		var nrm := Vector2(-d.y, d.x)
-		var c := (a + b) * 0.5
-		var pts := PackedVector2Array([c - d * 7 - nrm, c + d * 7 - nrm, c + d * 7 + nrm * 3, c - d * 7 + nrm * 3])
-		draw_colored_polygon(pts, dark)
-		draw_colored_polygon(PackedVector2Array([pts[0] + d * 0.5 + nrm * 0.5, pts[1] - d * 0.5 + nrm * 0.5, pts[2] - d * 0.5 - nrm * 0.5, pts[3] + d * 0.5 - nrm * 0.5]), wood.lerp(Color(0.7, 0.5, 0.3), float(i % 2) * 0.3))
+		draw_set_transform((a + b) * 0.5, (b - a).angle())
+		draw_texture(PLANK_TEX[(i * 7 + 3) % 5 % 3], Vector2(-8, -1))
+	draw_set_transform(Vector2.ZERO)
+	# the hand rope: post tops down to the deck and along, tied to each plank
 	var hand := PackedVector2Array()
 	for i in _p.size():
 		hand.append(_p[i] + Vector2(0, -12))
 	if _cut <= 0.0:
 		hand[0] = Vector2(0, -20)
 	hand[hand.size() - 1] = end_offset + Vector2(0, -20)
-	draw_polyline(hand, rope, 1.0)
-	draw_polyline(_p, rope, 1.0)
 	for i in range(1, _p.size() - 1):
-		draw_line(_p[i], hand[i], Color(rope, 0.6), 1.0)
+		draw_line(_p[i], hand[i], Color(dark, 0.7), 2.0)
+		draw_line(_p[i], hand[i], Color(rope, 0.75), 1.0)
+	draw_polyline(hand, dark, 3.0)
+	draw_polyline(hand, rope, 1.5)
+	for i in range(1, _p.size() - 1):
+		draw_texture(KNOT_TEX, hand[i] - Vector2(1, 1))
