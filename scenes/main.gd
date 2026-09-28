@@ -1255,6 +1255,7 @@ var _build_names := {
 	65: "Build: TALLY WHEEL (over a chute: every 3/5/10 pieces it fires traps at its wire's end; click to change, drag the wire)",
 	66: "Build: POINTS SWITCH (a rocker that stays put: thrown by a trigger, like a tally wheel or a plate, or a click)",
 	67: "Build: BRAKE RAIL (drag; brushes hold what runs on it to 80/150/250 px/s: click its number)",
+	68: "Build: TEETER LAUNCHER (drop a piece in its high cup: it flings the one waiting in the low cup up)",
 	44: "Build: ROBOTIC ARM (picks from one spot, drops at another)",
 	37: "Build: DOMINO ROW (drag start to end; click an end to reset)",
 	36: "Build: STEAM ENGINE (feed it ore: powers machines in reach)",

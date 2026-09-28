@@ -6345,6 +6345,46 @@ func save_marble_rec() -> void:
 	log_line("reloaded %d pieces; mismatches: %s" % [bs._placed_buildings.size(), bad if bad.size() > 0 else "none"])
 
 
+func teeter_rec() -> void:
+	# Teeter launcher: pieces dropped into its far cup one at a time; each
+	# (after the first) flings the one before up. Launch speeds and heights.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	await preload("res://scripts/marble_works.gd").carve(main, false)
+	var te: Node2D = preload("res://scenes/teeter.tscn").instantiate()
+	te.global_position = Vector2(1300, 540)
+	main.add_child(te)
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.6, 1.6)
+	cam.global_position = Vector2(1290, 400)
+	var out := []
+	for kind in ["copper", "copper", "iron", "copper"]:
+		var n0: int = te.launched
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.kind = kind
+		o.lifetime = 1.0e9
+		o.global_position = Vector2(1327, 380)
+		main.add_child(o)
+		var peak := 9999.0
+		var flung = null
+		for t in 60:
+			await wait(0.05)
+			if te.launched > n0 and flung == null:
+				for b in get_nodes_in_group("ore"):
+					if b.has_meta("teeter_launched") and not b.has_meta("teeter_seen"):
+						b.set_meta("teeter_seen", true)
+						flung = b
+			if flung != null and is_instance_valid(flung):
+				peak = minf(peak, flung.global_position.y)
+			if kind == "iron" and t == 14:
+				await shot("teeter")
+		out.append("%s dropped: %s" % [kind, ("flung at %d px/s to y %d" % [int(te.last_speed), int(peak)]) if te.launched > n0 else "loaded"])
+	log_line("teeter: %s" % [out])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.
