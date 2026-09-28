@@ -49,6 +49,9 @@ const ART_RECTS := {
 	"relay_hub.gd": Rect2(-17, -12, 30, 24),
 	"ground_listener.gd": Rect2(-14, -23, 32, 25),
 	"steam_jet.gd": Rect2(-11, -31, 26, 33),
+	"dice_box.gd": Rect2(-18, -24, 36, 38),
+	"flow_meter.gd": Rect2(-15, -31, 45, 64),
+	"check_valve.gd": Rect2(-10, -27, 20, 30),
 }
 
 const DARK := Color(0.1, 0.09, 0.07)
@@ -393,12 +396,13 @@ func _build_icon(slot: Node2D, t: int) -> void:
 				ic.position = Vector2(0, -2)
 				ic.scale = Vector2(0.55, 0.55)
 			elif scn == "mine_cart":
-				ic.end_offset = Vector2(60, 10)
+				# small, on a long track: the hopper sits over the loading end
+				ic.end_offset = Vector2(118, 10)
 				ic.position = Vector2(-20, 6)
-				ic.scale = Vector2(0.6, 0.6)
+				ic.scale = Vector2(0.4, 0.4)
 			elif scn == "check_valve":
 				ic.position = Vector2(0, 10)
-				ic.scale = Vector2(1.4, 1.4)
+				ic.scale = Vector2.ONE
 			elif scn == "trommel":
 				ic.end_offset = Vector2(44, 6)
 				ic.position = Vector2(-16, -4)
@@ -408,7 +412,7 @@ func _build_icon(slot: Node2D, t: int) -> void:
 				ic.scale = Vector2(0.8, 0.8)
 			elif scn == "flow_meter":
 				ic.position = Vector2(-2, 2)
-				ic.scale = Vector2(0.65, 0.65)
+				ic.scale = Vector2(0.55, 0.55)
 			elif scn == "ground_listener":
 				ic.wire_to = Vector2.ZERO
 				ic.scale = Vector2(1.3, 1.3)
