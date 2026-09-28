@@ -1257,6 +1257,7 @@ var _build_names := {
 	67: "Build: BRAKE RAIL (drag; brushes hold what runs on it to 80/150/250 px/s: click its number)",
 	68: "Build: TEETER LAUNCHER (drop a piece in its high cup: it flings the one waiting in the low cup up)",
 	69: "Build: CROSSOVER (feed its top corners: each stream crosses to the far bottom corner without catching the other)",
+	70: "Build: FLYWHEEL (next to a gravity wheel: spins up on its surplus, keeps machines running when the feed stops)",
 	44: "Build: ROBOTIC ARM (picks from one spot, drops at another)",
 	37: "Build: DOMINO ROW (drag start to end; click an end to reset)",
 	36: "Build: STEAM ENGINE (feed it ore: powers machines in reach)",

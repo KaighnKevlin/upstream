@@ -6490,6 +6490,38 @@ func wheel_mass_rec() -> void:
 	log_line("wheel fed %s: power at 3/6/9 s %s, omega %.2f" % [kind, out, wh.omega])
 
 
+func flywheel_rec() -> void:
+	# A gravity wheel fed for ~6 s powers a booster; FLY=1 adds a flywheel.
+	# The booster's power level at 4/10/16/22 s: the flywheel should carry
+	# it on after the wheel runs down.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	var MW = preload("res://scripts/marble_works.gd")
+	await MW.carve(main, false)
+	var wh: Node2D = MW._piece(main, "res://scenes/gravity_wheel.tscn", Vector2(1300, 540))
+	await wait(0.1)
+	var intake: Vector2 = wh.global_position + wh._rim(deg_to_rad(wh.INTAKE_AT), wh.R + 4.0)
+	MW._piece(main, "res://scenes/dispenser.tscn", intake + Vector2(0, -50), {"mode": 0, "kinds": ["iron"], "limit": 6})
+	var bo = MW._chute(main, Vector2(1380, 470), Vector2(1460, 450))
+	var fly = null
+	if OS.get_environment("FLY") == "1":
+		fly = MW._piece(main, "res://scenes/flywheel.tscn", Vector2(1360, 420))
+	var Power = preload("res://scripts/power.gd")
+	var out := []
+	for t in [4.0, 6.0, 6.0, 6.0]:
+		await wait(t)
+		out.append("%.2f" % Power.level_at(main.get_tree(), Vector2(1420, 460)))
+		if out.size() == 2:
+			var cam: Camera2D = main.get_node("Player/Camera2D")
+			cam.top_level = true
+			cam.position_smoothing_enabled = false
+			cam.zoom = Vector2(2.2, 2.2)
+			cam.global_position = Vector2(1350, 480)
+			await shot("flywheel")
+	log_line("flywheel %s: power at the booster at 4/10/16/22 s %s | wheel %.2f%s" % ["on" if fly else "off", out, wh.power(), (" fly spin %.2f" % fly.spin) if fly else ""])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.
