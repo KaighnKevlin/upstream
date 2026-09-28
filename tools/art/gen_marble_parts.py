@@ -58,7 +58,7 @@ def loop():
     n = 64
     pts = [(c[0] + math.cos(2 * math.pi * k / n) * rr, c[1] + math.sin(2 * math.pi * k / n) * rr) for k in range(n + 1)]
     for p, q in zip(pts, pts[1:]):
-        fig.capsule(p, q, 1.5, STEEL, z=0.5)
+        fig.capsule(p, q, 1.5, STEEL[2:], z=0.5)
     for k in range(0, n, 8):
         a = 2 * math.pi * (k + 4) / n
         fig.sphere((c[0] + math.cos(a) * rr, c[1] + math.sin(a) * rr), 0.6, BRONZE, z=0.6)
@@ -68,7 +68,7 @@ def loop():
     fig.capsule((-7, 18), (7, 18), 0.7, IRON, z=0.05)
     fig.box((-9, 28, 9, 31), IRON, z=0.2, bevel=0.6)
     # the rail
-    fig.capsule((-70, -1.5), (80, 12.5), 1.3, STEEL, z=0.3)
+    fig.capsule((-70, -1.5), (80, 12.5), 1.3, STEEL[2:], z=0.3)
     for t in (0.1, 0.3, 0.72, 0.9):
         x, y = -70 + 150 * t, -1.5 + 14 * t
         fig.box((x - 1.2, y + 0.4, x + 1.2, y + 3.6), BRONZE, z=0.25, bevel=0.4)   # sleepers
