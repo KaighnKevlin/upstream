@@ -1328,6 +1328,7 @@ var _build_names := {
 	119: "Build: FLUME (drag, level: light pieces float over its weir, heavy ones sink and pile up until a trigger or click on the weir flushes them)",
 	120: "Build: WRECKING BALL (hang it from the ceiling: a trigger or click on the latch lets it swing through walkers; 4 pieces dropped in its winch bucket re-arm it)",
 	121: "Build: SPRING TRAP (on the ground: flings the first walker up and back the way it came; 2 pieces in its hopper re-cock it)",
+	122: "Build: BOWL FEEDER (on the ground: pieces in its mouth buzz up the spiral and out single file toward the lip; grit is rejected; click to flip)",
 	44: "Build: ROBOTIC ARM (picks from one spot, drops at another)",
 	37: "Build: DOMINO ROW (drag start to end; click an end to reset)",
 	36: "Build: STEAM ENGINE (feed it ore: powers machines in reach)",

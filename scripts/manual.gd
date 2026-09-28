@@ -140,6 +140,7 @@ const TABS := [
 		["", "Flail", "post with a spiked ball on a chain: a wheel in reach whirls it, battering walkers and knocking them back; it only lolls round unpowered"],
 		["", "Gabion", "wire cage on the ground: pieces dropped in build a wall (12 = full); walkers stop and hack pieces out; a feed mends it"],
 		["", "Igniter", "brazier over a track: lights what rolls under it; it bursts on a walker, or when its fuse (1/2/3 s, click) runs out"],
+		["", "Bowl feeder", "a buzzing bowl: pieces dropped in any old how climb its spiral and leave single file, a steady gap apart; grit is spat out the reject hole; faster powered; click to flip"],
 		["", "Balloon lift", "pieces in its basket float straight up to the pin (80/160/240/320 px, click the bottle) and are tossed off toward the flag: lifts through open air"],
 		["", "Sling", "whirligig: catches a piece, whirls it twice, throws it where the arrow points (click the hub); twice as hard powered"],
 		["", "Speed trap", "over a line: fires its wire for pieces faster than 150/250/350 (click); shows the last speed"],
