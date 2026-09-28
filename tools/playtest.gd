@@ -6148,6 +6148,40 @@ func net_rec() -> void:
 	log_line("net: out at x %s | caught %d" % [out, nt.caught])
 
 
+func drum_rec() -> void:
+	# Magnet drum at a chute's end: a mixed stream; where each kind lands.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	await preload("res://scripts/sandbox_showcase.gd").clear(main)
+	var MW = preload("res://scripts/marble_works.gd")
+	await MW.carve(main, false)
+	MW._chute(main, Vector2(1150, 400), Vector2(1250, 432))
+	var dr: Node2D = MW._piece(main, "res://scenes/magnet_drum.tscn", Vector2(1260, 446), {"side": 1.0})
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(2.5, 2.5)
+	cam.global_position = Vector2(1270, 470)
+	var out := []
+	for kind in ["copper", "iron", "copper", "iron", "grit", "gear"]:
+		var o: RigidBody2D = preload("res://scenes/ore.tscn").instantiate()
+		o.kind = kind
+		o.lifetime = 1.0e9
+		o.global_position = Vector2(1160, 388)
+		main.add_child(o)
+		var x_floor := -1
+		for t in 50:
+			await wait(0.05)
+			if not is_instance_valid(o):
+				break
+			if x_floor < 0 and o.global_position.y > 520:
+				x_floor = int(o.global_position.x)
+			if kind == "iron" and out.size() == 1 and t == 18:
+				await shot("drum")
+		out.append("%s->x %d" % [kind, x_floor])
+	log_line("drum: %s | pulled %d" % [out, dr.pulled])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.
