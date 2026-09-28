@@ -17,6 +17,14 @@ var _flash := 0.0
 
 func _ready() -> void:
 	z_index = 2
+	# the magazine: a sprite, behind our _draw (flash, pips); ghosts too
+	var art := Sprite2D.new()
+	art.texture = preload("res://assets/sprites/dispenser.png")
+	art.centered = false
+	art.offset = Vector2(-11, -38)
+	art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	art.show_behind_parent = true
+	add_child(art)
 	if not has_meta("ghost"):
 		add_to_group("dispensers")
 
@@ -52,16 +60,9 @@ func _input(event: InputEvent) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var brass := Color(0.85, 0.65, 0.35).lerp(Color(1, 0.95, 0.7), _flash)
-	# the magazine: a tube of marbles
-	draw_rect(Rect2(-8, -34, 16, 38), dark)
-	draw_rect(Rect2(-6, -32, 12, 34), Color(0.3, 0.24, 0.18))
-	for k in 3:
-		draw_circle(Vector2(0, -26 + k * 10), 4.0, Color(0.7, 0.5, 0.3))
-	# spout
-	draw_rect(Rect2(-5, 4, 10, 6), dark)
-	draw_rect(Rect2(-4, 4, 8, 5), brass)
+	# the magazine and spout are a sprite (see _ready); the spout flashes as one drops
+	if _flash > 0.0:
+		draw_rect(Rect2(-4, 4, 8, 6), Color(1, 0.95, 0.7, 0.8 * _flash))
 	# the period, in pips
 	for k in mode + 1:
 		draw_circle(Vector2(12, -28 + k * 6), 1.5, Color(1.0, 0.85, 0.5))
