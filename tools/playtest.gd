@@ -5829,12 +5829,16 @@ func defence_rec() -> void:
 	cam.top_level = true
 	cam.position_smoothing_enabled = false
 	cam.zoom = Vector2(1.4, 1.4)
-	cam.global_position = Vector2(1290, 380)
+	cam.global_position = Vector2(1290, 440)
+	if OS.has_environment("CLOSE"):
+		cam.zoom = Vector2(4, 4)
+		cam.global_position = Vector2(1270, 255)
 	for k in (int(OS.get_environment("SECS")) / 5 if OS.has_environment("SECS") else 5):
 		await wait(5.0)
 		if k == 2 or k == 4:
 			await shot("defence_%d" % k)
-		log_line("t=%d | sent %d down %d leaks %d over %s | ore %d" % [(k + 1) * 5, d.sent, d.killed, d.leaks, d.over, get_nodes_in_group("ore").size()])
+		var cn: Array = get_nodes_in_group("cannons")
+		log_line("t=%d | sent %d down %d leaks %d over %s | cannon fired %d loaded %s | ore %d" % [(k + 1) * 5, d.sent, d.killed, d.leaks, d.over, cn[0].fired if cn.size() > 0 else -1, cn[0].loaded if cn.size() > 0 else [], get_nodes_in_group("ore").size()])
 
 
 func marble_trace_rec() -> void:
