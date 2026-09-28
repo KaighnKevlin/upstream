@@ -21,6 +21,15 @@ const SPIN := 5.0                # rad/s the drum turns at full power
 const V_OUT := 100.0             # leaving the low end
 const SMALL := ["grit"]          # what falls through the holes
 const SIFT_CHANCE := 0.3         # of a small piece at the bottom finding a hole, per ring
+const FRAMES := 6                # the drum's turning art: frames per quarter turn
+const INNER_TEX := preload("res://assets/sprites/trommel_inner.png")   # the far wall
+const BACK_TEX := preload("res://assets/sprites/trommel_back.png")     # its holes, 6 frames
+const FRONT_TEX := preload("res://assets/sprites/trommel_front.png")   # near staves and rims, 6 frames
+const HOLES_TEX := preload("res://assets/sprites/trommel_holes.png")   # near holes, 6 frames
+const HOOP_TEX := preload("res://assets/sprites/trommel_hoop.png")
+const STAND_TEX := preload("res://assets/sprites/trommel_stand.png")
+const MOUTH_TEX := preload("res://assets/sprites/trommel_mouth.png")
+const GEAR_TEX := preload("res://assets/sprites/trommel_gear.png")
 
 ## The low end of the drum, relative to its mouth.
 @export var end_offset := Vector2(150, 18)
@@ -51,7 +60,10 @@ func set_end(offset: Vector2) -> void:
 
 func _ready() -> void:
 	z_index = 0                  # under the ore: the tumbling pieces show inside
-	# the drum's near side (its mesh of holes), drawn over the riders
+	# pixel art (drawn tiled along the drum in _draw and _draw_front), made
+	# first so ghosts and build-bar icons have it
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	# the drum's near side (its staves and holes), drawn over the riders
 	_front = Node2D.new()
 	_front.z_index = 2
 	_front.draw.connect(_draw_front)
@@ -165,86 +177,69 @@ func _exit_tree() -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var brass := Color(0.85, 0.65, 0.35)
-	var steel := Color(0.42, 0.44, 0.5)
-	var d := _axis()
-	var dn := _down()
-	var e := end_offset
-	# stands: a roller at each end on a short post to the ground below
-	for p in [d * 10.0, e - d * 10.0]:
-		draw_line(p + dn * R, p + dn * (R + 14.0), dark, 4.0)
-		draw_line(p + dn * R, p + dn * (R + 14.0), steel.darkened(0.3), 2.0)
-		draw_line(p + dn * (R + 14.0) - d * 6.0, p + dn * (R + 14.0) + d * 6.0, dark, 3.0)
-		draw_circle(p + dn * (R + 1.5), 3.0, dark)
-		draw_circle(p + dn * (R + 1.5), 2.0, brass.darkened(0.2))
-	# the inside of the drum, in shadow behind the riders
-	var shell := PackedVector2Array([-dn * R, e - dn * R, e + dn * R, dn * R])
-	draw_colored_polygon(shell, Color(0.14, 0.12, 0.11))
-	# the far wall's holes, scrolling round as it turns
-	_holes(self, false)
-	# the mouth: a brass feed lip flaring up at the high end
-	draw_line(-dn * R, -dn * (R + 8.0) - d * 6.0, dark, 4.0)
-	draw_line(-dn * R, -dn * (R + 8.0) - d * 6.0, brass, 2.0)
-
-
-## The holes on the far (back) or near (front) side of the turning drum: rows
-## round the drum at 8 angles, a hole every HOLE along each.
-func _holes(ci: CanvasItem, front: bool) -> void:
 	var l := end_offset.length()
+	if l < 0.1:
+		return
+	var f := _frame()
+	# the drum's own frame: x along the axis, +y down across it
+	_along(self)
+	# stands: a roller at each end on a post to the ground below
+	for s in [10.0, l - 10.0]:
+		draw_texture(STAND_TEX, Vector2(s - 7, R + 1.5 - 4))
+	# the inside of the drum, in shadow behind the riders, and its far holes
+	_tile(self, INNER_TEX, 0, 24, 0.0, l, -12.0)
+	_tile(self, BACK_TEX, f, 24, FIRST_HOLE - 3.0, l - 4.0, -12.0)
+	# the mouth: a brass feed lip flaring up at the high end
+	draw_texture(MOUTH_TEX, Vector2(-8, -R - 10))
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+## Which of the drum's turning frames shows (the pattern repeats every
+## quarter turn).
+func _frame() -> int:
+	return int(fposmod(_turn, TAU / 4.0) / (TAU / 4.0) * FRAMES) % FRAMES
+
+
+## Set `ci` drawing in the drum's frame: x along the axis, +y toward
+## _down() (flipped on leftward drums).
+func _along(ci: CanvasItem) -> void:
 	var d := _axis()
-	var dn := _down()
-	for k in 8:
-		var th := _turn + k * TAU / 8.0
-		var near := sin(th) > 0.0
-		if near != front:
-			continue
-		var across := cos(th) * (R - 1.5)
-		var shade := 0.5 + 0.5 * absf(sin(th))
-		var x := FIRST_HOLE
-		while x < l - 4.0:
-			# rows stagger, so the pattern reads as a mesh
-			var off := (HOLE * 0.5) if k % 2 == 1 else 0.0
-			if x + off < l - 4.0:
-				var p := d * (x + off) + dn * across
-				ci.draw_circle(p, 1.1 if front else 1.0, Color(0.05, 0.04, 0.04, 0.6 if front else 0.6 * shade))
-			x += HOLE
+	ci.draw_set_transform(Vector2.ZERO, d.angle(), Vector2(1, 1.0 if d.x >= 0 else -1.0))
+
+
+## Frame `f` of a strip of `fh`-tall frames, repeated along the drum from x0
+## to x1 (the last copy cut short), its top at y.
+func _tile(ci: CanvasItem, tex: Texture2D, f: int, fh: int, x0: float, x1: float, y: float) -> void:
+	var w := float(tex.get_width())
+	var x := x0
+	while x < x1 - 0.01:
+		var seg := minf(w, x1 - x)
+		ci.draw_texture_rect_region(tex, Rect2(x, y, seg, fh), Rect2(0, f * fh, seg, fh))
+		x += w
 
 
 func _draw_front() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var brass := Color(0.85, 0.65, 0.35)
-	var steel := Color(0.42, 0.44, 0.5)
 	var l := end_offset.length()
-	var d := _axis()
-	var dn := _down()
-	var e := end_offset
-	# the near skin: see-through steel mesh, the riders show between the holes
-	var shell := PackedVector2Array([-dn * R, e - dn * R, e + dn * R, dn * R])
-	_front.draw_colored_polygon(shell, Color(steel.r, steel.g, steel.b, 0.12))
-	_holes(_front, true)
-	# long ribs (the drum's staves) slide round as it turns
-	for k in 4:
-		var th := _turn + k * TAU / 4.0 + TAU / 16.0
-		if sin(th) <= 0.0:
-			continue
-		var across := cos(th) * R
-		_front.draw_line(dn * across, e + dn * across, Color(0.7, 0.72, 0.78, 0.35 + 0.4 * sin(th)), 1.0)
-	# top and bottom edges
-	_front.draw_line(-dn * R, e - dn * R, dark, 2.0)
-	_front.draw_line(dn * R, e + dn * R, dark, 2.0)
-	_front.draw_line(-dn * (R - 1.0), e - dn * (R - 1.0), steel.lightened(0.2), 1.0)
+	if l < 0.1:
+		return
+	var f := _frame()
+	_along(_front)
+	# the near side: staves and rims, open between so the riders show, and
+	# its holes (none in the mouth)
+	_tile(_front, FRONT_TEX, f, 26, 0.0, l, -13.0)
+	_tile(_front, HOLES_TEX, f, 26, FIRST_HOLE - 3.0, l - 4.0, -13.0)
 	# brass hoops: both ends and every so often along
-	var hoops := [0.0, l]
+	var hoops := [1.0, l - 1.0]
 	var n := int(l / 60.0)
 	for i in range(1, n + 1):
 		hoops.append(l * i / float(n + 1))
 	for s in hoops:
-		var p: Vector2 = d * s
-		_front.draw_line(p - dn * (R + 1.0), p + dn * (R + 1.0), dark, 4.0)
-		_front.draw_line(p - dn * R, p + dn * R, brass, 2.0)
-	# a gear ring on the mouth hoop, its teeth turning: shows the drive
-	var g := -dn * (R + 1.0)
-	for k in 6:
-		var a := _turn * 2.0 + k * TAU / 6.0
-		_front.draw_circle(d * (cos(a) * 3.0) + g + dn * (sin(a) * 1.0), 0.9, brass.lightened(0.2))
+		_front.draw_texture(HOOP_TEX, Vector2(roundf(s) - 2, -13))
+	# the drive gear on the mouth hoop, turning with the drum
+	var d := _axis()
+	var g := d.rotated(-PI * 0.5) * (R + 1.0)
+	if g.y > 0.0:
+		g = -g
+	_front.draw_set_transform(g + d * 2.0, _turn * 2.0, Vector2.ONE)
+	_front.draw_texture(GEAR_TEX, Vector2(-5.5, -5.5))
+	_front.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
