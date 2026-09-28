@@ -23,10 +23,18 @@ var _spun := 0.0                 # how far it's turned with this one
 var _w := 0.0                    # rad/s
 var _rate := Power.UNPOWERED
 var _rate_t := 0.0
+var _arm_art: Sprite2D           # art: the arm and cup, turned to _theta
+var _hub_art: Sprite2D
 
 
 func _ready() -> void:
 	z_index = 2
+	# the sprites first, so ghosts and build-bar icons get them too; behind
+	# our own _draw (the swing circle and the aim arrow)
+	_spr(preload("res://assets/sprites/sling_post.png"), Vector2(-10, -1))
+	_arm_art = _spr(preload("res://assets/sprites/sling_arm.png"), Vector2(-2, -7))
+	_arm_art.rotation = _theta
+	_hub_art = _spr(preload("res://assets/sprites/sling_hub.png"), Vector2(-6, -6))
 	if has_meta("ghost"):
 		return
 	add_to_group("power_users")
@@ -40,6 +48,17 @@ func _ready() -> void:
 	a.add_child(cs)
 	add_child(a)
 	a.body_entered.connect(_catch)
+
+
+func _spr(tex: Texture2D, off: Vector2) -> Sprite2D:
+	var sp := Sprite2D.new()
+	sp.texture = tex
+	sp.centered = false
+	sp.offset = off
+	sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	sp.show_behind_parent = true
+	add_child(sp)
+	return sp
 
 
 func _dir() -> Vector2:
@@ -114,24 +133,12 @@ func _input(event: InputEvent) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var brass := Color(0.85, 0.65, 0.35)
-	var iron := Color(0.42, 0.44, 0.5)
-	# the post down to the ground, the swing circle faintly
-	draw_line(Vector2(0, 4), Vector2(-6, 30), dark, 4.0)
-	draw_line(Vector2(0, 4), Vector2(6, 30), dark, 4.0)
-	draw_line(Vector2(0, 4), Vector2(-6, 30), iron, 2.0)
-	draw_line(Vector2(0, 4), Vector2(6, 30), iron, 2.0)
+	# (the post, arm and hub are sprites) the arm turned to where it is, the
+	# hub glowing as it spins up, the swing circle faintly
+	_arm_art.rotation = _theta
+	_hub_art.self_modulate = Color(1, 1, 1).lerp(Color(1.4, 1.3, 1.05), clampf(_w / 20.0, 0, 1))
 	draw_arc(Vector2.ZERO, R, 0, TAU, 32, Color(0.85, 0.65, 0.35, 0.18), 1.0)
-	# the arm and its cup
-	var tip := Vector2.RIGHT.rotated(_theta) * R
-	draw_line(Vector2.ZERO, tip, dark, 4.0)
-	draw_line(Vector2.ZERO, tip, brass, 2.0)
-	draw_arc(tip, 5.0, _theta + PI * 0.5, _theta + PI * 1.5, 8, dark, 3.0)
-	draw_arc(tip, 5.0, _theta + PI * 0.5, _theta + PI * 1.5, 8, brass, 1.5)
-	# the hub, and the arrow the throw goes
-	draw_circle(Vector2.ZERO, 5.0, dark)
-	draw_circle(Vector2.ZERO, 3.5, brass.lerp(Color(1, 0.95, 0.7), clampf(_w / 20.0, 0, 1)))
+	# the arrow the throw goes
 	var d := _dir()
 	var a0 := d * (R + 6)
 	var a1 := d * (R + 14)
