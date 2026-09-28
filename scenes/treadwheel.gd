@@ -12,11 +12,25 @@ const COAST := 0.35              # lost per second when not
 var level := 0.0                 # 0..1
 var _angle := 0.0
 var walked := 0.0                # tests: seconds walked in it
+var _wheel: Sprite2D
 
 
 func _ready() -> void:
 	z_index = 0                      # (behind the cave backdrop at -1)
 	process_physics_priority = 10    # after the player moves, so it can hold them in place
+	# sprites first, so ghosts and build-bar icons get them too
+	var frame := Sprite2D.new()
+	frame.texture = preload("res://assets/sprites/treadwheel_frame.png")
+	frame.centered = false
+	frame.offset = Vector2(-25, -4)
+	frame.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	frame.show_behind_parent = true
+	add_child(frame)
+	_wheel = Sprite2D.new()
+	_wheel.texture = preload("res://assets/sprites/treadwheel.png")
+	_wheel.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_wheel.show_behind_parent = true
+	add_child(_wheel)
 	if has_meta("ghost"):
 		return
 	add_to_group("power_wheels")
@@ -46,19 +60,6 @@ func _physics_process(delta: float) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.16, 0.12, 0.08)
-	var wood := Color(0.55, 0.4, 0.22)
-	# the frame on the ground
-	draw_line(Vector2(0, 0), Vector2(-20, R + 6), dark, 4.0)
-	draw_line(Vector2(0, 0), Vector2(20, R + 6), dark, 4.0)
-	# the wheel: two rims, rungs between them (the tread), spokes
-	for k in 12:
-		var a := _angle + k * TAU / 12.0
-		var d := Vector2(cos(a), sin(a))
-		draw_line(Vector2.ZERO, d * R, Color(dark, 0.7), 2.0)
-		draw_line(d * (R - 3), d * (R + 3), wood.lightened(0.15), 3.0)
-	draw_arc(Vector2.ZERO, R + 3, 0, TAU, 40, dark, 3.0)
-	draw_arc(Vector2.ZERO, R - 3, 0, TAU, 40, wood, 2.0)
-	draw_circle(Vector2.ZERO, 4.0, Color(0.85, 0.65, 0.35))
+	_wheel.rotation = _angle   # the frame and wheel are sprites (see _ready)
 	if level > 0.01:
 		draw_arc(Vector2.ZERO, R + 7, -PI * 0.5, -PI * 0.5 + TAU * level, 32, Color(1.0, 0.8, 0.35, 0.8), 2.0)
