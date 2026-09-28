@@ -5819,6 +5819,24 @@ func puzzle2_rec() -> void:
 		log_line("with scale +%d s: cup %d/%d done %s, spoiled since %d" % [(k + 1) * 4, cup.count, cup.target, cup.done, cup.spoiled - sp0])
 
 
+func defence_rec() -> void:
+	# The Marble Defence world: the wave's progress every 5 s for 25 s.
+	main._wave_timer = -9999.0
+	await wait(0.3)
+	var d = await main.start_defence_works()
+	d = main.get_children().filter(func(c): return c.get_script() and c.get_script().resource_path.get_file() == "defence_director.gd")[0]
+	var cam: Camera2D = main.get_node("Player/Camera2D")
+	cam.top_level = true
+	cam.position_smoothing_enabled = false
+	cam.zoom = Vector2(1.4, 1.4)
+	cam.global_position = Vector2(1290, 380)
+	for k in 5:
+		await wait(5.0)
+		if k == 2 or k == 4:
+			await shot("defence_%d" % k)
+		log_line("t=%d | sent %d down %d leaks %d over %s | ore %d" % [(k + 1) * 5, d.sent, d.killed, d.leaks, d.over, get_nodes_in_group("ore").size()])
+
+
 func marble_trace_rec() -> void:
 	# Where the Marble Works' streams actually go: iron after the tap, drops
 	# below the escapement, pieces around the arm's shelf.
