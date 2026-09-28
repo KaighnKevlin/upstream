@@ -22,6 +22,14 @@ var _box: Array = []
 var _sling: Array = []
 var _swing := 0.0                # 0 cocked .. 1 thrown
 var _cool := {}
+var _art: Node2D                 # frame, arm, box and sling sprites, mirrored by side
+var _arm: Sprite2D
+var _box_spr: Sprite2D
+var _sling_spr: Sprite2D
+
+const PIVOT := Vector2(0, -34)   # the axle (art only)
+const COCKED := 0.52             # the arm's tilt when cocked: long end down in front
+const THROW := 2.2               # how far it swings over when thrown (rad)
 
 
 func _p(v: Vector2) -> Vector2:
@@ -30,9 +38,43 @@ func _p(v: Vector2) -> Vector2:
 
 func _ready() -> void:
 	z_index = 1
+	# sprites first, so ghosts and build-bar icons get them too; drawn
+	# throwing to +x, the whole art mirrored for side -1
+	_art = Node2D.new()
+	_art.scale = Vector2(side, 1)
+	_art.show_behind_parent = true
+	add_child(_art)
+	_spr(preload("res://assets/sprites/trebuchet_frame.png"), Vector2(-26, -42))
+	_box_spr = _spr(preload("res://assets/sprites/trebuchet_box.png"), Vector2(-12, -7))
+	_arm = _spr(preload("res://assets/sprites/trebuchet_arm.png"), Vector2(-32, -5))
+	_arm.position = PIVOT
+	_sling_spr = _spr(preload("res://assets/sprites/trebuchet_sling.png"), Vector2(-13, -3))
+	_pose()
 	if has_meta("ghost"):
 		return
 	add_to_group("triggerable")
+
+
+func _spr(tex: Texture2D, off: Vector2) -> Sprite2D:
+	var sp := Sprite2D.new()
+	sp.texture = tex
+	sp.centered = false
+	sp.offset = off
+	sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_art.add_child(sp)
+	return sp
+
+
+## Art: the arm swings about the axle from cocked (box up behind, sling end
+## down in front) over the top as _swing goes 0 -> 1; the box hangs from its
+## short end, the sling from its long end. In unmirrored (side +1) space.
+func _pose() -> void:
+	var a := COCKED - THROW * _swing
+	_arm.rotation = a
+	_box_spr.position = PIVOT + Vector2(-30, 0).rotated(a)
+	var tip := PIVOT + Vector2(42, 0).rotated(a)
+	# at rest the pouch lies on the ground at SLING; thrown, it whips out past the tip
+	_sling_spr.position = (SLING + Vector2(0, -6)).lerp(tip + Vector2(12, 0).rotated(a), clampf(_swing * 1.5, 0.0, 1.0))
 
 
 func _mass(arr: Array) -> float:
@@ -109,25 +151,15 @@ func _input(event: InputEvent) -> void:
 
 
 func _draw() -> void:
-	var dark := Color(0.16, 0.12, 0.08)
-	var wood := Color(0.55, 0.4, 0.22)
-	# A-frame
-	draw_line(Vector2(-18, 8), Vector2(0, -34), dark, 4.0)
-	draw_line(Vector2(18, 8), Vector2(0, -34), dark, 4.0)
-	draw_line(Vector2(-22, 8), Vector2(22, 8), dark, 4.0)
-	# the arm: cocked with the box up behind and the sling end down in front;
-	# thrown, swung over the other way
-	var a := lerpf(-0.9, 1.9, _swing) * side
-	var pivot := Vector2(0, -34)
-	var long_end := pivot + Vector2(side * 44, 0).rotated(-a * -1.0 if side > 0 else a)
-	var short_end := pivot - (long_end - pivot) * 0.45
-	draw_line(short_end, long_end, dark, 5.0)
-	draw_line(short_end, long_end, wood, 3.0)
-	draw_circle(pivot, 3.0, Color(0.85, 0.65, 0.35))
-	# the box and the sling at their resting places
-	var bx := _p(BOX)
-	draw_rect(Rect2(bx + Vector2(-11, -16), Vector2(22, 18)), dark, false, 2.0)
-	var sl := _p(SLING)
-	draw_arc(sl + Vector2(0, -6), 10.0, 0.2, PI - 0.2, 10, Color(0.7, 0.62, 0.45), 2.0)
+	_pose()   # frame, arm, box and sling are sprites (see _ready)
+	# the sling's ropes, from the arm tip to the pouch
+	var a := COCKED - THROW * _swing
+	var tip := PIVOT + Vector2(42, 0).rotated(a)
+	var pouch := _sling_spr.position
+	for dx in [-10.0, 10.0]:
+		var end := pouch + Vector2(dx, -1)
+		if tip.distance_to(end) > 3.0:
+			draw_line(_p(tip), _p(end), Color(0.7, 0.62, 0.45), 1.0)
 	var font := ThemeDB.fallback_font
+	var bx := _p(BOX)
 	draw_string(font, bx + Vector2(-10, -20), "%.1f" % _mass(_box), HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.9, 0.8, 0.55))
