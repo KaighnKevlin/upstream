@@ -15,13 +15,30 @@ var omega := 0.0
 var passes := 0                  # tests
 var _angle := 0.0
 var _seen := {}
+var _vane_art: Sprite2D          # art: the four blades, turned to _angle
 
 
 func _ready() -> void:
 	z_index = 2
+	# the sprites first, so ghosts and build-bar icons get them too; behind
+	# our own _draw (the blur disc and the gauge fill)
+	_spr(preload("res://assets/sprites/spinner_bracket.png"), Vector2(-11, -27))
+	_vane_art = _spr(preload("res://assets/sprites/spinner_vane.png"), Vector2(-14, -14))
+	_spr(preload("res://assets/sprites/spinner_hub.png"), Vector2(-4, -4))
 	if has_meta("ghost"):
 		return
 	add_to_group("power_wheels")
+
+
+func _spr(tex: Texture2D, off: Vector2) -> Sprite2D:
+	var sp := Sprite2D.new()
+	sp.texture = tex
+	sp.centered = false
+	sp.offset = off
+	sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	sp.show_behind_parent = true
+	add_child(sp)
+	return sp
 
 
 func power() -> float:
@@ -43,29 +60,17 @@ func _physics_process(delta: float) -> void:
 			passes += 1
 	omega = maxf(0.0, omega - (0.6 + omega * 0.3) * delta)
 	_angle += omega * delta
+	# the blades turn, and brighten as they blur
+	_vane_art.rotation = _angle
+	_vane_art.modulate = Color.WHITE.lerp(Color(1.25, 1.2, 1.05), clampf(omega / RATED, 0.0, 1.0))
 	queue_redraw()
 
 
 func _draw() -> void:
-	var dark := Color(0.1, 0.08, 0.07)
-	var brass := Color(0.85, 0.65, 0.35)
-	var iron := Color(0.42, 0.44, 0.5)
-	# the bracket it hangs from
-	draw_line(Vector2(-7, -18), Vector2(0, 0), dark, 3.0)
-	draw_line(Vector2(7, -18), Vector2(0, 0), dark, 3.0)
-	draw_line(Vector2(-7, -18), Vector2(0, 0), iron, 1.0)
-	draw_line(Vector2(7, -18), Vector2(0, 0), iron, 1.0)
-	draw_line(Vector2(-9, -18), Vector2(9, -18), iron, 2.0)
-	# the blades, blurred to a disc when it's fast
+	# the bracket, the blades and the hub are sprites; a faint disc over the
+	# blades when it's fast
 	var blur := clampf(omega / RATED, 0.0, 1.0)
 	if blur > 0.3:
 		draw_circle(Vector2.ZERO, R, Color(0.85, 0.65, 0.35, 0.15 * blur))
-	for i in 4:
-		var d := Vector2.RIGHT.rotated(_angle + i * PI * 0.5)
-		draw_line(Vector2.ZERO, d * R, dark, 4.0)
-		draw_line(Vector2.ZERO, d * R, brass.lerp(Color(1, 0.95, 0.7), blur), 2.0)
-	draw_circle(Vector2.ZERO, 3.0, dark)
-	draw_circle(Vector2.ZERO, 2.0, brass)
-	# a little power gauge on the bracket
-	draw_rect(Rect2(-6, -24, 12, 3), dark)
+	# the power gauge's fill, in the slot on the bracket's head
 	draw_rect(Rect2(-5, -23, 10 * blur, 1), Color(1.0, 0.85, 0.5))
