@@ -84,6 +84,7 @@ func _impact(tm: TileMapLayer) -> void:
 	var p := scene.get_node_or_null("Player") as Node2D
 	if p and p.global_position.distance_to(at) < SPLASH * 0.6 and p.has_method("take_damage"):
 		p.take_damage(8)
+	load("res://scripts/track/track_net.gd").eject_at(self, at, SPLASH * 1.4)   # riders there are knocked off the track too
 	for o in get_tree().get_nodes_in_group("ore"):
 		if is_instance_valid(o) and not o.freeze and o.global_position.distance_to(at) < SPLASH * 1.4:
 			o.sleeping = false

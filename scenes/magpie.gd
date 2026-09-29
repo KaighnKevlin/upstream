@@ -120,6 +120,22 @@ func _seek(delta: float) -> void:
 	if _retarget <= 0 or not _valid(_target):
 		_retarget = 0.4
 		_target = _pick_ore()
+	if _target and not _target.is_inside_tree():
+		# a rider on a track: follow it, and knock it off once close
+		var net: Node = load("res://scripts/track/track_net.gd").find_net(self)
+		var at: Array = net.find_rider(_target) if net != null else []
+		if at.is_empty():
+			_target = null
+			_retarget = 0.0
+			return
+		var body: RigidBody2D = net.rider_body(at[0], at[1])
+		if global_position.distance_to(body.global_position) < 90:
+			body = net.eject(at[0], at[1])
+			if body != null:
+				body.set_meta("hunted_by", get_instance_id())   # stays loose for the claw
+		_target = body
+		if _target == null:
+			return
 	if _target:
 		var aim := _target.global_position - CLAW
 		# lead a moving piece a little
@@ -158,6 +174,20 @@ func _pick_ore() -> RigidBody2D:
 		if d < best_d:
 			best_d = d
 			best = o
+	# and ore riding a track (scripts/track/track_net.gd): its parked body,
+	# placed where the rider is (_seek knocks it off when it's close)
+	var net: Node = load("res://scripts/track/track_net.gd").find_net(self)
+	if net != null:
+		var pick = null
+		for r in net.riders_near(global_position, best_d):
+			var d: float = global_position.distance_to(r.pos)
+			if r.pos.y < 60:
+				d *= 0.7
+			if d < best_d:
+				best_d = d
+				pick = r
+		if pick != null:
+			best = net.rider_body(pick.track, pick.index)
 	return best
 
 

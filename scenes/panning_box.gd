@@ -160,3 +160,10 @@ func _draw() -> void:
 		draw_circle(p, 1.5, Color(0.1, 0.08, 0.07))
 		if i < _toward:
 			draw_circle(p, 1.0, Color(0.95, 0.6, 0.3))
+
+
+## Where this looks at ore (world rects), for the track net: a chute
+## running through here drops its riders to physics ore over this stretch
+## (scripts/track/track_net.gd, zones), so it sees and moves them as before.
+func ore_watch() -> Array:
+	return [Rect2(global_position - Vector2(HALF + 12.0, 40.0), Vector2(HALF * 2.0 + 24.0, 56.0))]

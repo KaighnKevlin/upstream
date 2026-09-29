@@ -170,6 +170,7 @@ func detonate() -> void:
 			e.take_damage(maxi(3, int(DAMAGE * (1.0 - d / (reach * 1.4)))))
 			if is_instance_valid(e) and e.has_method("knock"):
 				e.knock((c - at).normalized() * 380.0 * (1.0 - d / (reach * 1.3)) + Vector2(0, -320))
+	load("res://scripts/track/track_net.gd").eject_at(self, at, RADIUS * 1.6)   # riders there are knocked off the track too
 	for o in get_tree().get_nodes_in_group("ore"):
 		if not is_instance_valid(o) or o.freeze or o.has_meta("store_material"):
 			continue

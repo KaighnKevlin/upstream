@@ -334,6 +334,7 @@ func explode() -> void:
 			e.take_damage(maxi(2, int(BLAST_DAMAGE * k * (1.0 - d / (radius * 1.5)))))
 			if is_instance_valid(e) and e.has_method("knock"):
 				e.knock((c - at).normalized() * 200.0 + Vector2(0, -180))
+	load("res://scripts/track/track_net.gd").eject_at(self, at, radius * 1.5)   # riders there are blown off the track too
 	for o in get_tree().get_nodes_in_group("ore"):
 		if not is_instance_valid(o) or o == self or o.freeze or o.has_meta("store_material"):
 			continue

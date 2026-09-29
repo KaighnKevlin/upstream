@@ -3,7 +3,8 @@ extends "res://scenes/chute.gd"
 ## than its limit (80 / 150 / 250 px/s) is held to it while it's on
 ## the rail, so a stream arrives at a known speed: into a cup or a net
 ## without overshooting, onto a flap sorter slowly enough to drop. Click
-## its number to change the limit.
+## its number to change the limit. On the track net: riders are capped
+## there (Track.vcap); its brush still holds any physics body on it.
 
 const LIMITS := [80.0, 150.0, 250.0]
 const BRISTLE := Color(0.55, 0.4, 0.22)
@@ -28,6 +29,10 @@ func _ready() -> void:
 	_art.draw.connect(_draw_art)
 	add_child(_art)
 	super._ready()
+
+
+func _track_ready() -> void:
+	track.vcap = LIMITS[mode]
 
 
 func _rebuilt() -> void:
@@ -56,6 +61,13 @@ func _physics_process(_delta: float) -> void:
 	if _brush == null:
 		return
 	var cap: float = LIMITS[mode]
+	if track != null:
+		track.vcap = cap
+		# riders held to the cap: count each piece once, as the brush does
+		for i in track.count():
+			if absf(track.rv[i]) >= cap - 0.5 and _net.rider_get_meta(track, i, "braked_by") == null:
+				_net.rider_set_meta(track, i, "braked_by", get_instance_id())
+				braked += 1
 	for o in _brush.get_overlapping_bodies():
 		if o is RigidBody2D and o.linear_velocity.length() > cap:
 			o.linear_velocity = o.linear_velocity.limit_length(cap)

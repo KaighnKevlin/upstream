@@ -108,3 +108,12 @@ func _draw() -> void:
 	for s: float in [-1.0, 1.0]:
 		draw_rect(Rect2(top + across * s + Vector2(-1, -1), Vector2(2, 2)), BRASS)
 		draw_rect(Rect2(across * s + Vector2(-1, -1), Vector2(2, 2)), BRASS)
+
+
+## Where this looks at ore (world rects), for the track net: a chute
+## running through here drops its riders to physics ore over this stretch
+## (scripts/track/track_net.gd, zones), so it sees and moves them as before.
+func ore_watch() -> Array:
+	var foot := global_position
+	var top := foot + Vector2(side * lean, -height)
+	return [Rect2(foot, Vector2.ZERO).expand(top).grow(16.0)]

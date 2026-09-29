@@ -30,6 +30,16 @@ var length := 0.0
 var bounds := Rect2()
 var drive := 0.0                        # powered: riders held to this speed (px/s)
 var catches := true                     # physics ore landing on it becomes riders
+var solid := false                      # it has a real rail under it (a chute): riders can drop to physics anywhere on it
+var lip_mode := -1                      # the start's stop: -1 auto (runs down from it), 0 none, 1 always
+var boost_only := false                 # powered, but only speeds riders up (a booster): gravity still acts
+var drive_acc := DRIVE_ACC              # how hard the drive holds them (px/s per s)
+var vcap := 0.0                         # > 0: no rider faster than this (a brake)
+var extra_damp := 0.0                   # more drag (1/s) on top of the net's (felt)
+var muffled := false                    # its knocks make no sound and no noise (felt)
+var keep_alive := false                 # riders on it don't age toward despawning (a belt)
+var zones := PackedFloat64Array()       # [s0, s1, ...]: stretches where a piece watches the ore: physics there
+var dzones := PackedFloat64Array()      # the same, this tick, round loose bodies lying on it
 
 # graph, filled in by the net
 var outs: Array = []                    # tracks this end feeds (a junction when > 1)
@@ -47,6 +57,8 @@ var rv := PackedFloat64Array()
 var rrot := PackedFloat64Array()
 var rkind := PackedInt32Array()
 var rframe := PackedInt32Array()
+var rtag := PackedInt32Array()          # 0, or the net's key for the metas it carries (scripts/track/track_net.gd)
+var rdie := PackedInt32Array()          # the net tick it would have despawned at, as loose ore
 
 
 func set_path(p: PackedVector2Array) -> void:
@@ -108,21 +120,27 @@ func integrate(dt: float, kr: PackedFloat64Array, damp: float, roll: float) -> v
 	var k := 0
 	var last := slope.size() - 1
 	var rdt := roll * dt
+	var dmp := damp + extra_damp
+	var dacc := drive_acc * dt
 	for i in n:
 		var s := rs[i]
 		while k < last and s > cum[k + 1]:
 			k += 1
 		var v := rv[i]
-		if drive != 0.0:
-			v = move_toward(v, drive, DRIVE_ACC * dt)
+		if drive != 0.0 and not boost_only:
+			v = move_toward(v, drive, dacc)
 		else:
-			v += (G_ALONG * slope[k] - damp * v) * dt
+			v += (G_ALONG * slope[k] - dmp * v) * dt
 			if v > rdt:
 				v -= rdt
 			elif v < -rdt:
 				v += rdt
 			else:
 				v = 0.0
+			if boost_only and v < drive:
+				v = minf(v + dacc, drive)
+		if vcap > 0.0:
+			v = clampf(v, -vcap, vcap)
 		rs[i] = s + v * dt
 		rv[i] = v
 		rrot[i] += v * dt * spin[k] / kr[rkind[i]]
@@ -220,19 +238,21 @@ func set_speed(i: int, v: float) -> void:
 	rv[i] = v
 
 
-## Takes rider i off: [s, v, rot, kind, frame].
+## Takes rider i off: [s, v, rot, kind, frame, tag, die].
 func take(i: int) -> Array:
-	var out := [rs[i], rv[i], rrot[i], rkind[i], rframe[i]]
+	var out := [rs[i], rv[i], rrot[i], rkind[i], rframe[i], rtag[i], rdie[i]]
 	rs.remove_at(i)
 	rv.remove_at(i)
 	rrot.remove_at(i)
 	rkind.remove_at(i)
 	rframe.remove_at(i)
+	rtag.remove_at(i)
+	rdie.remove_at(i)
 	return out
 
 
 ## Puts a rider on at s, in order. Returns its index.
-func insert(s: float, v: float, rot: float, kind: int, frame: int) -> int:
+func insert(s: float, v: float, rot: float, kind: int, frame: int, tag := 0, die := 0x7fffffff) -> int:
 	var i := rs.size()
 	while i > 0 and rs[i - 1] > s:
 		i -= 1
@@ -241,7 +261,25 @@ func insert(s: float, v: float, rot: float, kind: int, frame: int) -> int:
 	rrot.insert(i, rot)
 	rkind.insert(i, kind)
 	rframe.insert(i, frame)
+	rtag.insert(i, tag)
+	rdie.insert(i, die)
 	return i
+
+
+## The zone (static or this tick's) holding s: its index into zones (even)
+## or into dzones (odd, as 2k+1), or -1.
+func zone_at(s: float) -> int:
+	var i := 0
+	while i < zones.size():
+		if s >= zones[i] and s <= zones[i + 1]:
+			return i
+		i += 2
+	i = 0
+	while i < dzones.size():
+		if s >= dzones[i] and s <= dzones[i + 1]:
+			return i + 1
+		i += 2
+	return -1
 
 
 func clear_riders() -> void:
@@ -250,6 +288,8 @@ func clear_riders() -> void:
 	rrot.clear()
 	rkind.clear()
 	rframe.clear()
+	rtag.clear()
+	rdie.clear()
 
 
 

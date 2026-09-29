@@ -125,6 +125,7 @@ func ignite() -> void:
 			pl.take_damage(12)
 		if pl.has_method("launch"):
 			pl.launch((pl.global_position - at).normalized() * 380.0 + Vector2(0, -220))
+	load("res://scripts/track/track_net.gd").eject_at(self, at, BLAST * 1.3)   # riders there are knocked off the track too
 	for o in get_tree().get_nodes_in_group("ore"):
 		if is_instance_valid(o) and not o.freeze and o.global_position.distance_to(at) < BLAST * 1.3:
 			if o.get("kind") in ["shell", "bomb"]:

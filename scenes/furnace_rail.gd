@@ -7,6 +7,9 @@ extends "res://scenes/chute.gd"
 ## An ingot rolled back over it heats up again (for a crucible, which
 ## wants its bars hot): the same dwell brings a cold one back to white-hot.
 ## Hotter (quicker) when a gravity wheel or steam engine is in reach.
+## Not on the track net (on_track = false): ore on the grate stays physics,
+## timed body by body, and comes off as a physics ingot. A chute feeding it
+## hands its riders over as physics at the join.
 
 const Power = preload("res://scripts/power.gd")
 const FX = preload("res://scripts/fx.gd")
@@ -27,6 +30,7 @@ var _art: Node2D                 # the grate and firebox, pixel art tiled along 
 
 func _ready() -> void:
 	has_lip = false
+	on_track = false
 	# art first, so ghosts and build-bar icons have it; behind our _draw (the glow)
 	_art = Node2D.new()
 	_art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST

@@ -61,6 +61,7 @@ func _splash(on_dome: bool) -> void:
 	var p := scene.get_node_or_null("Player") as Node2D
 	if p and p.global_position.distance_to(at) < SPLASH and p.has_method("take_damage"):
 		p.take_damage(player_damage)
+	load("res://scripts/track/track_net.gd").eject_at(self, at, SPLASH * 1.5)   # riders there are knocked off the track too
 	for o in get_tree().get_nodes_in_group("ore"):
 		if is_instance_valid(o) and o.global_position.distance_to(at) < SPLASH * 1.5 and not o.freeze:
 			o.sleeping = false

@@ -159,3 +159,10 @@ func _physics_process(delta: float) -> void:
 				flings += 1
 				FX.burst(get_parent(), end, Color(0.66, 0.5, 0.32), 5, 60.0, 0.3, 1.4)
 				SFX.play_small(self, SFX.sfx_bounce(), -6.0, 0.8)
+
+
+## Where this looks at ore (world rects), for the track net: a chute
+## running through here drops its riders to physics ore over this stretch
+## (scripts/track/track_net.gd, zones), so it sees and moves them as before.
+func ore_watch() -> Array:
+	return [Rect2(global_position - Vector2(HALF + 24.0, 40.0), Vector2(HALF + 24.0, 40.0) * 2.0)]

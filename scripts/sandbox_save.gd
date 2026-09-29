@@ -1,7 +1,8 @@
 extends RefCounted
 ## Sandbox save/load (F5 / F9): the terrain as it is now (worlds are random
 ## each run, so a layout needs its ground) plus every placed piece with its
-## settings: aims, forces, slopes, modes. Loose ore and enemies aren't kept.
+## settings: aims, forces, slopes, modes. Loose ore and enemies aren't kept,
+## nor are marbles riding a track (chutes and the rest: scripts/track).
 ## One slot, in user://sandbox_save.json.
 
 const PATH := "user://sandbox_save.json"
@@ -61,7 +62,10 @@ static func load_into(main: Node) -> int:
 		return -1
 	var tree := main.get_tree()
 	var bs := main.get_node("/root/BuildSystem")
-	# clear the field
+	# clear the field (marbles riding tracks go with them, like loose ore: dropped, not spilt)
+	var net: Node = load("res://scripts/track/track_net.gd").find_net(main)
+	if net != null:
+		net.clear_all_riders()
 	for b in bs._placed_buildings:
 		if is_instance_valid(b):
 			b.queue_free()

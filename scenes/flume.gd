@@ -215,3 +215,12 @@ func _draw() -> void:
 		var x := (x0 + f) if side > 0 else (x0 + w - f)
 		var y := -D * 0.5 + (i % 3 - 1) * 2.0
 		draw_line(Vector2(x, y), Vector2(x - side * 6, y), Color(0.8, 0.9, 1.0, 0.35), 1.0)
+
+
+## Where this looks at ore (world rects), for the track net: a chute
+## running through here drops its riders to physics ore over this stretch
+## (scripts/track/track_net.gd, zones), so it sees and moves them as before.
+func ore_watch() -> Array:
+	var a := global_position
+	var b := global_position + end_offset
+	return [Rect2(a, Vector2.ZERO).expand(b).grow_individual(4.0, D + 12.0, 4.0, 6.0)]

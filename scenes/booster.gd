@@ -4,7 +4,8 @@ extends "res://scenes/chute.gd"
 ## set speed: uphill too, so a run can climb, or a slow stream be sped up
 ## to make a jump or a loop. Runs slowly on its own and at full speed when
 ## a gravity wheel or steam engine is in reach. No stop-lip: it drives
-## through both ends.
+## through both ends. On the track net: a boost-only powered track (gravity
+## still acts; anything slower than the rollers is taken up to speed).
 
 const Power = preload("res://scripts/power.gd")
 const SFX = preload("res://scripts/sfx.gd")
@@ -34,6 +35,16 @@ func _ready() -> void:
 	super._ready()
 	if not has_meta("ghost"):
 		add_to_group("power_users")
+
+
+func _track_path() -> PackedVector2Array:
+	return PackedVector2Array([global_position, global_position + end_offset])
+
+
+func _track_ready() -> void:
+	track.boost_only = true
+	track.drive_acc = 1400.0
+	track.drive = SPEED * _rate
 
 
 func _rebuilt() -> void:
@@ -68,6 +79,13 @@ func _physics_process(delta: float) -> void:
 	_phase += delta * _rate * 12.0
 	var dir := end_offset.normalized()
 	var want := SPEED * _rate
+	if track != null:
+		track.drive = want
+		for i in track.count():
+			if _net.rider_get_meta(track, i, "boosted_by") == null:
+				_net.rider_set_meta(track, i, "boosted_by", get_instance_id())
+				boosted += 1
+				SFX.play_small(self, SFX.sfx_hiss(), -18.0, 1.4)
 	for o in _grip.get_overlapping_bodies():
 		if not (o is RigidBody2D) or o.freeze:
 			continue

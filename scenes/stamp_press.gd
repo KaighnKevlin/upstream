@@ -233,3 +233,10 @@ func _draw() -> void:
 		draw_circle(Vector2(34, TOP + 14), 5.0, dark)
 		draw_circle(Vector2(34, TOP + 14), 1.5, steel)
 		draw_arc(Vector2(34, TOP + 14), 4.0, _lift_t * 8.0, _lift_t * 8.0 + 4.0, 8, brass, 1.5)
+
+
+## Where this looks at ore (world rects), for the track net: a chute
+## running through here drops its riders to physics ore over this stretch
+## (scripts/track/track_net.gd, zones), so it sees and moves them as before.
+func ore_watch() -> Array:
+	return [Rect2(global_position - Vector2(HALF_W + 16.0, 40.0), Vector2(HALF_W + 16.0, 40.0) * 2.0)]

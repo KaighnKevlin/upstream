@@ -131,3 +131,12 @@ func _draw() -> void:
 	# the field it reaches with, faintly (the bar itself is in the art child)
 	var pulse := 0.08 + 0.04 * sin(Time.get_ticks_msec() / 200.0)
 	draw_colored_polygon(PackedVector2Array([Vector2.ZERO, end_offset, end_offset + n * PULL, n * PULL]), Color(0.5, 0.7, 1.0, pulse))
+
+
+## Where this looks at ore (world rects), for the track net: a chute
+## running through here drops its riders to physics ore over this stretch
+## (scripts/track/track_net.gd, zones), so it sees and moves them as before.
+func ore_watch() -> Array:
+	var a := global_position
+	var b := global_position + end_offset
+	return [Rect2(a, Vector2.ZERO).expand(b).grow(PULL + 12.0)]

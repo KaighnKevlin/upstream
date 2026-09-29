@@ -5,6 +5,9 @@ extends "res://scenes/chute.gd"
 ## go sideways or climb where a chute could only let it fall.
 ## Placed and adjusted exactly like a chute. No stop at the high end: ore
 ## rides off whichever end the belt runs to.
+## On the track net it's a powered track: riders are held to belt speed
+## (gravity doesn't move them) and don't age while on it; its grip area
+## still carries whatever physics body is on it (an ingot, a bomb).
 
 const SPEED := 110.0
 const GRIP := 14.0            # how fast riders are brought up to belt speed (1/s)
@@ -25,6 +28,16 @@ func _init() -> void:
 ## Direction the belt runs: from the placement point to the end.
 func run_dir() -> Vector2:
 	return end_offset.normalized()
+
+
+func _track_path() -> PackedVector2Array:
+	return PackedVector2Array([global_position, global_position + end_offset])
+
+
+func _track_ready() -> void:
+	track.keep_alive = true
+	track.drive_acc = SPEED * GRIP
+	track.drive = SPEED * rate * Tech.mult("belts")
 
 
 func _rebuilt() -> void:
@@ -58,6 +71,8 @@ func _physics_process(delta: float) -> void:
 		_rate_t = 0.25
 		rate = Power.rate_at(get_tree(), global_position)
 	var speed := SPEED * rate * Tech.mult("belts")
+	if track != null:
+		track.drive = speed
 	var dir := run_dir()
 	for body in _grip.get_overlapping_bodies():
 		var b := body as RigidBody2D
