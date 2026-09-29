@@ -74,6 +74,8 @@ func _release() -> void:
 	var k: String = stored.pop_front()
 	var o: RigidBody2D = (INGOT if k.begins_with("ingot:") else ORE).instantiate()
 	o.kind = k.trim_prefix("ingot:")
+	if "heat" in o:
+		o.heat = 0.0      # a bar stored has gone cold (no hot bars out of storage)
 	if "lifetime" in o:
 		o.lifetime = 1.0e9
 	o.global_position = global_position + Vector2(0, 10)

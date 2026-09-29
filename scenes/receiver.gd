@@ -9,6 +9,7 @@ var _spr: Sprite2D
 signal ammo_changed(current: int, max_ammo: int)
 
 @export var max_buffer: int = 20
+const BRONZE_STOCK := 3
 var buffer: int = 0
 
 
@@ -54,10 +55,11 @@ func _on_body_entered(body: Node2D) -> void:
 		body.queue_free()  # raw ore is destroyed, not accepted
 		return
 
-	# It's an ingot — accept it
+	# It's an ingot — accept it. Bronze (forged hot in a crucible from a
+	# copper and an iron bar) mends three times as much as a plain bar.
 	SFX.play(self, SFX.sfx_ammo_received())
 	if buffer < max_buffer:
-		buffer += 1
+		buffer = mini(max_buffer, buffer + (BRONZE_STOCK if body.get("kind") == "bronze" else 1))
 		ammo_changed.emit(buffer, max_buffer)
 		_update_bar()
 		FX.pop(_spr, Vector2(1.2, 0.85), 0.16)

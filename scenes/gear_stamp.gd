@@ -7,7 +7,8 @@ extends Node2D
 ## on the anvil (copper ingots, ore) is pushed on off the same end. Slow
 ## on its own, full speed with a gravity wheel or steam engine in reach.
 ## Put its feet on the floor or a ledge, under the end of a run; click the
-## frame to turn it round.
+## frame to turn it round. A bar still hot from the smelter stamps in half
+## the stroke (HOT_SPEED): lay the run from furnace to stamp short.
 
 const Power = preload("res://scripts/power.gd")
 const Tech = preload("res://scripts/tech.gd")
@@ -18,6 +19,7 @@ const ORE := preload("res://scenes/ore.tscn")
 const ORE_ONLY := 64
 const STAMPS := {"iron": "gear"}     # ingot kind -> what it's stamped into
 const STROKE := 1.0                  # s per stroke at full power
+const HOT_SPEED := 2.0               # a hot bar (Ingot.heat > 0) strikes this much quicker
 const HOLD := 3
 const FACE := -16.0                  # anvil face, from the feet
 const HALF := 12.0                   # anvil face half-width
@@ -31,6 +33,8 @@ var stamped := 0             # gears made (tests)
 var taken := 0               # ingots taken in (tests)
 var passed := 0              # other things pushed on (tests)
 var _queue := []             # ingot kinds waiting
+var _hot := []               # and whether each came in hot
+var hot_stamped := 0         # gears struck from hot bars (tests)
 var _work := -1.0            # 0..STROKE while a stroke runs; < 0 idle
 var _intake: Area2D
 var _rate := Power.UNPOWERED
@@ -104,6 +108,7 @@ func _physics_process(delta: float) -> void:
 		var k = b.get("kind")
 		if b.is_in_group("ingots") and STAMPS.has(k) and _queue.size() < HOLD:
 			_queue.append(k)
+			_hot.append(b.has_method("is_hot") and b.is_hot())
 			taken += 1
 			b.queue_free()
 			SFX.play_small(self, SFX.sfx_ore_knock("metal"), -12.0, 0.8)
@@ -119,9 +124,11 @@ func _physics_process(delta: float) -> void:
 	if _work < 0 and not _queue.is_empty():
 		_work = 0.0
 	if _work >= 0:
-		_work += delta * _rate * Tech.mult("assembly")
+		_work += delta * _rate * Tech.mult("assembly") * (HOT_SPEED if _hot[0] else 1.0)
 		if _work >= STROKE:
 			_work = -1.0
+			if _hot.pop_front():
+				hot_stamped += 1
 			_strike(_queue.pop_front())
 	queue_redraw()
 
