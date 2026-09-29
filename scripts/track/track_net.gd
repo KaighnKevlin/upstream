@@ -51,6 +51,7 @@ const SNAP := 10.0         # an end this close to a start feeds it
 const SINK_SNAP := 16.0    # an end this close to a sink's inlet feeds it
 const CATCH_ABOVE := 5.0   # catch ore whose centre is within r + this of the rail
 const JOINT_POW := 0.6     # speed kept over a concave joint: cos(turn) ^ this
+const JOINT_HOP := 0.17    # and a bouncy piece loses this x bounce x sin(turn) more (copper vs iron)
 const NEVER := 0x7fffffff  # a rider's despawn tick when it doesn't age
 const COOL := 12          # ticks before ore that just flew off can be caught again
 const WATCH_R := 40.0      # a piece with no areas or ore_watch() watches this far round its node
@@ -81,6 +82,7 @@ var KID := {}                          # kind name -> id
 var KR := PackedFloat64Array()         # radius per kind
 var KM := PackedFloat64Array()         # mass per kind
 var KF := PackedInt32Array()           # sprite frames per kind
+var KB := PackedFloat64Array()         # joint loss per kind (JOINT_HOP x bounce)
 
 var _next_id := 1
 var _dirty := true
@@ -125,6 +127,7 @@ func _init() -> void:
 		KR.append(spec.radius)
 		KM.append(spec.mass)
 		KF.append(spec.frames)
+		KB.append(JOINT_HOP * float(spec.bounce))
 
 
 func _ready() -> void:
@@ -587,7 +590,7 @@ func _exit_end(tr: Track) -> bool:
 		var over: float = tr.rs[li] - tr.length
 		var d := tr.take(li)
 		var last := tr.tan.size() - 1
-		var v: float = d[1] * _joint(tr.tan[last], tr.nrm[last], dst.tan[0])
+		var v: float = d[1] * _joint(tr.tan[last], tr.nrm[last], dst.tan[0], KB[k])
 		dst.insert(minf(over, dst.room_at_start(r, KR)), v, d[2], d[3], d[4], d[5], d[6])
 		if tr.router != null and tr.router.has_method("passed"):
 			tr.router.passed(pick, NAMES[k])
@@ -632,12 +635,15 @@ func _passed(tr: Track, k: int) -> void:
 ## Speed kept going from one track onto the next: where the path turns up
 ## into the ball it loses the part of its speed into the new surface (a
 ## physics marble thumps into the joint the same way).
-func _joint(t_old: Vector2, n_old: Vector2, t_new: Vector2) -> float:
+func _joint(t_old: Vector2, n_old: Vector2, t_new: Vector2, kb := 0.0) -> float:
 	var d := t_old.dot(t_new)
 	if t_new.dot(n_old) > 0.02:
 		# a round ball meets the new slope over its radius, not at a point:
-		# it keeps a bit more than cos(turn) (fitted to the physics chute)
-		return clampf(pow(maxf(d, 0.0), JOINT_POW), 0.15, 1.0)
+		# it keeps a bit more than cos(turn) (fitted to the physics chute);
+		# a bouncy one (copper) also hops off the joint and loses a little
+		# more, in proportion to the turn (kb: JOINT_HOP x its bounce)
+		var turn: float = absf(t_old.cross(t_new))
+		return clampf(pow(maxf(d, 0.0), JOINT_POW) * (1.0 - kb * turn), 0.15, 1.0)
 	return 1.0 if d > 0.0 else 0.15
 
 

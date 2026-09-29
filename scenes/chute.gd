@@ -128,6 +128,10 @@ func _rebuild() -> void:
 		_body.add_child(lip)
 	_rebuilt()
 	_build_posts()
+	if track != null and track.lip_mode != (1 if has_lip else 0):
+		track.lip_mode = 1 if has_lip else 0   # has_lip changed after it was placed
+		if is_instance_valid(_net):
+			_net._dirty = true
 
 
 ## For subclasses (the belt adds its grip area).
