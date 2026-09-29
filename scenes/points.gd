@@ -4,12 +4,27 @@ extends "res://scenes/rocker.gd"
 ## plate, a bell: it's triggerable) or a click. Routing by signal: with a
 ## tally wheel, three one way then three the other; with a plate, the
 ## stream swings to the turret when a walker steps on it.
+##
+## Rate: up to 10 a second.
+##
+## On a track (a chute ending at its funnel: see scenes/rocker.gd) every
+## rider goes the way it's thrown; if that way is backed up it doesn't
+## switch itself: the rider waits and the queue backs up behind it, until
+## the way clears or something throws it.
 
 
 func _ready() -> void:
 	super._ready()
 	if not has_meta("ghost"):
 		add_to_group("triggerable")
+
+
+func _dodges() -> bool:
+	return false
+
+
+func _went(_i: int, _kind: String) -> void:
+	_next = _fork.net.tick + 6   # it doesn't rock: at most 10/s
 
 
 func trigger() -> void:

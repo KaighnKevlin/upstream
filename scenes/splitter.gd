@@ -6,8 +6,22 @@ extends Node2D
 ##
 ## Click it to cycle the mode: alternate -> always left -> always right.
 ## Like the chute, only ore and ingots collide with it.
+##
+## Rate: up to 10 a second (the paddle flicks over in 0.09 s).
+##
+## On a track (scripts/track/track_net.gd): when a track's open end sits
+## over it (MOUTH: a chute ending above the paddle), it's a junction on the
+## net (scripts/track/track_fork.gd): a feed from that end to the pivot and
+## a branch down each half of the paddle, open at the paddle's ends (the
+## piece flies off as it always did) or feeding track laid from them.
+## Alternating, each rider goes the way the paddle leans and flicks it
+## over; if that way is backed up the rider takes the free way. Locked left
+## or right, it only goes that way: backed up, the rider waits, and the
+## queue behind it. No zone. Ore landing on the paddle from the air rolls
+## off it as physics, as before.
 
 const SFX = preload("res://scripts/sfx.gd")
+const TrackFork = preload("res://scripts/track/track_fork.gd")
 
 enum Mode { ALTERNATE, LEFT, RIGHT }
 @export var mode: Mode = Mode.ALTERNATE
@@ -16,12 +30,17 @@ const ORE_ONLY := 64
 const HALF := 15.0            # paddle half-length
 const TILT := 0.5             # radians (~29 degrees)
 const POST_MAX := 220.0
+const MOUTH := Rect2(-24, -50, 48, 44)   # a feeding track end in here makes it a junction
+const GAP := 6                   # net ticks between riders (0.1 s)
+const LANDING := 60.0            # px/s a rider keeps coming down the feed: the paddle soaks up the landing
 
 var side := -1.0              # which way the next piece goes (-1 left, +1 right)
 var passed := [0, 0]          # pieces sent left, right (for tests / tuning)
 var _paddle: StaticBody2D
 var _zone: Area2D
 var _tilt := -TILT            # drawn angle, tweened
+var _fork = null              # its junction on the track net (TrackFork), when fed by a track
+var _next := 0
 static var _steel := _make_steel()
 
 
@@ -64,6 +83,56 @@ func _ready() -> void:
 	add_child(_zone)
 	_zone.body_exited.connect(_on_left, CONNECT_DEFERRED)
 	_build_post()
+	_fork = TrackFork.new(self, MOUTH)
+
+
+func _exit_tree() -> void:
+	if _fork:
+		_fork.teardown()
+
+
+func _physics_process(_delta: float) -> void:
+	if _fork:
+		_fork.update()
+
+
+# ── on the track net: a junction ───────────────────────────────────────
+
+## The paddle's end (0 left, 1 right), world space, for laying track on.
+func branch_end(i: int) -> Vector2:
+	var sx := -1.0 if i == 0 else 1.0
+	return global_position + Vector2(sx * HALF * cos(TILT), HALF * sin(TILT))
+
+
+func fork_paths(src: Vector2, _tangent: Vector2) -> Dictionary:
+	var pivot := global_position
+	return {"feed": PackedVector2Array([src, pivot]),
+		"branches": [PackedVector2Array([pivot, branch_end(0)]), PackedVector2Array([pivot, branch_end(1)])],
+		"feed_vcap": LANDING}
+
+
+## Junction router: the way the paddle leans; alternating, the free way if
+## that one's backed up; -1 to wait.
+func pick(_kind: String, free: Array) -> int:
+	if _fork.net.tick < _next:
+		return -1
+	var w := 0 if side < 0 else 1
+	if free[w]:
+		return w
+	if mode == Mode.ALTERNATE and free[1 - w]:
+		return 1 - w
+	return -1
+
+
+func passed_at(_tr, i: int, _kind: String) -> void:
+	_next = _fork.net.tick + GAP
+	passed[i] += 1
+	if mode == Mode.ALTERNATE:
+		_flip(1.0 if i == 0 else -1.0)
+
+
+func rider_released(_tr, body: RigidBody2D) -> void:
+	body.set_meta("split_by", get_instance_id())
 
 
 ## Paddle angle for the current side: the low end is the side ore goes.
@@ -72,7 +141,7 @@ func _target_tilt() -> float:
 
 
 func _on_left(body) -> void:   # untyped: a deferred call can arrive after the body was freed
-	if not is_instance_valid(body):
+	if not is_instance_valid(body) or body.get_meta("split_by", 0) == get_instance_id():
 		return
 	passed[0 if body.global_position.x < global_position.x else 1] += 1
 	if mode == Mode.ALTERNATE:

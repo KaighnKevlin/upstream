@@ -4,14 +4,23 @@ extends "res://scenes/rocker.gd"
 ## (click: 1.5 / 2.5, so copper vs iron, or shot and ingots vs copper) tips
 ## it over as it lands and rolls off the heavy side instead. Iron one way,
 ## copper the other: the marble machine's ore filter.
+##
+## Rate: up to 10 a second, sorted exactly.
+##
+## On a track (a chute ending at its funnel: see scenes/rocker.gd) each
+## rider goes the heavy or the light way by its kind's weight; if that way
+## is backed up it waits (a sorter doesn't send it the wrong way), and the
+## queue behind it waits too.
 
 const THRESH := [1.5, 2.5]
+const ORE_KINDS: Dictionary = preload("res://scenes/ore.gd").KINDS
 
 @export var mode := 0
 @export var heavy_side := 1.0    # which way heavy pieces go
 
 var heavy := 0                   # tests
 var light := 0
+var _right_t := 0.0              # s until the counterweight rights it after a rider tipped it
 
 
 func _ready() -> void:
@@ -45,6 +54,39 @@ func _weigh(b) -> void:
 		SFX.play_small(self, SFX.sfx_ore_knock("metal"), -14.0, 0.7)
 	else:
 		light += 1
+
+
+func _want(kind: String) -> int:
+	var spec: Dictionary = ORE_KINDS.get(kind, {})
+	var is_heavy: bool = float(spec.get("mass", 1.0)) > THRESH[mode]
+	var s := heavy_side if is_heavy else -heavy_side
+	return 1 if s > 0 else 0
+
+
+func _dodges() -> bool:
+	return false
+
+
+func _went(i: int, _kind: String) -> void:
+	_next = _fork.net.tick + 6   # at most 10/s
+	var is_heavy: bool = (i == 1) == (heavy_side > 0)
+	if is_heavy:
+		heavy += 1
+		SFX.play_small(self, SFX.sfx_ore_knock("metal"), -14.0, 0.7)
+	else:
+		light += 1
+	tilt = 1.0 if i == 1 else -1.0
+	_right_t = 0.3
+	_apply()
+
+
+func _physics_process(delta: float) -> void:
+	super._physics_process(delta)
+	if _right_t > 0:
+		_right_t -= delta
+		if _right_t <= 0 and tilt != -heavy_side:
+			tilt = -heavy_side
+			_apply()
 
 
 func _on_leave(b) -> void:
