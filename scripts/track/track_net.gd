@@ -72,7 +72,8 @@ var tick_usec := 0         # how long the last tick took (tests)
 var render_usec := 0       # and the last draw update
 var snap_every := 0        # tests: record snapshot() every this many ticks
 var snapshots: Array = []
-var ejected := 0           # riders taken off as physics by a piece or a zone (tests)
+var ejected := 0           # riders taken off as physics by a piece (tests)
+var expired := 0           # riders past their ore's despawn clock (tests)
 var zone_count := 0        # static zones, all tracks (tests)
 
 var NAMES: Array = []                  # kind id -> ore kind name
@@ -839,6 +840,7 @@ func _age() -> void:
 			if tr.rdie[i] <= tick:
 				var d: Array = tr.take(i)
 				_drop_tag(d[5])
+				expired += 1
 			i -= 1
 
 
