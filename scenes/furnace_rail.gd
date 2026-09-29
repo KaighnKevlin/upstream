@@ -4,6 +4,8 @@ extends "res://scenes/chute.gd"
 ## ore that runs across quickly comes off raw. So the yield is a matter of
 ## speed: lay it shallow, or put a brake rail before it, and it all
 ## smelts. Copper and grit make copper ingots; iron, shot, gears iron ones.
+## An ingot rolled back over it heats up again (for a crucible, which
+## wants its bars hot): the same dwell brings a cold one back to white-hot.
 ## Hotter (quicker) when a gravity wheel or steam engine is in reach.
 
 const Power = preload("res://scripts/power.gd")
@@ -68,7 +70,13 @@ func _physics_process(delta: float) -> void:
 		_rate = Power.rate_at(get_tree(), global_position)
 	var heat := lerpf(0.6, 1.0, (_rate - Power.UNPOWERED) / (1.0 - Power.UNPOWERED))
 	for o in _heat.get_overlapping_bodies():
-		if not (o is RigidBody2D) or o.is_queued_for_deletion() or o.is_in_group("ingots"):
+		if not (o is RigidBody2D) or o.is_queued_for_deletion():
+			continue
+		if o.is_in_group("ingots"):
+			# an ingot back over the grate heats up again: as long on it as
+			# ore takes to smelt brings a cold bar back to white-hot
+			if o.has_method("reheat"):
+				o.reheat(delta * heat / DWELL)
 			continue
 		if not str(o.get("kind")) in SMELTS:
 			continue
