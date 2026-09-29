@@ -216,3 +216,62 @@ static func cost_of(t: Dictionary) -> Dictionary:
 	if c is Dictionary:
 		return c
 	return {"flask": int(c)}
+
+
+# ── Factory research (tree techs through a lab) ─────────────────────────
+
+## A science kind as the player reads it.
+static func kind_name(kind: String) -> String:
+	return {"flask": "red", "flask_clock": "clockwork", "flask_bronze": "bronze"}.get(kind, kind)
+
+
+## Can anything make this kind yet? (an assembler recipe puts it out)
+static func producible(kind: String) -> bool:
+	for r in load("res://scenes/assembler.gd").RECIPES:
+		if r.out == kind:
+			return true
+	return false
+
+
+## A tree tech a lab can take on: its needs are met, it isn't done, and
+## every science it costs can be made.
+static func researchable(id: String) -> bool:
+	if researched(id) or not available(id):
+		return false
+	for k in cost_of(tree_tech(id)):
+		if not producible(k):
+			return false
+	return true
+
+
+## A build piece's short name (the build bar's, without its hint).
+static func piece_name(id: int) -> String:
+	var p = load("res://scripts/build_bar.gd").PIECES.get(id)
+	if p == null:
+		return str(id)
+	return String(p[1]).get_slice(" (", 0)
+
+
+static func unlock_names(t: Dictionary) -> Array:
+	return t.get("unlocks", []).map(func(id): return piece_name(id))
+
+
+## A tech's name as shown (the pixel font has no "&").
+static func title(t: Dictionary) -> String:
+	return String(t.get("name", "")).replace("&", "and")
+
+
+## Text broken into lines of at most n characters, at spaces (the UI's
+## labels don't wrap the pixel font reliably).
+static func wrap_text(s: String, n: int) -> String:
+	var lines := []
+	var line := ""
+	for w in s.split(" "):
+		if line != "" and line.length() + 1 + w.length() > n:
+			lines.append(line)
+			line = w
+		else:
+			line = w if line == "" else line + " " + w
+	if line != "":
+		lines.append(line)
+	return "\n".join(lines)

@@ -142,7 +142,8 @@ func _ready() -> void:
 
 ## A curated bar (Marble Siege): only these build types show, in their usual
 ## tabs (empty tabs drop out), and picking any other by its hotkey is
-## refused. An empty list puts the full bar back.
+## refused. An empty list puts the full bar back. Factory mode re-applies it
+## as research unlocks pieces: the tab on show stays if it's still there.
 var _all_cats: Array = []
 var allowed: Array = []
 
@@ -150,6 +151,7 @@ var allowed: Array = []
 func set_allowed(types: Array) -> void:
 	if _all_cats.is_empty():
 		_all_cats = CATS.duplicate(true)
+	var was: String = CATS[_cat][0] if _cat < CATS.size() else ""
 	allowed = types
 	if types.is_empty():
 		CATS = _all_cats.duplicate(true)
@@ -160,7 +162,10 @@ func set_allowed(types: Array) -> void:
 			if not keep.is_empty():
 				CATS.append([c[0], keep])
 	_cat = 0
-	_page = 0
+	for c in CATS.size():
+		if CATS[c][0] == was:
+			_cat = c
+	_page = mini(_page, _pages() - 1) if CATS[_cat][0] == was else 0
 	_hover = -1
 	_layout()
 
