@@ -133,6 +133,7 @@ const TABS := [
 		["", "Escapement", "at a track's end: lets one marble through per beat; click: 0.6/1.2/2.4 s"],
 		["", "Tally wheel", "over a chute: every 3/5/10 pieces (click) fires the traps at its wire's end (drag it)"],
 		["", "Load cell", "when the ore in its pan weighs 2/5/10 (click), fires the traps at its wire's end (drag it)"],
+		["", "Crucible", "a hot copper and a hot iron ingot in the pot together fuse into bronze (3 repair stock in the dome); ingots cool over 8 s and a cold one is tipped out: pair the ore before smelting, or reheat on a furnace rail; click: turn"],
 		["", "Panning box", "set in a flume: grit floating through is caught behind the riffles and washed, every 3 -> 1 copper nugget that floats on; other pieces pass over; dry, it does nothing"],
 		["", "Water wheel", "set over a flume so its paddles dip in the water: the current turns it steadily and it powers machines in reach"],
 		["", "Spinner", "vane hung just over a track: pieces rolling under spin it (and lose a little speed); powers machines in reach"],

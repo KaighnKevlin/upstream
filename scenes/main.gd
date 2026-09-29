@@ -1337,6 +1337,7 @@ var _build_names := {
 	128: "Build: PORTCULLIS (on the ground: a trigger or click drops it, hurting what's under it; it holds walkers until 6 blows jam it up; 4 pieces in the bucket raise it)",
 	129: "Build: FUSE CORD (drag it out: lit by a signal, a click on its start cap or a lit piece, a spark burns along it and fires its end; 40 px = 1 s; chain cords end to start)",
 	130: "Build: FLAK CANNON (on the ground: pieces in its hopper are shelled up at fliers within 200 px; each bursts into shrapnel at the flier's height or the fuse (click: auto/120/200/280 px): iron 5, copper 3, grit 1)",
+	131: "Build: CRUCIBLE (on the ground under two runs: a HOT copper and a HOT iron ingot together fuse into bronze, worth 3 in the dome; bars cool in 8 s, cold ones are tipped out; reheat on a furnace rail; click: turn)",
 	44: "Build: ROBOTIC ARM (picks from one spot, drops at another)",
 	37: "Build: DOMINO ROW (drag start to end; click an end to reset)",
 	36: "Build: STEAM ENGINE (feed it ore: powers machines in reach)",
