@@ -213,7 +213,7 @@ func remove_ticker(node: Object) -> void:
 ## The last piece gone: the net goes too (the next piece makes a fresh one,
 ## its clock from 0: a layout built again runs the same).
 func _retire_if_idle() -> void:
-	if tracks.is_empty() and _sinks.is_empty() and _tickers.is_empty() and not is_queued_for_deletion():
+	if tracks.is_empty() and _sinks.is_empty() and _tickers.is_empty() and is_inside_tree() and not is_queued_for_deletion():
 		var root := get_parent()
 		if root and root.has_meta("track_net") and root.get_meta("track_net") == self:
 			root.remove_meta("track_net")
@@ -678,7 +678,7 @@ func _release(tr: Track, i: int, deferred := false) -> void:
 	if "_prev_speed" in o:
 		o._prev_speed = absf(float(d[1]))
 	if deferred:
-		get_parent().add_child.call_deferred(o)   # a piece going: the scene may be mid-change
+		_add_released.call_deferred(o, get_parent())   # a piece going: the scene may be mid-change
 	else:
 		get_parent().add_child(o)
 	if fresh:
@@ -687,6 +687,15 @@ func _release(tr: Track, i: int, deferred := false) -> void:
 				var sz: float = ORE_KINDS[NAMES[k]].size
 				c.texture.region.position.x = d[4] * sz   # the same chunk of rock it was
 	last_released = o
+
+
+static func _add_released(o, parent) -> void:
+	if not is_instance_valid(o):
+		return
+	if is_instance_valid(parent) and parent.is_inside_tree() and not parent.is_queued_for_deletion() and o.get_parent() == null:
+		parent.add_child(o)
+	elif o.get_parent() == null:
+		o.free()   # the scene went with the piece
 
 
 func _catchable(o: Object) -> bool:
@@ -725,6 +734,8 @@ func _catch_ore() -> void:
 				continue
 			if not (o is Node2D):
 				continue
+			if o is CollisionObject2D and not (o.collision_mask & 64):
+				continue   # passing through track for now (a kicker's punch): not on it
 			var p: Vector2 = o.global_position
 			var hit := _on_band(tr, p)
 			if hit.is_empty():
@@ -870,7 +881,7 @@ func _on_node_changed(n: Node) -> void:
 
 
 ## Whether node n (a child of the scene) is a piece that watches ore.
-func _is_watcher(n: Node, own: Dictionary) -> bool:
+func _is_watcher(n, own: Dictionary) -> bool:
 	if not (n is Node2D) or n is RigidBody2D or n is CharacterBody2D or own.has(n):
 		return false
 	if not n.scene_file_path.begins_with("res://scenes/") or n.has_meta("ghost") or n.is_queued_for_deletion():
@@ -926,13 +937,15 @@ func _rebuild_zones() -> void:
 		if is_instance_valid(tr.piece):
 			own[tr.piece] = true
 	for sk in _sinks:
-		own[sk[0]] = true
+		if is_instance_valid(sk[0]):
+			own[sk[0]] = true
 	for tk in _tickers:
-		own[tk] = true
+		if is_instance_valid(tk):
+			own[tk] = true
 	var rects := []
-	if _root != null:
+	if is_instance_valid(_root):
 		for n in _root.get_children():
-			if _is_watcher(n, own):
+			if is_instance_valid(n) and _is_watcher(n, own):
 				rects.append_array(_watch_rects(n))
 				_watch_sig.append([n, _signature(n)])
 	zone_count = 0
