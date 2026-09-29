@@ -5,16 +5,33 @@ extends Node2D
 ## are pushing behind it. PERIOD seconds a beat at full power (faster when
 ## a wheel or engine drives it). Click it to cycle 0.6 / 1.2 / 2.4 s.
 ## Ore-only layer: walkers pass through.
+##
+## Rate: exactly 1 per beat with a queue behind it: 1 per 0.6 / 1.2 / 2.4 s
+## powered (a wheel or engine in reach), 1 per 0.81 / 1.62 / 3.24 s unpowered
+## (the clockwork runs at 0.74). A beat nobody's there for is lost.
+##
+## On a track (scripts/track/track_net.gd) its pin is a mark on the chute
+## under it (scripts/track/track_mark.gd): shut, the lead rider stops
+## against it and the queue backs up behind, the track's own queue, all the
+## way up the line; on the beat it lets exactly one by (and gives it the
+## pallet's nudge). No zone: the riders stay riders. Set mid-chute or at a
+## chute's low end (a point just past the end is the end), it's the same.
+## Physics ore (a chute off the track net, ore dropped onto the gate)
+## still meets the pin's collision, as it always did.
 
 const SFX = preload("res://scripts/sfx.gd")
 const Power = preload("res://scripts/power.gd")
+const TrackMark = preload("res://scripts/track/track_mark.gd")
 const ORE_ONLY := 64
 const PERIODS := [0.6, 1.2, 2.4]
+const OPEN_FOR := 0.35           # s the pin stays up on a beat
+const NUDGE := 45.0              # px/s the pallet gives the one it lets go
 
 @export var mode := 1
 @export var side := 1.0            # which way the track runs through it
 
-var released := 0                # tests
+var released := 0                # tests: beats
+var let_by := 0                  # tests: riders it let by on the track
 var _gate: CollisionShape2D
 var _open := 0.0
 var _beat := 0.0
@@ -25,6 +42,7 @@ var _swing := 0.0
 var _pin: Sprite2D
 var _fork: Sprite2D
 var _wheel: Sprite2D
+var _mark = null                 # its pin on the track under it (TrackMark)
 
 
 func _ready() -> void:
@@ -61,6 +79,9 @@ func _ready() -> void:
 		if _open > 0:
 			_open = 0.0
 			_close())
+	past.set_meta("track_ignore", true)   # on a track it reads the riders (the mark), no zone
+	_mark = TrackMark.new(self, Vector2.ZERO, 6.0, 10.0)
+	_mark.gate(0, false)
 
 
 func _sprite(n: String, off: Vector2, at: Vector2) -> Sprite2D:
@@ -76,12 +97,35 @@ func _sprite(n: String, off: Vector2, at: Vector2) -> Sprite2D:
 
 func _close() -> void:
 	_gate.set_deferred("disabled", false)
+	if _mark:
+		_mark.gate(0, false)
 	queue_redraw()
+
+
+func _exit_tree() -> void:
+	if _mark:
+		_mark.drop()
+
+
+## For the track net's zones: none while its pin is on the track (it gates
+## the riders there itself), a watch round it while it isn't.
+func ore_watch() -> Array:
+	return _mark.watching() if _mark else []
+
+
+## The net: a rider went by the pin (or was stopped by it).
+func mark_event(_m, _kind: String, _v: float, ev: int) -> void:
+	if ev == 1:
+		let_by += 1
+		if _open > 0:
+			_open = 0.0
+			_close()
 
 
 func _physics_process(delta: float) -> void:
 	if _gate == null:
 		return
+	_mark.update()
 	_rate_t -= delta
 	if _rate_t <= 0:
 		_rate_t = 0.25
@@ -91,12 +135,19 @@ func _physics_process(delta: float) -> void:
 		_open -= delta
 		if _open <= 0:
 			_close()
-		return
+	# the clockwork keeps its beat whatever the pin is doing: exactly one
+	# beat per period, a beat nobody's there for lost
 	_beat -= delta * _rate
 	if _beat <= 0:
-		_beat = PERIODS[mode]
-		_open = 0.35
+		_beat = maxf(_beat + PERIODS[mode], 0.0)
+		_open = OPEN_FOR
 		_gate.set_deferred("disabled", true)
+		# on a track: the pin lets one by; the one resting against it gets
+		# the pallet's nudge
+		_mark.gate(1, false)
+		var fi: int = _mark.front()
+		if fi >= 0 and _mark.m.track.rv[fi] < NUDGE:
+			_mark.m.track.set_speed(fi, NUDGE)
 		# the one at the front has been resting against the pin: wake it and
 		# give it the nudge the pallet would
 		var front: RigidBody2D = null

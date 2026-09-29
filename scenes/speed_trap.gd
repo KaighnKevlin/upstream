@@ -5,9 +5,17 @@ extends Node2D
 ## around itself), like a tally wheel. Wire it to a kicker or a points
 ## switch to route by speed: slow ore one way, a fast shot the other.
 ## Shows the last speed it read.
+##
+## Rate: clocks every one, whatever the rate (no limit of its own).
+##
+## On a track (scripts/track/track_net.gd) it clocks the riders passing
+## under it (a mark on the chute, scripts/track/track_mark.gd): each once,
+## at its speed along the chute, no zone. Physics ore under it is clocked
+## as before.
 
 const SFX = preload("res://scripts/sfx.gd")
 const Tripwire = preload("res://scenes/tripwire.gd")
+const TrackMark = preload("res://scripts/track/track_mark.gd")
 const LIMITS := [150.0, 250.0, 350.0]
 
 @export var mode := 1
@@ -19,6 +27,7 @@ var last := 0.0
 var _flash := 0.0
 var _seen := {}
 var _dragging := false
+var _mark = null                 # where it reads the riders on the track under it (TrackMark)
 var _box_art: Sprite2D           # art: the brass box, lit on a fire
 
 
@@ -46,6 +55,30 @@ func _ready() -> void:
 	a.add_child(cs)
 	add_child(a)
 	a.body_entered.connect(_clock)
+	a.set_meta("track_ignore", true)
+	_mark = TrackMark.new(self, Vector2.ZERO, 0.0, 30.0)
+
+
+func _exit_tree() -> void:
+	if _mark:
+		_mark.drop()
+
+
+## For the track net's zones: none while it reads the track, a watch round
+## it while it isn't.
+func ore_watch() -> Array:
+	return _mark.watching() if _mark else []
+
+
+func _physics_process(_delta: float) -> void:
+	if _mark:
+		_mark.update()
+
+
+## The net: a rider went under it, at v along the chute.
+func mark_event(_m, _kind: String, v: float, ev: int) -> void:
+	if ev == 1:
+		_clock_speed(absf(v))
 
 
 func _clock(b) -> void:
@@ -55,7 +88,11 @@ func _clock(b) -> void:
 	if _seen.get(b.get_instance_id(), 0.0) > now:
 		return
 	_seen[b.get_instance_id()] = now + 1.0
-	last = b.linear_velocity.length()
+	_clock_speed(b.linear_velocity.length())
+
+
+func _clock_speed(speed: float) -> void:
+	last = speed
 	clocked += 1
 	if last > LIMITS[mode]:
 		fire()
