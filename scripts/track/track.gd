@@ -49,6 +49,8 @@ var sink: Object = null                 # takes riders off the end: can_accept(k
 var lip := true                         # a stop at the start (nothing feeds it and it runs down from there)
 var gate := -1                          # -1 open; 0 shut; n: let n more off the end
 var notify := false                     # tell the piece when a rider leaves the end: rider_passed(track, kind)
+var marks: Array = []                   # points where a piece gates or counts the riders going by (net: add_mark)
+var ends_open := false                  # its end never feeds a track or a sink: riders always fly off it
 var cands := {}                         # physics ore inside the catch area (instance id -> body)
 
 # riders, in order of s
@@ -316,3 +318,18 @@ func clear_riders() -> void:
 func set_sv(i: int, s: float, v: float) -> void:
 	rs[i] = s
 	rv[i] = v
+
+
+## Where rider i was at the end of the last tick, as far as marks go.
+func set_last(i: int, s: float) -> void:
+	rlast[i] = s
+
+
+## Nobody ahead of the one in front of it (after marks stopped some): the
+## queue is then sorted out by contacts().
+func keep_order() -> void:
+	var j := rs.size() - 2
+	while j >= 0:
+		if rs[j] > rs[j + 1]:
+			rs[j] = rs[j + 1]
+		j -= 1
