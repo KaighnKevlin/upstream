@@ -5,10 +5,11 @@ extends RefCounted
 
 const LightTextures = preload("res://scripts/light_textures.gd")
 static var _tex: Texture2D
+static var enabled := true          # main turns it off while the caves are fully lit
 
 
 static func add(piece: Node2D) -> void:
-	if piece == null or piece.has_node("PieceLight"):
+	if not enabled or piece == null or piece.has_node("PieceLight"):
 		return
 	if _tex == null:
 		_tex = LightTextures.create_radial_light(128)

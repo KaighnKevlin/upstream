@@ -53,6 +53,9 @@ const ENEMY_NAMES := ["titan", "scuttler", "soldier", "caster", "ornithopter", "
 @onready var _tilemap: TileMapLayer = $TileMapLayer
 @onready var _player: CharacterBody2D = $Player
 @onready var _player_hp_fill: Polygon2D = $CanvasLayer/PlayerHpFill
+## Cave darkness and fog of war. Off while prototyping (Kaighn, 29 Sep):
+## everything visible; the L key still toggles the dark back on.
+const DARK_CAVES := false
 @onready var _canvas_mod: CanvasModulate = $CanvasModulate
 
 
@@ -63,6 +66,11 @@ func _ready() -> void:
 	var fog := preload("res://scripts/fog.gd").new()   # fog of war underground
 	fog.name = "Fog"
 	add_child(fog)
+	if not DARK_CAVES:
+		# prototyping: the whole cave lit and uncovered (L still toggles the dark)
+		_canvas_mod.color = Color(1, 1, 1, 1)
+		fog.visible = false
+	preload("res://scripts/piece_light.gd").enabled = DARK_CAVES   # glows only wash out a lit cave
 	preload("res://scripts/ruins.gd").build(self, _tilemap)     # a buried vault with a sentinel
 	preload("res://scenes/cache.gd").scatter(self, _tilemap)   # salvage caches in the caves
 	preload("res://scenes/geyser.gd").scatter(self, _tilemap)  # ore geysers on cave floors
