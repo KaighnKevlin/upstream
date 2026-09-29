@@ -65,7 +65,7 @@ func _physics_process(_delta: float) -> void:
 		track.vcap = cap
 		# riders held to the cap: count each piece once, as the brush does
 		for i in track.count():
-			if absf(track.rv[i]) >= cap - 0.5 and _net.rider_get_meta(track, i, "braked_by") == null:
+			if absf(track.rv[i]) >= cap - 0.5 and _net.rider_get_meta(track, i, "braked_by", 0) != get_instance_id():
 				_net.rider_set_meta(track, i, "braked_by", get_instance_id())
 				braked += 1
 	for o in _brush.get_overlapping_bodies():

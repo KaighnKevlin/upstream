@@ -82,7 +82,7 @@ func _physics_process(delta: float) -> void:
 	if track != null:
 		track.drive = want
 		for i in track.count():
-			if _net.rider_get_meta(track, i, "boosted_by") == null:
+			if _net.rider_get_meta(track, i, "boosted_by", 0) != get_instance_id():
 				_net.rider_set_meta(track, i, "boosted_by", get_instance_id())
 				boosted += 1
 				SFX.play_small(self, SFX.sfx_hiss(), -18.0, 1.4)
@@ -93,8 +93,9 @@ func _physics_process(delta: float) -> void:
 		if along < want:
 			# the rollers take it up to speed quickly, keeping it on the rail
 			o.linear_velocity += dir * minf(want - along, 1400.0 * delta)
-		if not _seen.has(o.get_instance_id()):
+		if not _seen.has(o.get_instance_id()) and o.get_meta("boosted_by", 0) != get_instance_id():
 			_seen[o.get_instance_id()] = true
+			o.set_meta("boosted_by", get_instance_id())   # the same piece, on track or off: counted once
 			boosted += 1
 			SFX.play_small(self, SFX.sfx_hiss(), -18.0, 1.4)
 	queue_redraw()
