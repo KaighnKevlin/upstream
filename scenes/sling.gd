@@ -6,6 +6,7 @@ extends Node2D
 ## hard. Lifts a line up and over, or hurls it across a gap.
 ## Ore-only: walkers aren't touched.
 
+const Hold = preload("res://scripts/hold.gd")
 const Power = preload("res://scripts/power.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const R := 22.0                  # arm length, px
@@ -68,9 +69,10 @@ func _dir() -> Vector2:
 func _catch(b) -> void:
 	if _held != null or not (b is RigidBody2D) or not b.is_in_group("ore"):
 		return
-	if b.get_meta("sling_until", 0.0) > Time.get_ticks_msec() / 1000.0:
+	if b.get_meta("sling_until", 0.0) > Time.get_ticks_msec() / 1000.0 or not Hold.free_to_take(b, self):
 		return
 	_held = b
+	Hold.claim(b, self)
 	b.gravity_scale = 0.0
 	# the arm swings to where it came in, already moving at its speed
 	var p: Vector2 = b.global_position - global_position
@@ -108,7 +110,7 @@ func _physics_process(delta: float) -> void:
 		var o := _held
 		_held = null
 		o.global_position = global_position + Vector2.RIGHT.rotated(_theta) * R
-		o.gravity_scale = 1.0
+		Hold.release(o, self)
 		o.linear_velocity = _dir() * v_out
 		o.set_meta("sling_until", Time.get_ticks_msec() / 1000.0 + 0.6)
 		thrown += 1
@@ -117,6 +119,7 @@ func _physics_process(delta: float) -> void:
 		queue_redraw()
 		return
 	var at := global_position + Vector2.RIGHT.rotated(_theta) * R
+	Hold.claim(_held, self)
 	_held.linear_velocity = (at - _held.global_position) / delta
 	if "_timer" in _held:
 		_held._timer = 0.0

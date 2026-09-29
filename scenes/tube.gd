@@ -6,6 +6,7 @@ extends Node2D
 ## pipe (you can watch it through the glass) and is shot out of the nozzle
 ## along the pipe's last stretch. Faster when a gravity wheel drives it.
 
+const Hold = preload("res://scripts/hold.gd")
 const Power = preload("res://scripts/power.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const FX = preload("res://scripts/fx.gd")
@@ -70,7 +71,7 @@ func _rebuild() -> void:
 
 
 func _on_intake(b) -> void:   # untyped: a deferred call can arrive after the body was freed
-	if not is_instance_valid(b) or not b is RigidBody2D or b.has_meta("caught_by") or b.freeze:
+	if not is_instance_valid(b) or not b is RigidBody2D or b.has_meta("caught_by") or b.freeze or Hold.held(b):
 		return
 	b.set_meta("caught_by", self)
 	b.freeze_mode = RigidBody2D.FREEZE_MODE_KINEMATIC

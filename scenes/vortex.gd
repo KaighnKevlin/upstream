@@ -6,6 +6,7 @@ extends Node2D
 ## A show, and a delay: a burst in comes out one at a time, seconds later.
 ## The node is the rim's centre; the spout is DEPTH below.
 
+const Hold = preload("res://scripts/hold.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const R := 56.0                  # rim radius
 const DEPTH := 64.0              # rim to spout
@@ -53,13 +54,14 @@ func _physics_process(delta: float) -> void:
 	_t += delta
 	# catch marbles coming in over the rim
 	for o in get_tree().get_nodes_in_group("ore"):
-		if not is_instance_valid(o) or o.freeze or _riders.has(o.get_instance_id()) or o.has_meta("in_beam"):
+		if not is_instance_valid(o) or o.freeze or _riders.has(o.get_instance_id()) or o.has_meta("in_beam") or not Hold.free_to_take(o, self):
 			continue
 		var p: Vector2 = o.global_position - global_position
 		if absf(p.x) < R and p.y > -8 and p.y < 10 and o.get_meta("vortex_until", 0.0) < _t:
 			var theta := acos(clampf(p.x / R, -1.0, 1.0))
 			var v := maxf(V_MIN, absf(o.linear_velocity.x) + 40.0)
 			_riders[o.get_instance_id()] = [o, theta, R, v]
+			Hold.claim(o, self)
 			o.gravity_scale = 0.0
 			SFX.play_small(self, SFX.sfx_roll(), -16.0, 0.8)
 	for id in _riders.keys():
@@ -70,7 +72,7 @@ func _physics_process(delta: float) -> void:
 			continue
 		var rad: float = r[2] - SHRINK * delta
 		if rad < SPOUT:
-			o.gravity_scale = 1.0
+			Hold.release(o, self)
 			o.linear_velocity = Vector2(0, 160)
 			o.global_position = global_position + Vector2(0, DEPTH + 6)
 			o.set_meta("vortex_until", _t + 1.0)
@@ -85,6 +87,7 @@ func _physics_process(delta: float) -> void:
 		r[2] = rad
 		r[3] = v
 		var target := global_position + _pos(theta, rad)
+		Hold.claim(o, self)
 		o.linear_velocity = (target - o.global_position) / delta
 		if "_timer" in o:
 			o._timer = 0.0

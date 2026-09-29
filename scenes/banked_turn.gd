@@ -5,6 +5,7 @@ extends Node2D
 ## mouth one level down heading back the other way. Switchback runs with
 ## these instead of stop-lips keep their pace. The node is the top mouth.
 
+const Hold = preload("res://scripts/hold.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const R := 22.0
 const KEEP := 0.94               # speed kept round the bend
@@ -37,11 +38,12 @@ func _physics_process(delta: float) -> void:
 		return
 	var now := Time.get_ticks_msec() / 1000.0
 	for o in get_tree().get_nodes_in_group("ore") + get_tree().get_nodes_in_group("ingots"):
-		if not is_instance_valid(o) or o.freeze or _riders.has(o.get_instance_id()) or _cool.get(o.get_instance_id(), 0.0) > now:
+		if not is_instance_valid(o) or o.freeze or _riders.has(o.get_instance_id()) or _cool.get(o.get_instance_id(), 0.0) > now or not Hold.free_to_take(o, self):
 			continue
 		var p: Vector2 = o.global_position - global_position
 		if absf(p.x) < 8 and absf(p.y) < 9 and o.linear_velocity.x * side > 20:
 			_riders[o.get_instance_id()] = [o, 0.0, maxf(o.linear_velocity.length(), V_MIN)]
+			Hold.claim(o, self)
 			o.gravity_scale = 0.0
 	for id in _riders.keys():
 		var r: Array = _riders[id]
@@ -53,7 +55,7 @@ func _physics_process(delta: float) -> void:
 		var th: float = r[1] + v / R * delta
 		r[1] = th
 		if th >= PI:
-			o.gravity_scale = 1.0
+			Hold.release(o, self)
 			o.global_position = global_position + Vector2(0, 2 * R)
 			o.linear_velocity = Vector2(-side * v * KEEP, 0)
 			_cool[id] = now + 0.8
@@ -63,6 +65,7 @@ func _physics_process(delta: float) -> void:
 			continue
 		# round the outside of the bend: from the top, out toward `side`, down, back
 		var target := global_position + _centre() + Vector2(sin(th) * side, -cos(th)) * R
+		Hold.claim(o, self)
 		o.linear_velocity = (target - o.global_position) / delta
 		if "_timer" in o:
 			o._timer = 0.0

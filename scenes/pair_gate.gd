@@ -5,6 +5,7 @@ extends Node2D
 ## streams one for one (a copper with each iron, for a recipe that needs
 ## both) and makes either wait for the other. Shows what each side holds.
 
+const Hold = preload("res://scripts/hold.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const CUP_X := 22.0
 
@@ -42,7 +43,7 @@ func _physics_process(delta: float) -> void:
 		return
 	var now := Time.get_ticks_msec() / 1000.0
 	for o in get_tree().get_nodes_in_group("ore"):
-		if not is_instance_valid(o) or o.freeze or _cool.get(o.get_instance_id(), 0.0) > now:
+		if not is_instance_valid(o) or o.freeze or _cool.get(o.get_instance_id(), 0.0) > now or not Hold.free_to_take(o, self):
 			continue
 		for k in 2:
 			if o in _held[k]:
@@ -50,6 +51,7 @@ func _physics_process(delta: float) -> void:
 			var p: Vector2 = o.global_position - (global_position + _cup(k))
 			if absf(p.x) < 11 and p.y > -16 and p.y < 4:
 				_held[k].append(o)
+				Hold.claim(o, self)
 				o.gravity_scale = 0.0
 	# both sides stocked: one of each goes
 	for k in 2:
@@ -57,7 +59,7 @@ func _physics_process(delta: float) -> void:
 	if not _held[0].is_empty() and not _held[1].is_empty():
 		for k in 2:
 			var b: RigidBody2D = _held[k].pop_front()
-			b.gravity_scale = 1.0
+			Hold.release(b, self)
 			b.global_position = global_position + Vector2(-4 if k == 0 else 4, 14)
 			b.linear_velocity = Vector2(0, 80)
 			_cool[b.get_instance_id()] = now + 1.0
@@ -69,6 +71,7 @@ func _physics_process(delta: float) -> void:
 		var i := 0
 		for b in _held[k]:
 			var at := global_position + _cup(k) + Vector2(0, -6 - i * 12)
+			Hold.claim(b, self)
 			b.linear_velocity = (at - b.global_position) / delta
 			if "_timer" in b:
 				b._timer = 0.0

@@ -8,6 +8,7 @@ extends Node2D
 ## with the grit spread along its length. Slow on its own, full speed
 ## with a gravity wheel or steam engine in reach.
 
+const Hold = preload("res://scripts/hold.gd")
 const Power = preload("res://scripts/power.gd")
 const SFX = preload("res://scripts/sfx.gd")
 
@@ -99,7 +100,7 @@ func _physics_process(delta: float) -> void:
 	var dn := _down()
 	# take in anything loose that falls into the drum
 	for o in get_tree().get_nodes_in_group("ore") + get_tree().get_nodes_in_group("ingots"):
-		if not is_instance_valid(o) or o.freeze or o.is_queued_for_deletion() or o.has_meta("caught_by"):
+		if not is_instance_valid(o) or o.freeze or not Hold.free_to_take(o, self):
 			continue
 		var id: int = o.get_instance_id()
 		if _riders.has(id) or _cool.get(id, 0.0) > now:
@@ -108,6 +109,7 @@ func _physics_process(delta: float) -> void:
 		var s := p.dot(d)
 		var across := p.dot(dn)
 		if s > -8.0 and s < l - 10.0 and across > -R - 10.0 and across < R + 2.0:
+			Hold.claim(o, self)
 			o.gravity_scale = 0.0
 			_riders[id] = [o, maxf(s, 0.0), randf() * TAU, now]
 	var v := V_ALONG * _rate
@@ -147,6 +149,7 @@ func _physics_process(delta: float) -> void:
 			SFX.play_small(self, SFX.sfx_ore_knock("metal"), -18.0, 1.0)
 			continue
 		var at: Vector2 = global_position + d * s + dn * (R - rad - 1.0) * (0.15 + 0.85 * low)
+		Hold.claim(o, self)
 		o.linear_velocity = (at - o.global_position) / delta
 		o.angular_velocity = SPIN * _rate * 2.0
 		if "_timer" in o:
@@ -161,7 +164,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _release(o: RigidBody2D, id: int, at: Vector2, vel: Vector2, now: float) -> void:
-	o.gravity_scale = 1.0
+	Hold.release(o, self)
 	o.global_position = at
 	o.linear_velocity = vel
 	_cool[id] = now + 1.5
@@ -172,7 +175,7 @@ func _exit_tree() -> void:
 	for id in _riders:
 		var o = _riders[id][0]
 		if is_instance_valid(o):
-			o.gravity_scale = 1.0
+			Hold.release(o, self)
 	_riders.clear()
 
 

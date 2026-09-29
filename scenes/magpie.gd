@@ -8,6 +8,7 @@ extends Node2D
 ## Ore in hoppers and turret funnels is safe: it only takes what's loose.
 ## Art: tools/art/gen_magpie.py (8 frames of 40x28, facing right).
 
+const Hold = preload("res://scripts/hold.gd")
 const FX = preload("res://scripts/fx.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const WorldGen = preload("res://scripts/world_gen.gd")
@@ -141,7 +142,7 @@ func _steer(to: Vector2, speed: float, delta: float, turn := TURN) -> void:
 
 func _valid(o) -> bool:
 	return o != null and is_instance_valid(o) and not o.freeze and not o.has_meta("caught_by") \
-		and not o.has_meta("store_material")
+		and not o.has_meta("store_material") and not Hold.held(o)
 
 
 func _pick_ore() -> RigidBody2D:

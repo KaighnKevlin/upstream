@@ -7,6 +7,7 @@ extends Node2D
 ## weir drops it for a moment and flushes them out. A conveyor, a sorter and
 ## an iron store at once. Ore-only: walkers aren't touched.
 
+const Hold = preload("res://scripts/hold.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const ORE_ONLY := 64
 const LEN_MIN := 60.0
@@ -143,7 +144,7 @@ func _physics_process(delta: float) -> void:
 	var k := 1.0 - exp(-6.0 * delta)
 	var now_wet := {}
 	for o in get_tree().get_nodes_in_group("ore"):
-		if not is_instance_valid(o) or o.freeze or o.has_meta("store_material"):
+		if not is_instance_valid(o) or o.freeze or o.has_meta("store_material") or Hold.holder(o) != null:
 			continue
 		var p: Vector2 = to_local(o.global_position)
 		var along := p.x * side
@@ -170,7 +171,8 @@ func _physics_process(delta: float) -> void:
 	# out of the water: back to their own weight (and counted out the far end)
 	for o in _wet.keys():
 		if not now_wet.has(o) and is_instance_valid(o):
-			o.gravity_scale = 1.0
+			if Hold.holder(o) == null:   # (not if it was taken out by a holder)
+				o.gravity_scale = 1.0
 			if (to_local(o.global_position).x * side) > l:
 				if o.kind in HEAVY:
 					flushed += 1

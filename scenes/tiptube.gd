@@ -9,6 +9,7 @@ extends Node2D
 ## The node is the tube's mouth (end the feeding chute just short of it,
 ## a touch below); the pour comes out under and behind it.
 
+const Hold = preload("res://scripts/hold.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const PIVOT := 12.0              # from the mouth, toward `side`
 const REACH := 36.0              # pivot to the far end
@@ -81,10 +82,11 @@ func _physics_process(delta: float) -> void:
 		return
 	var now := Time.get_ticks_msec() / 1000.0
 	for o in get_tree().get_nodes_in_group("ore") + get_tree().get_nodes_in_group("ingots"):
-		if not is_instance_valid(o) or o.freeze or o == _rider or o in _waiting or _cool.get(o.get_instance_id(), 0.0) > now:
+		if not is_instance_valid(o) or o.freeze or o == _rider or o in _waiting or _cool.get(o.get_instance_id(), 0.0) > now or not Hold.free_to_take(o, self):
 			continue
 		var p: Vector2 = o.global_position - global_position
 		if absf(p.x) < 9 and absf(p.y) < 10 and o.linear_velocity.x * side > 10:
+			Hold.claim(o, self)
 			o.gravity_scale = 0.0
 			_waiting.append(o)
 	_waiting = _waiting.filter(func(o): return is_instance_valid(o))
@@ -135,6 +137,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _hold(o: RigidBody2D, at: Vector2, delta: float) -> void:
+	Hold.claim(o, self)
 	o.linear_velocity = (at - o.global_position) / delta
 	if "_timer" in o:
 		o._timer = 0.0
@@ -143,7 +146,7 @@ func _hold(o: RigidBody2D, at: Vector2, delta: float) -> void:
 func _pour(now: float) -> void:
 	if not is_instance_valid(_rider):
 		return
-	_rider.gravity_scale = 1.0
+	Hold.release(_rider, self)
 	_rider.global_position = global_position + out_point()
 	_rider.linear_velocity = _dir(OVER) * V_OUT
 	last_out = _rider.linear_velocity

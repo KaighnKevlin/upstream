@@ -9,6 +9,7 @@ extends Node2D
 ## Climbs slowly unpowered; a gravity wheel or steam engine in reach runs it
 ## at full rate. Ore-only layer: walkers pass through.
 
+const Hold = preload("res://scripts/hold.gd")
 const Power = preload("res://scripts/power.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const ORE_ONLY := 64
@@ -110,6 +111,7 @@ func _r(o) -> float:
 
 
 func _hold(o, at: Vector2, delta: float) -> void:
+	Hold.claim(o, self)
 	o.linear_velocity = ((at - o.global_position) / delta).limit_length(260.0)
 	o.angular_velocity = 0.0
 	if "_timer" in o:
@@ -126,11 +128,12 @@ func _physics_process(delta: float) -> void:
 	var now := Time.get_ticks_msec() / 1000.0
 	# anything falling into the mouth joins the jumble
 	for o in get_tree().get_nodes_in_group("ore"):
-		if not is_instance_valid(o) or o.freeze or o.has_meta("store_material") or o.get_meta("bowl_until", 0.0) > now:
+		if not is_instance_valid(o) or o.freeze or o.has_meta("store_material") or o.get_meta("bowl_until", 0.0) > now or not Hold.free_to_take(o, self):
 			continue
 		if o in _pile or _held(o):
 			continue
 		if MOUTH.has_point(o.global_position - global_position) and o.linear_velocity.y >= -20:
+			Hold.claim(o, self)
 			o.gravity_scale = 0.0
 			_pile.append(o)
 			SFX.play_small(self, SFX.sfx_ore_knock("metal"), -18.0, 1.1)
@@ -192,7 +195,7 @@ func _physics_process(delta: float) -> void:
 		else:
 			var at: Vector2 = p.move_toward(hole, 70.0 * delta)
 			if at.distance_to(hole) < 1.0:
-				o.gravity_scale = 1.0
+				Hold.release(o, self)
 				o.linear_velocity = Vector2(-_s() * 90.0, -10.0)
 				o.set_meta("bowl_until", now + 1.5)
 				rejected += 1
@@ -215,7 +218,7 @@ func _held(o) -> bool:
 
 ## Off the top of the ledge onto the lip, rolling out.
 func _release(o, now: float) -> void:
-	o.gravity_scale = 1.0
+	Hold.release(o, self)
 	o.linear_velocity = Vector2(_s() * 50.0, 0.0)
 	o.set_meta("bowl_until", now + 1.5)
 	fed += 1

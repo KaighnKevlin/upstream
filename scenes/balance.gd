@@ -9,6 +9,7 @@ extends Node2D
 ## weight first. Triggered, it just empties both pans. Ore-only: walkers
 ## pass through.
 
+const Hold = preload("res://scripts/hold.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const Tripwire = preload("res://scenes/tripwire.gd")
 const THRESH := [1.0, 2.0, 3.0]
@@ -84,11 +85,12 @@ func _physics_process(delta: float) -> void:
 	var now := Time.get_ticks_msec() / 1000.0
 	# anything falling into a pan with room is caught
 	for o in get_tree().get_nodes_in_group("ore"):
-		if not is_instance_valid(o) or o.freeze or o in _pans[0] or o in _pans[1] or o.get_meta("bal_until", 0.0) > now:
+		if not is_instance_valid(o) or o.freeze or o in _pans[0] or o in _pans[1] or o.get_meta("bal_until", 0.0) > now or not Hold.free_to_take(o, self):
 			continue
 		for i in 2:
 			var p: Vector2 = o.global_position - global_position - _rim(i)
 			if absf(p.x) < 15 and p.y > -44 and p.y < 4 and _pans[i].size() < SLOTS.size():
+				Hold.claim(o, self)
 				o.gravity_scale = 0.0
 				_pans[i].append(o)
 				SFX.play_small(self, SFX.sfx_ore_knock("metal"), -18.0, 1.1)
@@ -106,6 +108,7 @@ func _physics_process(delta: float) -> void:
 		for k in _pans[i].size():
 			var o = _pans[i][k]
 			if is_instance_valid(o):
+				Hold.claim(o, self)
 				o.linear_velocity = (c + SLOTS[k] - o.global_position) / delta
 				o.angular_velocity = 0.0
 				if "_timer" in o:
@@ -136,7 +139,7 @@ func _dump() -> void:
 	for i in 2:
 		for o in _pans[i]:
 			if is_instance_valid(o):
-				o.gravity_scale = 1.0
+				Hold.release(o, self)
 				o.linear_velocity = Vector2(randf_range(-20.0, 20.0), 30.0)
 				o.set_meta("bal_until", until)
 				dumped += 1

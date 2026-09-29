@@ -7,6 +7,7 @@ extends Node2D
 ## round a corner, onto a higher line; copper stays below.
 ## Ore-only: walkers aren't touched.
 
+const Hold = preload("res://scripts/hold.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const LEN_MIN := 60.0
 const LEN_MAX := 400.0
@@ -68,12 +69,13 @@ func _physics_process(delta: float) -> void:
 	for o in get_tree().get_nodes_in_group("ore"):
 		if not is_instance_valid(o) or o.freeze or held_ids.has(o) or not (o.kind in MAGNETIC):
 			continue
-		if o.get_meta("mag_until", 0.0) > now or o.has_meta("store_material"):
+		if o.get_meta("mag_until", 0.0) > now or o.has_meta("store_material") or not Hold.free_to_take(o, self):
 			continue
 		var p: Vector2 = o.global_position - global_position
 		var s := p.dot(dir)
 		var d := p.dot(n)
 		if s > 4 and s < l - 12 and d > -2 and d < PULL:
+			Hold.claim(o, self)
 			o.gravity_scale = 0.0
 			_held.append([o, s, clampf(o.linear_velocity.dot(dir), V_MIN, V_MAX)])
 			SFX.play_small(self, SFX.sfx_clink(), -14.0, 1.6)
@@ -86,10 +88,12 @@ func _physics_process(delta: float) -> void:
 		h[2] = clampf(h[2] + _g * dir.y * delta * 0.6, V_MIN, V_MAX)
 		h[1] += h[2] * delta
 		if h[1] >= l:
-			o.gravity_scale = 1.0
+			Hold.release(o, self)
 			o.linear_velocity = dir * h[2]
 			o.set_meta("mag_until", now + 0.8)
 			carried += 1
+			continue
+		if not Hold.claim(o, self):
 			continue
 		var at: Vector2 = global_position + dir * h[1] + n * (r + 3.0)
 		o.linear_velocity = (at - o.global_position) / delta

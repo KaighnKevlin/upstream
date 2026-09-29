@@ -9,6 +9,7 @@ extends Node2D
 ## way: intake and outlet swap sides) while it's empty.
 ## Art: tools/art/gen_wheel.py.
 
+const Hold = preload("res://scripts/hold.gd")
 const Power = preload("res://scripts/power.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const Tech = preload("res://scripts/tech.gd")
@@ -105,7 +106,7 @@ func _on_intake(body) -> void:   # untyped: a deferred call can arrive after the
 	if not is_instance_valid(body):
 		return
 	var o := body as RigidBody2D
-	if o == null or o.freeze or o.has_meta("caught_by") or o.get_meta("wheel_cool", 0.0) > Time.get_ticks_msec() / 1000.0:
+	if o == null or o.freeze or o.has_meta("caught_by") or Hold.held(o) or o.get_meta("wheel_cool", 0.0) > Time.get_ticks_msec() / 1000.0:
 		return
 	# the empty bucket nearest the intake, on the loading side
 	var best := -1

@@ -7,6 +7,7 @@ extends Node2D
 ## its load high and far toward `side`; the counterweight ore spills out
 ## and the box must be refilled. Iron in the box outthrows copper.
 
+const Hold = preload("res://scripts/hold.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const FX = preload("res://scripts/fx.gd")
 const BOX := Vector2(-26, -40)   # the counterweight box, cocked up (x flips with side)
@@ -91,12 +92,13 @@ func _physics_process(delta: float) -> void:
 	var now := Time.get_ticks_msec() / 1000.0
 	if _swing <= 0.0:
 		for o in get_tree().get_nodes_in_group("ore"):
-			if not is_instance_valid(o) or o.freeze or o in _box or o in _sling or _cool.get(o.get_instance_id(), 0.0) > now:
+			if not is_instance_valid(o) or o.freeze or o in _box or o in _sling or _cool.get(o.get_instance_id(), 0.0) > now or not Hold.free_to_take(o, self):
 				continue
 			for pair in [[_box, BOX], [_sling, SLING]]:
 				var c: Vector2 = global_position + _p(pair[1])
 				if absf(o.global_position.x - c.x) < 12 and o.global_position.y > c.y - 18 and o.global_position.y < c.y + 4:
 					pair[0].append(o)
+					Hold.claim(o, self)
 					o.gravity_scale = 0.0
 					break
 	else:
@@ -109,6 +111,7 @@ func _physics_process(delta: float) -> void:
 				arr.erase(b)
 				continue
 			var at: Vector2 = global_position + _p(pair[1]) + Vector2((i % 3) * 5 - 5, -6 - (i / 3) * 6)
+			Hold.claim(b, self)
 			b.linear_velocity = (at - b.global_position) / delta
 			if "_timer" in b:
 				b._timer = 0.0
@@ -124,13 +127,13 @@ func trigger() -> void:
 	var v := clampf(V_PER * sqrt(m), 120.0, V_MAX)
 	for b in _sling:
 		if is_instance_valid(b):
-			b.gravity_scale = 1.0
+			Hold.release(b, self)
 			b.global_position = global_position + _p(Vector2(-10, -70))
 			b.linear_velocity = Vector2(side * 0.72, -0.7).normalized() * v * randf_range(0.95, 1.05)
 			_cool[b.get_instance_id()] = now + 2.0
 	for b in _box:
 		if is_instance_valid(b):
-			b.gravity_scale = 1.0
+			Hold.release(b, self)
 			b.linear_velocity = Vector2(-side * 60.0, 40.0)
 			_cool[b.get_instance_id()] = now + 2.0
 	_box.clear()

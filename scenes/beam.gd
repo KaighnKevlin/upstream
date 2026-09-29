@@ -9,6 +9,7 @@ extends Node2D
 ## fitted along it pull out matching pieces on the way up.
 ## The node sits at the crown; the column runs down `depth` px.
 
+const Hold = preload("res://scripts/hold.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const LightTextures = preload("res://scripts/light_textures.gd")
 
@@ -65,20 +66,20 @@ func bottom_y() -> float:
 
 
 func _usable(b) -> bool:
-	return b is RigidBody2D and not b.freeze and not b.has_meta("caught_by") and not b.has_meta("store_material") \
+	return b is RigidBody2D and not b.freeze and Hold.free_to_take(b, self) and not b.has_meta("store_material") \
 		and b.get_meta("beam_cool", 0.0) < Time.get_ticks_msec() * 0.001
 
 
 func _on_exit(b) -> void:
 	if is_instance_valid(b) and b is RigidBody2D and b.has_meta("in_beam"):
 		b.remove_meta("in_beam")
-		b.gravity_scale = 1.0
+		Hold.release(b, self)
 
 
 ## Let a piece go from the beam at `at` with velocity `v` (the crown, taps).
 func release(b: RigidBody2D, at: Vector2, v: Vector2) -> void:
 	b.remove_meta("in_beam")
-	b.gravity_scale = 1.0
+	Hold.release(b, self)
 	b.set_meta("beam_cool", Time.get_ticks_msec() * 0.001 + COOL)
 	b.global_position = at
 	b.linear_velocity = v
@@ -93,8 +94,10 @@ func _physics_process(delta: float) -> void:
 		var o := b as RigidBody2D
 		if not o.has_meta("in_beam"):
 			o.set_meta("in_beam", true)
+			Hold.claim(o, self)
 			o.gravity_scale = 0.0
 		var dx := global_position.x - o.global_position.x
+		Hold.claim(o, self)
 		o.linear_velocity = o.linear_velocity.lerp(Vector2(dx * PULL, -RISE), minf(1.0, 5.0 * delta))
 		o.angular_velocity *= 0.9
 		if "_timer" in o:

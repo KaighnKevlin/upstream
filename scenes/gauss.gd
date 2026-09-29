@@ -7,6 +7,7 @@ extends Node2D
 ## A gentle roll in, a fast shot out, toward `side`. The first piece in only
 ## loads it. Iron is snatched harder than copper and comes out faster.
 
+const Hold = preload("res://scripts/hold.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const FX = preload("res://scripts/fx.gd")
 const LEN := 44.0
@@ -49,7 +50,7 @@ func _physics_process(delta: float) -> void:
 	var now := Time.get_ticks_msec() / 1000.0
 	if not is_instance_valid(_pass):
 		for o in get_tree().get_nodes_in_group("ore") + get_tree().get_nodes_in_group("ingots"):
-			if not is_instance_valid(o) or o == _loaded or o.freeze or _cool.get(o.get_instance_id(), 0.0) > now:
+			if not is_instance_valid(o) or o == _loaded or o.freeze or _cool.get(o.get_instance_id(), 0.0) > now or not Hold.free_to_take(o, self):
 				continue
 			var p: Vector2 = o.global_position - (global_position + _near())
 			if absf(p.x) < 9 and absf(p.y) < 10 and o.linear_velocity.x * side > 10:
@@ -59,11 +60,13 @@ func _physics_process(delta: float) -> void:
 		_pass_t += delta
 		var f := clampf(_pass_t / 0.5, 0.0, 1.0)
 		var at := global_position + _near().lerp(_far(), f)
+		Hold.claim(_pass, self)
 		_pass.linear_velocity = (at - _pass.global_position) / delta
 		if f >= 1.0:
 			_loaded = _pass
 			_pass = null
 	if is_instance_valid(_loaded):
+		Hold.claim(_loaded, self)
 		_loaded.linear_velocity = (global_position + _far() - _loaded.global_position) / delta
 		if "_timer" in _loaded:
 			_loaded._timer = 0.0
@@ -72,11 +75,12 @@ func _physics_process(delta: float) -> void:
 
 func _arrive(o: RigidBody2D, now: float) -> void:
 	var v_in: float = absf(o.linear_velocity.x)
+	Hold.claim(o, self)
 	o.gravity_scale = 0.0
 	if is_instance_valid(_loaded):
 		var pull := BOOST * (1.4 if o.get("kind") in ["iron", "shot", "gear", "spring", "scrap"] else 1.0)
 		var v := minf(V_MAX, v_in * GAIN + pull)
-		_loaded.gravity_scale = 1.0
+		Hold.release(_loaded, self)
 		_loaded.linear_velocity = Vector2(side * v, -20)
 		_cool[_loaded.get_instance_id()] = now + 1.0
 		last_speed = v

@@ -7,6 +7,7 @@ extends Node2D
 ## cup, loaded for the next. Each piece dropped in fires the one before it.
 ## `side` is the side of the drop cup; the launch goes up and away from it.
 
+const Hold = preload("res://scripts/hold.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const FX = preload("res://scripts/fx.gd")
 const ARM := 30.0
@@ -74,13 +75,13 @@ func _cup(s: float) -> Vector2:
 
 
 func _drop_in(b) -> void:
-	if not (b is RigidBody2D) or b == _loaded or b == _incoming or b.has_meta("teeter_launched"):
+	if not (b is RigidBody2D) or b == _loaded or b == _incoming or b.has_meta("teeter_launched") or not Hold.free_to_take(b, self):
 		return
 	var hit := maxf(b.linear_velocity.y, 0.0)
 	if is_instance_valid(_loaded):
 		# the slam: momentum from the drop into the loaded piece
 		var v := clampf(V_MIN + hit * 0.9 * b.mass / maxf(_loaded.mass, 0.3), V_MIN, V_MAX)
-		_loaded.gravity_scale = 1.0
+		Hold.release(_loaded, self)
 		_loaded.set_meta("teeter_launched", true)
 		_loaded.linear_velocity = Vector2(-side * 70.0, -v)
 		last_speed = v
@@ -91,6 +92,7 @@ func _drop_in(b) -> void:
 		_loaded = null
 	# the arrival is kept and rolled across into the near cup
 	_incoming = b
+	Hold.claim(b, self)
 	b.gravity_scale = 0.0
 	_settle = 0.0
 
@@ -105,6 +107,7 @@ func _physics_process(delta: float) -> void:
 		var from := global_position + _cup(side)
 		var to := global_position + _cup(-side)
 		var target := from.lerp(to, clampf(_settle / 0.7, 0.0, 1.0))
+		Hold.claim(_incoming, self)
 		_incoming.linear_velocity = (target - _incoming.global_position) / delta
 		if _settle >= 0.7:
 			_loaded = _incoming
@@ -112,6 +115,7 @@ func _physics_process(delta: float) -> void:
 	elif is_instance_valid(_loaded):
 		_angle = move_toward(_angle, -TILT * side, delta * 1.4)
 		var hold := global_position + _cup(-side)
+		Hold.claim(_loaded, self)
 		_loaded.linear_velocity = (hold - _loaded.global_position) / delta
 		if "_timer" in _loaded:
 			_loaded._timer = 0.0

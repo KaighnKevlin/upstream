@@ -7,6 +7,7 @@ extends Node2D
 ## swapped: the new top one is waiting. Drop heavy, lift light: an iron in
 ## the top bucket brings a copper up. The node is the pulley.
 
+const Hold = preload("res://scripts/hold.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const DROP := 150.0              # how far a bucket travels
 const GAP := 18.0                # half the distance between the ropes
@@ -68,7 +69,7 @@ func _physics_process(delta: float) -> void:
 	# catch pieces landing in either bucket while it's resting
 	if _t < 0:
 		for o in get_tree().get_nodes_in_group("ore"):
-			if not is_instance_valid(o) or o.freeze or _cool.get(o.get_instance_id(), 0.0) > now:
+			if not is_instance_valid(o) or o.freeze or _cool.get(o.get_instance_id(), 0.0) > now or not Hold.free_to_take(o, self):
 				continue
 			for k in 2:
 				if o in _loads[k]:
@@ -76,6 +77,7 @@ func _physics_process(delta: float) -> void:
 				var c := global_position + _bucket(k)
 				if absf(o.global_position.x - c.x) < 11 and o.global_position.y > c.y - 16 and o.global_position.y < c.y + 2:
 					_loads[k].append(o)
+					Hold.claim(o, self)
 					o.gravity_scale = 0.0
 		if not _loads[_top].is_empty() and _mass(_top) > _mass(1 - _top) + MARGIN:
 			_t = 0.0
@@ -103,6 +105,7 @@ func _physics_process(delta: float) -> void:
 		for b in _loads[k]:
 			if is_instance_valid(b):
 				var at := c + Vector2((i % 2) * 6 - 3, -6 - (i / 2) * 7)
+				Hold.claim(b, self)
 				b.linear_velocity = (at - b.global_position) / delta
 				if "_timer" in b:
 					b._timer = 0.0
@@ -111,7 +114,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _release(b: RigidBody2D, v: Vector2, now: float) -> void:
-	b.gravity_scale = 1.0
+	Hold.release(b, self)
 	b.linear_velocity = v
 	_cool[b.get_instance_id()] = now + 1.5
 

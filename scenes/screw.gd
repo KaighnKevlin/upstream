@@ -5,6 +5,7 @@ extends Node2D
 ## wheel or engine drives it) and tipped out of the top. A local lift for
 ## the marble machine: steady and slow where the Beam is magic and fast.
 
+const Hold = preload("res://scripts/hold.gd")
 const Power = preload("res://scripts/power.gd")
 const SFX = preload("res://scripts/sfx.gd")
 
@@ -79,7 +80,7 @@ func _physics_process(delta: float) -> void:
 	var dir := end_offset / l
 	var n := dir.orthogonal()
 	for b in _area.get_overlapping_bodies():
-		if not (b is RigidBody2D) or b.freeze or b.has_meta("caught_by") or b.has_meta("in_beam"):
+		if not (b is RigidBody2D) or b.freeze or not Hold.free_to_take(b, self) or b.has_meta("in_beam"):
 			continue
 		var o := b as RigidBody2D
 		var rel := o.global_position - global_position
@@ -87,13 +88,14 @@ func _physics_process(delta: float) -> void:
 		var off := rel.dot(n)
 		if along > l - 6.0:
 			# out of the top: tipped over the lip
-			o.gravity_scale = 1.0
+			Hold.release(o, self)
 			o.remove_meta("in_screw")
 			o.linear_velocity = dir * 60.0 + Vector2(signf(dir.x) * 60.0 if dir.x != 0 else 60.0, -40.0)
 			lifted += 1
 			continue
 		if not o.has_meta("in_screw"):
 			o.set_meta("in_screw", true)
+		Hold.claim(o, self)
 		o.gravity_scale = 0.0
 		o.linear_velocity = dir * SPEED * _rate - n * off * 8.0
 		o.angular_velocity = 6.0

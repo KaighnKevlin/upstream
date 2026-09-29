@@ -6,6 +6,7 @@ extends Node2D
 ## bell) erupts whatever it holds early. Turns a trickle into a volley.
 ## The node is the middle of the cup's mouth.
 
+const Hold = preload("res://scripts/hold.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const FX = preload("res://scripts/fx.gd")
 const NEEDS := [3, 5]
@@ -54,11 +55,12 @@ func _physics_process(delta: float) -> void:
 		return
 	var now := Time.get_ticks_msec() / 1000.0
 	for o in get_tree().get_nodes_in_group("ore") + get_tree().get_nodes_in_group("ingots"):
-		if not is_instance_valid(o) or o.freeze or o in _held or _cool.get(o.get_instance_id(), 0.0) > now:
+		if not is_instance_valid(o) or o.freeze or o in _held or _cool.get(o.get_instance_id(), 0.0) > now or not Hold.free_to_take(o, self):
 			continue
 		var p: Vector2 = o.global_position - global_position
 		if absf(p.x) < 15 and p.y > -12 and p.y < 20 and o.linear_velocity.y > -20:
 			_held.append(o)
+			Hold.claim(o, self)
 			o.gravity_scale = 0.0
 			SFX.play_small(self, SFX.sfx_ore_knock("metal"), -18.0, 1.2)
 	_held = _held.filter(func(o): return is_instance_valid(o))
@@ -74,6 +76,7 @@ func _physics_process(delta: float) -> void:
 		if _rumble >= 0:
 			slot += Vector2(randf_range(-1, 1), randf_range(-1, 1))
 		# sink into its place in the pile (quick, not a jump)
+		Hold.claim(o, self)
 		var v: Vector2 = (global_position + slot - o.global_position) / delta
 		o.linear_velocity = v.limit_length(400.0)
 		if "_timer" in o:
@@ -93,7 +96,7 @@ func _erupt(now: float) -> void:
 		var u := 0.0 if n == 1 else float(k) / (n - 1) * 2.0 - 1.0
 		var s := signf(u) if absf(u) > 0.01 else flip
 		var vx := s * (FAN_MIN + FAN_MIN * absf(u)) + randf_range(-6, 6)
-		o.gravity_scale = 1.0
+		Hold.release(o, self)
 		o.sleeping = false
 		o.global_position = global_position + Vector2(clampf(vx * 0.05, -6, 6), -4)
 		o.linear_velocity = Vector2(vx, -V_UP * randf_range(0.96, 1.04))

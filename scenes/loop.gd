@@ -7,6 +7,7 @@ extends Node2D
 ## The node is the foot of the hoop; the rail runs toward `side`.
 ## Ore-only layer: walkers pass through.
 
+const Hold = preload("res://scripts/hold.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const ORE_ONLY := 64
 const G := 980.0
@@ -63,7 +64,7 @@ func _physics_process(delta: float) -> void:
 		return
 	# catch marbles rolling into the foot
 	for o in get_tree().get_nodes_in_group("ore"):
-		if not is_instance_valid(o) or _riders.has(o.get_instance_id()) or o.freeze:
+		if not is_instance_valid(o) or _riders.has(o.get_instance_id()) or o.freeze or not Hold.free_to_take(o, self):
 			continue
 		var p: Vector2 = o.global_position - global_position
 		if absf(p.x) < 6 and absf(p.y) < 10 and o.linear_velocity.x * side > 150 \
@@ -71,6 +72,7 @@ func _physics_process(delta: float) -> void:
 			var v: float = o.linear_velocity.length()
 			entry_speeds.append(int(v))
 			_riders[o.get_instance_id()] = [o, 0.0, v * v]
+			Hold.claim(o, self)
 			o.gravity_scale = 0.0
 	# carry the riders round
 	for id in _riders.keys():
@@ -101,6 +103,7 @@ func _physics_process(delta: float) -> void:
 			continue
 		r[1] = phi
 		var target := global_position + _centre() + Vector2(sin(phi) * side, cos(phi)) * R
+		Hold.claim(o, self)
 		o.linear_velocity = (target - o.global_position) / delta
 		if "_timer" in o:
 			o._timer = 0.0
@@ -108,7 +111,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _release(o: RigidBody2D, vel: Vector2) -> void:
-	o.gravity_scale = 1.0
+	Hold.release(o, self)
 	o.linear_velocity = vel
 
 

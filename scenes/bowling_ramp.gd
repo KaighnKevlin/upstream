@@ -8,6 +8,7 @@ extends Node2D
 ## bumps it and bounces off. Copper glances off a tower shield, iron
 ## doesn't. Walkers pass through the ramp itself.
 
+const Hold = preload("res://scripts/hold.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const FX = preload("res://scripts/fx.gd")
 const G := 980.0
@@ -97,11 +98,12 @@ func _physics_process(delta: float) -> void:
 	var mouth := global_position + _p(TOP)
 	# feed: anything loose dropping into the mouth
 	for o in get_tree().get_nodes_in_group("ore"):
-		if not is_instance_valid(o) or o.freeze or o.is_queued_for_deletion() or _cool.get(o.get_instance_id(), 0.0) > now:
+		if not is_instance_valid(o) or o.freeze or o.is_queued_for_deletion() or _cool.get(o.get_instance_id(), 0.0) > now or not Hold.free_to_take(o, self):
 			continue
 		var d: Vector2 = o.global_position - mouth
 		if absf(d.x) < MOUTH and d.y > -22 and d.y < 6:
 			_cool[o.get_instance_id()] = now + 999.0
+			Hold.claim(o, self)
 			o.gravity_scale = 0.0
 			_riding.append([o, 0.0, maxf(0.0, o.linear_velocity.y) * 0.5])
 			SFX.play_small(self, SFX.sfx_roll(), -16.0, 0.9)
@@ -125,6 +127,7 @@ func _physics_process(delta: float) -> void:
 			_release(o, r[2])
 			_riding.erase(r)
 		else:
+			Hold.claim(o, self)
 			o.linear_velocity = (global_position + p1 - o.global_position) / delta
 	# along the floor: the bowling
 	for r in _rolling.duplicate():
@@ -142,7 +145,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _release(o: RigidBody2D, v: float) -> void:
-	o.gravity_scale = 1.0
+	Hold.release(o, self)
 	o.global_position = global_position + _p(EXIT)
 	o.linear_velocity = Vector2(side * v, 0.0)
 	var rad := 6.5

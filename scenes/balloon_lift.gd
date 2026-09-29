@@ -8,6 +8,7 @@ extends Node2D
 ## balloon line crosses a chasm's height where nothing can be built.
 ## A few ride at once; while the air's full, arrivals wait in the basket.
 
+const Hold = preload("res://scripts/hold.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const FX = preload("res://scripts/fx.gd")
 const HEIGHTS := [80.0, 160.0, 240.0, 320.0]
@@ -52,6 +53,7 @@ func _solid_at(p: Vector2) -> bool:
 
 
 func _hold(o, at: Vector2, delta: float) -> void:
+	Hold.claim(o, self)
 	o.linear_velocity = (at - o.global_position) / delta
 	o.angular_velocity = 0.0
 	if "_timer" in o:
@@ -63,7 +65,7 @@ func _physics_process(delta: float) -> void:
 		return
 	var now := Time.get_ticks_msec() / 1000.0
 	for o in get_tree().get_nodes_in_group("ore"):
-		if not is_instance_valid(o) or o.freeze or o in _wait or o.has_meta("store_material"):
+		if not is_instance_valid(o) or o.freeze or o in _wait or o.has_meta("store_material") or not Hold.free_to_take(o, self):
 			continue
 		if o.get_meta("balloon_until", 0.0) > now:
 			continue
@@ -74,6 +76,7 @@ func _physics_process(delta: float) -> void:
 				if u[0] == o:
 					held = true
 			if not held:
+				Hold.claim(o, self)
 				o.gravity_scale = 0.0
 				_wait.append(o)
 	_wait = _wait.filter(func(o): return is_instance_valid(o))
@@ -109,7 +112,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _pop(o, ci: int) -> void:
-	o.gravity_scale = 1.0
+	Hold.release(o, self)
 	o.linear_velocity = Vector2(side * 130.0, -60)
 	o.set_meta("balloon_until", Time.get_ticks_msec() / 1000.0 + 2.0)
 	lifted += 1

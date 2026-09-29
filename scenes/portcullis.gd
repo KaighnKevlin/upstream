@@ -8,6 +8,7 @@ extends Node2D
 ## quarter; four raise it, and the bucket tips its load out. Every blow the
 ## walkers land jams the works, though: JAM of them wrench it up anyway.
 
+const Hold = preload("res://scripts/hold.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const FX = preload("res://scripts/fx.gd")
 const W := 20.0
@@ -161,10 +162,11 @@ func _catch() -> void:
 		return
 	var b := _bucket()
 	for o in get_tree().get_nodes_in_group("ore"):
-		if not is_instance_valid(o) or o.freeze or o in _load or o.has_meta("store_material"):
+		if not is_instance_valid(o) or o.freeze or o in _load or o.has_meta("store_material") or not Hold.free_to_take(o, self):
 			continue
 		var p: Vector2 = o.global_position - b
 		if absf(p.x) < 7.0 and p.y > -12.0 and p.y < 4.0 and o.linear_velocity.y >= -20:
+			Hold.claim(o, self)
 			o.gravity_scale = 0.0
 			_load.append(o)
 			SFX.play_small(self, SFX.sfx_ratchet(), -10.0, 0.9)
@@ -179,6 +181,7 @@ func _hold(delta: float) -> void:
 		var o = _load[i]
 		if is_instance_valid(o):
 			var at := b + Vector2((i % 2) * 6 - 3, 5 - (i / 2) * 5)
+			Hold.claim(o, self)
 			o.linear_velocity = (at - o.global_position) / delta
 			if "_timer" in o:
 				o._timer = 0.0
@@ -191,7 +194,7 @@ func _up() -> void:
 	_tip = 0.7
 	for o in _load:
 		if is_instance_valid(o):
-			o.gravity_scale = 1.0
+			Hold.release(o, self)
 			o.linear_velocity = Vector2(randf_range(-110, -60), randf_range(-80, -30))
 	_load.clear()
 	SFX.play_small(self, SFX.sfx_latch(), -8.0, 1.2)

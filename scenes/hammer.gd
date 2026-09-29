@@ -9,6 +9,7 @@ extends Node2D
 ## trigger (tally wheel, plate, bell) swings it too. Load the ledge by
 ## dropping a piece onto it; it holds one. The node is the pivot.
 
+const Hold = preload("res://scripts/hold.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const FX = preload("res://scripts/fx.gd")
 const PADDLE := 24.0             # pivot to the paddle's plate, away from `side`
@@ -94,7 +95,7 @@ func _physics_process(delta: float) -> void:
 		return
 	var now := Time.get_ticks_msec() / 1000.0
 	for o in get_tree().get_nodes_in_group("ore") + get_tree().get_nodes_in_group("ingots"):
-		if not is_instance_valid(o) or o.freeze or o == _loaded or _cool.get(o.get_instance_id(), 0.0) > now:
+		if not is_instance_valid(o) or o.freeze or o == _loaded or _cool.get(o.get_instance_id(), 0.0) > now or not Hold.free_to_take(o, self):
 			continue
 		var p: Vector2 = o.global_position - global_position
 		# onto the paddle: the swing, and the piece rolls off it and on down
@@ -108,6 +109,7 @@ func _physics_process(delta: float) -> void:
 		# onto the ledge: it's held there, waiting to be struck
 		if not is_instance_valid(_loaded) and p.distance_to(ledge_point()) < 11:
 			_loaded = o
+			Hold.claim(o, self)
 			o.gravity_scale = 0.0
 	match _state:
 		1:
@@ -120,6 +122,7 @@ func _physics_process(delta: float) -> void:
 			if _swing <= 0.0:
 				_state = 0
 	if is_instance_valid(_loaded):
+		Hold.claim(_loaded, self)
 		_loaded.linear_velocity = (global_position + ledge_point() - _loaded.global_position) / delta
 		if "_timer" in _loaded:
 			_loaded._timer = 0.0
@@ -132,7 +135,7 @@ func _hit(now: float) -> void:
 	SFX.play_small(self, SFX.sfx_ore_knock("metal"), -6.0, 0.9)
 	if not is_instance_valid(_loaded):
 		return
-	_loaded.gravity_scale = 1.0
+	Hold.release(_loaded, self)
 	_loaded.sleeping = false
 	_loaded.linear_velocity = Vector2(side * _power, -50.0)
 	_cool[_loaded.get_instance_id()] = now + 1.0

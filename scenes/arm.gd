@@ -6,6 +6,7 @@ extends Node2D
 ## picks exactly what you ask for off a track or a pile. Click the base to
 ## cycle the filter; the arm's reach sets both spots.
 
+const Hold = preload("res://scripts/hold.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const FILTERS := ["any", "copper", "iron", "scrap", "ingot", "grit"]
 const COLORS := {"copper": Color(0.95, 0.55, 0.3), "iron": Color(0.6, 0.65, 0.75), "scrap": Color(0.7, 0.6, 0.45),
@@ -65,7 +66,7 @@ func _find() -> RigidBody2D:
 	var at := to_global(pick)
 	for g in ["ore", "ingots"]:
 		for o in get_tree().get_nodes_in_group(g):
-			if is_instance_valid(o) and not o.freeze and not o.has_meta("caught_by") and o.global_position.distance_to(at) < PICK_R \
+			if is_instance_valid(o) and not o.freeze and Hold.free_to_take(o, self) and o.global_position.distance_to(at) < PICK_R \
 					and o.linear_velocity.length() < 60.0 and _matches(o):
 				return o
 	return null

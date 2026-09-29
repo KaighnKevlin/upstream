@@ -6,6 +6,7 @@ extends Node2D
 ## paths in the air. Drag from the high post to the low one (it only runs
 ## downhill). The node is the high post's landing.
 
+const Hold = preload("res://scripts/hold.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const LEN_MIN := 80.0
 const LEN_MAX := 420.0
@@ -67,11 +68,12 @@ func _physics_process(delta: float) -> void:
 	var l := end_offset.length()
 	var dir := end_offset / l
 	for o in get_tree().get_nodes_in_group("ore") + get_tree().get_nodes_in_group("ingots"):
-		if not is_instance_valid(o) or o.freeze or _riders.has(o.get_instance_id()) or _cool.get(o.get_instance_id(), 0.0) > now:
+		if not is_instance_valid(o) or o.freeze or _riders.has(o.get_instance_id()) or _cool.get(o.get_instance_id(), 0.0) > now or not Hold.free_to_take(o, self):
 			continue
 		var p: Vector2 = o.global_position - global_position
 		if absf(p.x) < 12 and p.y > -14 and p.y < 8:
 			_riders[o.get_instance_id()] = [o, 0.0, START]
+			Hold.claim(o, self)
 			o.gravity_scale = 0.0
 			SFX.play_small(self, SFX.sfx_creak(), -16.0, 1.1)
 	for id in _riders.keys():
@@ -85,7 +87,7 @@ func _physics_process(delta: float) -> void:
 		r[1] = s
 		r[2] = v
 		if s >= l:
-			o.gravity_scale = 1.0
+			Hold.release(o, self)
 			o.linear_velocity = dir * v * 0.12   # let go gently: it drops by the low post
 			_cool[id] = now + 1.0
 			carried += 1
@@ -93,6 +95,7 @@ func _physics_process(delta: float) -> void:
 			continue
 		# hanging under its hook, a little below the cable
 		var target := global_position + Vector2(0, -26) + dir * s + Vector2(0, 12)
+		Hold.claim(o, self)
 		o.linear_velocity = (target - o.global_position) / delta
 		if "_timer" in o:
 			o._timer = 0.0

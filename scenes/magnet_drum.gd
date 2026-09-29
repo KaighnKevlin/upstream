@@ -6,6 +6,7 @@ extends Node2D
 ## on. Two piles from one stream, by kind. Put the node where the stream
 ## leaves the chute; `side` is the way the stream is going.
 
+const Hold = preload("res://scripts/hold.gd")
 const Magnet = preload("res://scenes/magnet.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const R := 11.0                  # drum radius
@@ -45,13 +46,14 @@ func _physics_process(delta: float) -> void:
 	_drum.rotation = _phase
 	_time += delta
 	for o in get_tree().get_nodes_in_group("ore"):
-		if not is_instance_valid(o) or o.freeze or _riders.has(o.get_instance_id()):
+		if not is_instance_valid(o) or o.freeze or _riders.has(o.get_instance_id()) or not Hold.free_to_take(o, self):
 			continue
 		if not str(o.get("kind")) in Magnet.METAL or o.get_meta("drum_until", 0.0) > _time:
 			continue
 		var p: Vector2 = o.global_position - global_position
 		if p.length() < R + GRAB + 6.5:
 			_riders[o.get_instance_id()] = [o, p.angle()]
+			Hold.claim(o, self)
 			o.gravity_scale = 0.0
 			SFX.play_small(self, SFX.sfx_magnet(), -16.0, 1.1)
 	for id in _riders.keys():
@@ -64,11 +66,12 @@ func _physics_process(delta: float) -> void:
 		var a: float = r[1] + SPIN * side * delta
 		r[1] = a
 		var target := global_position + Vector2(cos(a), sin(a)) * (R + 6.5)
+		Hold.claim(o, self)
 		o.linear_velocity = (target - o.global_position) / delta
 		# let go once it's round underneath and heading back
 		var under := Vector2(cos(a), sin(a))
 		if under.y > 0.5 and under.x * side < -0.2:
-			o.gravity_scale = 1.0
+			Hold.release(o, self)
 			o.linear_velocity = Vector2(-side * 40.0, 60.0)
 			o.set_meta("drum_until", _time + 1.0)
 			pulled += 1

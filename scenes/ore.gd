@@ -1,5 +1,7 @@
 extends RigidBody2D
 
+const Hold = preload("res://scripts/hold.gd")
+
 ## Lifetime in seconds before the ore despawns.
 @export var lifetime: float = 15.0
 ## What it is. Iron is three times as heavy and barely bounces: springs,
@@ -251,6 +253,8 @@ func _physics_process(delta: float) -> void:
 	if kind == "bomb":
 		_burn_fuse(delta)
 	_check_enemy_hit()
+	if has_meta(Hold.META):
+		Hold.lapse(self)   # its holder was removed, or let it go without saying
 	_timer += delta
 	if _timer >= lifetime:
 		queue_free()

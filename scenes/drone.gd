@@ -7,6 +7,7 @@ extends Node2D
 ## it on its dock's pad. Between jobs it hovers over the pad.
 ## Art: tools/art/gen_drone.py (2 frames of 22x16).
 
+const Hold = preload("res://scripts/hold.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const FX = preload("res://scripts/fx.gd")
 
@@ -57,7 +58,7 @@ func _home() -> Vector2:
 
 func _valid(o) -> bool:
 	return o != null and is_instance_valid(o) and not o.freeze and not o.has_meta("caught_by") \
-		and not o.has_meta("store_material") and not o.has_meta("claimed_by") and not o.is_queued_for_deletion()
+		and not o.has_meta("store_material") and not o.has_meta("claimed_by") and not o.is_queued_for_deletion() and not Hold.held(o)
 
 
 func _pick() -> RigidBody2D:
@@ -115,7 +116,7 @@ func _physics_process(delta: float) -> void:
 					o.set_meta("claimed_by", self)
 					_state = State.FETCH
 		State.FETCH:
-			if not is_instance_valid(_target) or _target.freeze or _target.has_meta("caught_by"):
+			if not is_instance_valid(_target) or _target.freeze or _target.has_meta("caught_by") or Hold.held(_target):
 				_release_claim()
 				_state = State.IDLE
 				return

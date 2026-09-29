@@ -13,6 +13,7 @@ extends Node2D
 ## cocked. Unwired, it throws as soon as it catches.
 ## Art: tools/art/gen_catapult.py (origin = the arm's pivot).
 
+const Hold = preload("res://scripts/hold.gd")
 const FX = preload("res://scripts/fx.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const Trajectory = preload("res://scripts/trajectory_preview.gd")
@@ -134,7 +135,7 @@ func _place_catch() -> void:
 
 
 func _on_catch(body) -> void:   # untyped: a deferred call can arrive after the body was freed
-	if _busy or not is_instance_valid(body) or not body is RigidBody2D:
+	if _busy or not is_instance_valid(body) or not body is RigidBody2D or Hold.held(body):
 		return
 	_busy = true
 	_held = body

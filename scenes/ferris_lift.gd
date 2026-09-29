@@ -5,6 +5,7 @@ extends Node2D
 ## A bucket elevator: lifts a lot, one marble per cup, and turns faster
 ## when a gravity wheel or steam engine drives it. The node is the hub.
 
+const Hold = preload("res://scripts/hold.gd")
 const Power = preload("res://scripts/power.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const RADIUS := 56.0
@@ -90,13 +91,14 @@ func _physics_process(delta: float) -> void:
 			var o := b as RigidBody2D
 			# tip out once the cup is over the top and heading down the far side
 			if p.y < -RADIUS * 0.6 and signf(p.x) == signf(side):
-				o.gravity_scale = 1.0
+				Hold.release(o, self)
 				o.remove_meta("in_lift")
 				o.linear_velocity = Vector2(side * 90.0, -30.0)
 				_load[k] = null
 				lifted += 1
 				SFX.play_small(self, SFX.sfx_ore_knock("wood"), -16.0, 1.1)
 			else:
+				Hold.claim(o, self)
 				o.linear_velocity = (global_position + p + Vector2(0, -5) - o.global_position) / maxf(delta, 0.001) * 0.5
 				o.angular_velocity = 0.0
 				if "_timer" in o:
@@ -108,7 +110,7 @@ func _physics_process(delta: float) -> void:
 		var best: RigidBody2D = null
 		var bd := SCOOP
 		for n in near:
-			if not (n is RigidBody2D) or n.freeze or n.has_meta("in_lift") or n.has_meta("in_beam") or n.has_meta("caught_by"):
+			if not (n is RigidBody2D) or n.freeze or n.has_meta("in_lift") or n.has_meta("in_beam") or not Hold.free_to_take(n, self):
 				continue
 			var d: float = n.global_position.distance_to(global_position + p)
 			if d < bd:
@@ -116,6 +118,7 @@ func _physics_process(delta: float) -> void:
 				best = n
 		if best:
 			best.set_meta("in_lift", true)
+			Hold.claim(best, self)
 			best.gravity_scale = 0.0
 			best.sleeping = false
 			_load[k] = best

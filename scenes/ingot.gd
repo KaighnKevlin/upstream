@@ -1,5 +1,7 @@
 extends RigidBody2D
 
+const Hold = preload("res://scripts/hold.gd")
+
 ## Lifetime in seconds before the ingot despawns.
 @export var lifetime: float = 20.0
 ## copper (a brass bar) or iron (a gunmetal bar, twice as heavy).
@@ -71,6 +73,8 @@ func _roll_on_track() -> void:
 
 func _physics_process(delta: float) -> void:
 	_roll_on_track()
+	if has_meta(Hold.META):
+		Hold.lapse(self)   # its holder was removed, or let it go without saying
 	_timer += delta
 	if _timer >= lifetime:
 		queue_free()

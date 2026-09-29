@@ -7,6 +7,7 @@ extends CharacterBody2D
 @export var max_hp: int = 100
 @export var contact_damage_cooldown: float = 1.0
 
+const Hold = preload("res://scripts/hold.gd")
 const GRAVITY := 980.0
 const TILE_SIZE := 16
 const ENEMY_DETECT_RADIUS := 28.0
@@ -490,7 +491,7 @@ func _pick_up() -> void:
 	var best_d := INF
 	for hit in space.intersect_shape(q, 16):
 		var b = hit.collider
-		if b is RigidBody2D and not b.has_meta("caught_by"):
+		if b is RigidBody2D and not b.has_meta("caught_by") and not Hold.held(b):
 			var d: float = b.global_position.distance_to(global_position)
 			if d < best_d:
 				best_d = d

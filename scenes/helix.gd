@@ -8,6 +8,7 @@ extends Node2D
 ## turn is PITCH px of drop. The node is the top mouth, in the middle of
 ## the column; end the feeding chute there, the way out is straight below.
 
+const Hold = preload("res://scripts/hold.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const R := 14.0                  # the column's half-width
 const PITCH := 26.0              # drop per turn
@@ -83,11 +84,12 @@ func _physics_process(delta: float) -> void:
 		return
 	var now := Time.get_ticks_msec() / 1000.0
 	for o in get_tree().get_nodes_in_group("ore") + get_tree().get_nodes_in_group("ingots"):
-		if not is_instance_valid(o) or o.freeze or _riders.has(o.get_instance_id()) or _cool.get(o.get_instance_id(), 0.0) > now:
+		if not is_instance_valid(o) or o.freeze or _riders.has(o.get_instance_id()) or _cool.get(o.get_instance_id(), 0.0) > now or not Hold.free_to_take(o, self):
 			continue
 		var p: Vector2 = o.global_position - global_position
 		if absf(p.x) < 9 and p.y > -12 and p.y < 6 and o.linear_velocity.x * side > 10:
 			_riders[o.get_instance_id()] = [o, 0.0, clampf(o.linear_velocity.length(), 60.0, 400.0)]
+			Hold.claim(o, self)
 			o.gravity_scale = 0.0
 	var turn_len := Vector2(TAU * R, PITCH).length()
 	for id in _riders.keys():
@@ -102,7 +104,7 @@ func _physics_process(delta: float) -> void:
 		var th: float = r[1] + v / turn_len * TAU * delta
 		r[1] = th
 		if th >= TAU * turns:
-			o.gravity_scale = 1.0
+			Hold.release(o, self)
 			o.global_position = global_position + out_point() + Vector2(side * 2, -6)
 			o.linear_velocity = Vector2(side * V_OUT, 10.0)
 			last_out = o.linear_velocity
@@ -112,6 +114,7 @@ func _physics_process(delta: float) -> void:
 			_riders.erase(id)
 			continue
 		# riding on the coil's rail (the piece's centre a radius above it)
+		Hold.claim(o, self)
 		o.linear_velocity = (global_position + _coil(th) + Vector2(0, -6) - o.global_position) / delta
 		if "_timer" in o:
 			o._timer = 0.0

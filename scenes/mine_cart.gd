@@ -8,6 +8,7 @@ extends Node2D
 ## holds what arrives while the cart's away. Batches, over distances a
 ## chute can't span. Ore-only layer: walkers pass through.
 
+const Hold = preload("res://scripts/hold.gd")
 const Power = preload("res://scripts/power.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const ORE_ONLY := 64
@@ -94,10 +95,11 @@ func _physics_process(delta: float) -> void:
 	# room, otherwise into the hopper to wait
 	var now := Time.get_ticks_msec() / 1000.0
 	for o in get_tree().get_nodes_in_group("ore"):
-		if not is_instance_valid(o) or o.freeze or o in _load or o in _hopper or o.get_meta("cart_until", 0.0) > now:
+		if not is_instance_valid(o) or o.freeze or o in _load or o in _hopper or o.get_meta("cart_until", 0.0) > now or not Hold.free_to_take(o, self):
 			continue
 		var p: Vector2 = o.global_position - global_position
 		if absf(p.x) < 14 and p.y > -40 and p.y < 2:
+			Hold.claim(o, self)
 			o.gravity_scale = 0.0
 			if _state == 0 and _load.size() < LOADS[mode]:
 				_load.append(o)
@@ -124,7 +126,7 @@ func _physics_process(delta: float) -> void:
 			if _t <= 0:
 				for o in _load:
 					if is_instance_valid(o):
-						o.gravity_scale = 1.0
+						Hold.release(o, self)
 						o.linear_velocity = Vector2(signf(dir.x) * 90.0, -30.0)
 						o.set_meta("cart_until", now + 2.0)
 						delivered += 1
@@ -141,6 +143,7 @@ func _physics_process(delta: float) -> void:
 		var h = _hopper[i]
 		if is_instance_valid(h):
 			var at := global_position + Vector2((i % 2) * 6 - 3, -28 - (i / 2) * 6)
+			Hold.claim(h, self)
 			h.linear_velocity = (at - h.global_position) / delta
 			if "_timer" in h:
 				h._timer = 0.0
@@ -151,6 +154,7 @@ func _physics_process(delta: float) -> void:
 		var o = _load[i]
 		if is_instance_valid(o):
 			var at := c + Vector2((i % 3) * 6 - 6, -8 - (i / 3) * 6)
+			Hold.claim(o, self)
 			o.linear_velocity = (at - o.global_position) / delta
 			if "_timer" in o:
 				o._timer = 0.0

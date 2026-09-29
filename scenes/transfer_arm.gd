@@ -10,6 +10,7 @@ extends Node2D
 ## `side`) with the low end of a chute, and put the next piece of track
 ## under the drop point (up and over toward `side`).
 
+const Hold = preload("res://scripts/hold.gd")
 const SFX = preload("res://scripts/sfx.gd")
 const Power = preload("res://scripts/power.gd")
 const ARM := 36.0
@@ -85,9 +86,10 @@ func _physics_process(delta: float) -> void:
 		_rate = Power.rate_at(get_tree(), global_position)
 	var catch := global_position + catch_point()
 	for o in get_tree().get_nodes_in_group("ore") + get_tree().get_nodes_in_group("ingots"):
-		if not is_instance_valid(o) or o.freeze or o == _rider or o in _waiting or _cool.get(o.get_instance_id(), 0.0) > now:
+		if not is_instance_valid(o) or o.freeze or o == _rider or o in _waiting or _cool.get(o.get_instance_id(), 0.0) > now or not Hold.free_to_take(o, self):
 			continue
 		if o.global_position.distance_to(catch) < 12 and o.linear_velocity.y > -60:
+			Hold.claim(o, self)
 			o.gravity_scale = 0.0
 			_waiting.append(o)
 			SFX.play_small(self, SFX.sfx_ore_knock("metal"), -20.0, 1.3)
@@ -128,13 +130,14 @@ func _ease(f: float) -> float:
 
 
 func _hold(o: RigidBody2D, at: Vector2, delta: float) -> void:
+	Hold.claim(o, self)
 	o.linear_velocity = (at - o.global_position) / delta
 	if "_timer" in o:
 		o._timer = 0.0
 
 
 func _tip(now: float) -> void:
-	_rider.gravity_scale = 1.0
+	Hold.release(_rider, self)
 	_rider.sleeping = false
 	_rider.global_position = global_position + drop_point()
 	_rider.linear_velocity = Vector2(side * V_OUT.x, V_OUT.y)
