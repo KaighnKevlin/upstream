@@ -27,6 +27,7 @@ extends RefCounted
 
 const WorldGen = preload("res://scripts/world_gen.gd")
 const Showcase = preload("res://scripts/sandbox_showcase.gd")
+const PieceLight = preload("res://scripts/piece_light.gd")
 
 const CAVE := Rect2i(58, 9, 45, 27)      # tiles: x, y, w, h (rows 9..35; floor row 36)
 const BEAM_X := 1200.0
@@ -37,14 +38,18 @@ const FLOOR_Y := 576.0
 static func _chute(main: Node, a: Vector2, b: Vector2) -> Node2D:
 	var ch: Node2D = preload("res://scenes/chute.tscn").instantiate()
 	ch.end_offset = b - a
-	return Showcase._add_node(main, ch, a)
+	var out: Node2D = Showcase._add_node(main, ch, a)
+	PieceLight.add(out)
+	return out
 
 
 static func _piece(main: Node, path: String, at: Vector2, props := {}) -> Node2D:
 	var n: Node2D = load(path).instantiate()
 	for k in props:
 		n.set(k, props[k])
-	return Showcase._add_node(main, n, at)
+	var out: Node2D = Showcase._add_node(main, n, at)
+	PieceLight.add(out)
+	return out
 
 
 ## Carves the cavern (cleared, solid floor and walls); with `veins`, a copper

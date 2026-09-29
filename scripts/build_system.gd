@@ -2,6 +2,8 @@ extends Node
 
 enum BuildType { NONE, TRAMPOLINE, MINER, LASER, UPSTREAM, HOPPER, TURRET, SPIKES, CATAPULT, CHUTE, SPLITTER, BUMPER, BELT, BELLOWS, PENDULUM, WHEEL, ASSEMBLER, LAB, TESLA, FLAMER, TRAPDOOR, CRUSHER, MAGNET, HARPOON, SEESAW, TUBE, KEG, SNARE, TRIPWIRE, PLATE, BORER, LANTERN, SENTRY, TIMER, DOCK, BARRICADE, ENGINE, DOMINOES, TAP, ROCKER, ESCAPEMENT, BUCKET, SIEVE, SCREW, ARM, STAIRS, FERRIS, JUMP, BELL, LOOP, DISPENSER, GOAL, SCALE, CANNON, FELT, CHIME, PLUNGER, VORTEX, FLAPS, OVERFLOW, DEFLECTOR, BOOSTER, NET, DRUM, SLUICE, TALLY, POINTS, BRAKE, TEETER, CROSSOVER, FLYWHEEL, DISTRIBUTOR, FLIPPER, COUNTERWEIGHT, PAIR, FURNACE, SILO, ROPEWAY, LOADCELL, TURN, GAUSS, TREAD, TREBUCHET, PADDLE, MAT, KICKER, TIPTUBE, HAMMER, VOLCANO, BOWLING, GRAPESHOT, STAMP, GRINDSTONE, PELLET, GEARSTAMP, HELIX, DRAWBRIDGE, TRANSFER, LATCH, DELAY, HUB, LISTENER, PLATING, STEAMJET, TROMMEL, DICE, FLOWMETER, CHECKVALVE, MINECART, POPBUMPER, SPEEDTRAP, SLING, IGNITER, SPINNER, GABION, MAGRAIL, ROPEBRIDGE, BALLOON, FLAIL, FLUME, WRECKBALL, SPRINGTRAP, BOWLFEEDER, WATERWHEEL, BALANCE, HOURGLASS, CALTROPS, PANNING, PORTCULLIS, FUSE, FLAK }
 
+const PieceLight = preload("res://scripts/piece_light.gd")
+
 var current_build: BuildType = BuildType.NONE
 var _ghost: Node2D = null
 var _placed_buildings: Array[Node2D] = []
@@ -381,6 +383,7 @@ func _place_chute(from: Vector2, off: Vector2) -> void:
 		building.end_offset = off.normalized() * clampf(off.length(), building.LEN_MIN, building.LEN_MAX)
 	get_tree().current_scene.add_child(building)
 	_placed_buildings.append(building)
+	PieceLight.add(building)
 	if _ghost:
 		_ghost.set_end(building.end_offset)  # next one starts from the same shape
 
@@ -469,6 +472,7 @@ func _place_building() -> void:
 	building.global_position = pos
 	get_tree().current_scene.add_child(building)
 	_placed_buildings.append(building)
+	PieceLight.add(building)
 
 
 ## A lift whose top is just under `pos` (building there extends it).
