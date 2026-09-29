@@ -147,6 +147,7 @@ const TABS := [
 		["", "Bowl feeder", "a buzzing bowl: pieces dropped in any old how climb its spiral and leave single file, a steady gap apart; grit is spat out the reject hole; faster powered; click to flip"],
 		["", "Balloon lift", "pieces in its basket float straight up to the pin (80/160/240/320 px, click the bottle) and are tossed off toward the flag: lifts through open air"],
 		["", "Sling", "whirligig: catches a piece, whirls it twice, throws it where the arrow points (click the hub); twice as hard powered"],
+		["", "Fuse cord", "drag it out: lit by a signal, a click on its start cap or a lit piece, a spark burns along at 40 px/s and fires what's at its end; chain cords end to start for long delays; re-knits in 3 s"],
 		["", "Hourglass", "a timer that runs on grit: 0.4 s a grain, fires its wire when the top runs dry (5 grains = 2 s); a signal or click turns it over; wire it to its own glass for a clock"],
 		["", "Balance", "two-pan beam: pieces in each pan are weighed (iron = 3 copper); the side ahead by 1/2/3 (click the post) fires its own wire, then both pans tip out: which line delivered more first"],
 		["", "Speed trap", "over a line: fires its wire for pieces faster than 150/250/350 (click); shows the last speed"],
