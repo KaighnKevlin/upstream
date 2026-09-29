@@ -1,12 +1,20 @@
 extends "res://scenes/rocker.gd"
-## Overflow gate: the priority splitter. A rocker held tipped toward its
-## primary side (`side`), so everything goes that way, until what it feeds
-## is full: it watches a point (`watch`, an offset: a turret's funnel, a
-## dip at a line's end) and when `full` pieces sit still there it tips the
-## other way and the stream overflows to the secondary side, tipping back
-## as they're used. Feed a machine first and send only the surplus on.
-## Drag its ring onto the spot to watch. (Loose ore passes through ore, so
-## lines never queue back to the gate: it has to look where they end.)
+## Overflow gate: the priority splitter, as a counterweighted flap. A steel
+## tent under the funnel, and on its apex an oak flap leaning over the
+## overflow side: every marble rolls down the primary side (`side`). An
+## iron arm under the flap carries the counterweight (`full` iron discs)
+## that holds it there. When the primary line has backed up to the gate the
+## next marble can't go that way: the queue behind shoves it against the
+## flap, the flap yields (the counterweight swings up) and it goes over the
+## overflow side, and as soon as the primary side has room the weight
+## swings the flap back. Feed a machine first and send only the surplus on.
+##
+## A line that ends in a physics heap (loose ore passes through ore, so it
+## never queues back to the gate) is felt instead: a brass feeler pan set
+## where it ends (`watch`, an offset: a turret's funnel, a dip at a line's
+## end; drag the pan there) sinks as pieces settle in it, and with `full`
+## pieces sitting still its string pulls the counterweight up and the flap
+## over by its top, until they're used.
 ##
 ## Rate: up to 10 a second.
 ##
@@ -14,8 +22,11 @@ extends "res://scenes/rocker.gd"
 ## queue does reach it: every rider goes the primary way until that branch
 ## is backed up (whatever it feeds is full), then the secondary way, and
 ## back to the primary the moment it has room: priority by backpressure,
-## exact, no ring needed (the ring still works, for a line that ends in
+## exact, no pan needed (the pan still works, for a line that ends in
 ## physics). Both backed up, the queue waits behind it.
+
+const FLAP := 0.45               # rad the flap leans over a plate
+const FLAP_LEN := 11.0
 
 const STILL := 25.0              # px/s: slower than this is queued, not passing
 const HOLD := 0.3                # s a piece must sit before it counts
@@ -30,9 +41,13 @@ var _still_t := 0.0
 var _held := 0
 var _dragging := false
 var _blocked_t := 0              # net tick until which the primary way counts as backed up (for the lean)
+var _rig: Node2D                 # the drawn parts, mirrored so primary is +x
+var _flap: Sprite2D
+var _pan: Sprite2D
+var _pan_dip := 0.0
 
 
-## Drag the watch ring onto where the primary line ends.
+## Drag the feeler pan onto where the primary line ends.
 func _input(event: InputEvent) -> void:
 	if has_meta("ghost"):
 		return
@@ -45,15 +60,77 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 	elif event is InputEventMouseMotion and _dragging:
 		watch = get_global_mouse_position() - global_position
-		queue_redraw()
+		_place_pan()
 
 
 func _ready() -> void:
+	tilt = side
 	super._ready()
 	if has_meta("ghost"):
 		return
-	tilt = side
+	# the tent's plates are fixed; what moves is the flap on the apex
+	(_shape.shape as SegmentShape2D).a = Vector2.ZERO
+	(_shape.shape as SegmentShape2D).b = Vector2(0, -FLAP_LEN)
+	for sx in [-1.0, 1.0]:
+		var cs := CollisionShape2D.new()
+		var sg := SegmentShape2D.new()
+		sg.a = Vector2.ZERO
+		sg.b = Vector2(sx * ARM * cos(TILT), ARM * sin(TILT))
+		cs.shape = sg
+		_body.add_child(cs)
 	_apply()
+
+
+func _build_art() -> void:
+	_rig = Node2D.new()
+	_rig.scale.x = 1.0 if side >= 0 else -1.0
+	_rig.show_behind_parent = true
+	add_child(_rig)
+	var fr := Sprite2D.new()
+	fr.texture = preload("res://assets/sprites/overflow_frame.png")
+	fr.centered = false
+	fr.offset = Vector2(-22, -28)
+	fr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_rig.add_child(fr)
+	_flap = Sprite2D.new()
+	_flap.texture = preload("res://assets/sprites/overflow_flap.png")
+	_flap.centered = false
+	_flap.offset = Vector2(-13, -13)
+	_flap.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_rig.add_child(_flap)
+	# the counterweight: one iron disc per piece it waits for, on the arm's end
+	var arm := Vector2(-4, 8)
+	for k in clampi(full, 1, 8):
+		var d := Sprite2D.new()
+		d.texture = preload("res://assets/sprites/overflow_disc.png")
+		d.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		d.position = arm * (1.0 - k * 0.16)
+		d.rotation = arm.angle() - PI / 2
+		_flap.add_child(d)
+	_pan = _sprite(preload("res://assets/sprites/overflow_pan.png"), Vector2(-10, -1), false)
+	_place_pan()
+
+
+func _place_pan() -> void:
+	if _pan:
+		_pan.position = watch + Vector2(0, _pan_dip)
+	queue_redraw()
+
+
+## The flap's lean (world, +: clockwise): over the overflow side while
+## `tilt` is primary, over the primary side once yielded.
+func _pose_angle() -> float:
+	return -FLAP * tilt
+
+
+func _pose(a: float) -> void:
+	if _flap:
+		_flap.rotation = a * _rig.scale.x
+	queue_redraw()
+
+
+func _swing_time() -> float:
+	return 0.15
 
 
 func _count_held() -> int:
@@ -77,14 +154,20 @@ func _physics_process(delta: float) -> void:
 	var h := _count_held()
 	if h != _held:
 		_held = h
-		queue_redraw()
+	var dip := 3.0 * clampf(float(_held) / maxf(full, 1), 0.0, 1.0)
+	if not is_equal_approx(dip, _pan_dip):
+		_pan_dip = move_toward(_pan_dip, dip, delta * 20.0)
+		_place_pan()
 	_still_t = _still_t + delta if _held >= full else 0.0
 	var backed: bool = _fork != null and _fork.linked() and _fork.net.tick < _blocked_t
 	var want := -side if _still_t > HOLD or backed else side
 	if want != tilt:
 		tilt = want
 		_apply()
-		SFX.play_small(self, SFX.sfx_latch(), -16.0, 1.1)
+		if want == side:
+			SFX.play_small(self, SFX.sfx_ore_knock("wood"), -16.0, 1.2)   # the weight drops it back on its stop
+		else:
+			SFX.play_small(self, SFX.sfx_creak(), -18.0, 1.4)          # yielding
 
 
 ## The primary way (0 left, 1 right) unless the ring says it's full.
@@ -124,16 +207,11 @@ func _on_leave(b) -> void:
 
 
 func _draw() -> void:
-	super._draw()
-	# the watched point, with a dotted line to it, lit when it's full
-	var lit := _still_t > HOLD
-	var n := 10
-	for i in n:
-		draw_circle(watch * (i + 0.5) / n, 0.8, Color(0.85, 0.65, 0.35, 0.5))
-	draw_arc(watch, 18.0, 0, TAU, 20, Color(1.0, 0.5, 0.2, 0.8) if lit else Color(0.6, 0.8, 1.0, 0.4), 1.0)
-	var font := ThemeDB.fallback_font
-	draw_string(font, watch + Vector2(-8, -22), "%d/%d" % [_held, full], HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.9, 0.8, 0.55))
-	draw_string(font, Vector2(side * 14 - 4, -28), "1st", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.9, 0.8, 0.55))
+	# the feeler pan's string, tied to the flap's top: a full pan pulls it over
+	if _flap == null:
+		return
+	var tip := Vector2(0, -FLAP_LEN + 1.0).rotated(_flap.rotation) * Vector2(_rig.scale.x, 1.0)
+	draw_line(tip, watch + Vector2(0, _pan_dip), Color(0.78, 0.7, 0.52, 0.8), 1.0)
 
 
 ## On the track net (fed by a track, so its own tracks aren't zones): only

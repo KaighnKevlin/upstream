@@ -67,6 +67,11 @@ const ART_RECTS := {
 	"dice_box.gd": Rect2(-18, -24, 36, 38),
 	"flow_meter.gd": Rect2(-15, -31, 45, 64),
 	"check_valve.gd": Rect2(-10, -27, 20, 30),
+	"rocker.gd": Rect2(-22, -28, 44, 44),
+	"points.gd": Rect2(-22, -28, 44, 46),
+	"overflow_gate.gd": Rect2(-22, -34, 56, 50),
+	"escapement.gd": Rect2(-20, -54, 28, 58),
+	"splitter.gd": Rect2(-17, -13, 34, 32),
 }
 
 const DARK := Color(0.1, 0.09, 0.07)
@@ -388,6 +393,8 @@ func _build_icon(slot: Node2D, t: int) -> void:
 				ic.position = Vector2(0, 12)
 			elif scn == "rocker" or scn == "weigh_scale" or scn == "overflow_gate" or scn == "points":
 				ic.position = Vector2(0, 4)
+				if scn == "overflow_gate":
+					ic.watch = Vector2(26, -28)   # its feeler pan, close by
 			elif scn == "stair_lift":
 				ic.steps = 4
 				ic.position = Vector2(-20, 12)
