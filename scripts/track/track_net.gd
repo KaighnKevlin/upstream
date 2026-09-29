@@ -492,6 +492,8 @@ func _physics_process(delta: float) -> void:
 	_clacks.clear()
 	for tr in tracks:
 		_resolve(tr)
+	for tr in tracks:
+		tr.spin_from_travel(KR)
 	_catch_ore()
 	if tick % 30 == 0:
 		_age()

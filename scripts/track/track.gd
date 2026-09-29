@@ -59,6 +59,7 @@ var rkind := PackedInt32Array()
 var rframe := PackedInt32Array()
 var rtag := PackedInt32Array()          # 0, or the net's key for the metas it carries (scripts/track/track_net.gd)
 var rdie := PackedInt32Array()          # the net tick it would have despawned at, as loose ore
+var rlast := PackedFloat64Array()       # where it was at the end of the last tick (its spin follows travel)
 
 
 func set_path(p: PackedVector2Array) -> void:
@@ -143,7 +144,23 @@ func integrate(dt: float, kr: PackedFloat64Array, damp: float, roll: float) -> v
 			v = clampf(v, -vcap, vcap)
 		rs[i] = s + v * dt
 		rv[i] = v
-		rrot[i] += v * dt * spin[k] / kr[rkind[i]]
+
+
+## Spin from the distance each rider actually travelled this tick (after
+## the queue and the stops had their say): one held behind the rider in
+## front, or against a stop, a full sink or a shut gate, doesn't turn.
+func spin_from_travel(kr: PackedFloat64Array) -> void:
+	var n := rs.size()
+	var k := 0
+	var last := slope.size() - 1
+	for i in n:
+		var s := rs[i]
+		while k < last and s > cum[k + 1]:
+			k += 1
+		var ds := s - rlast[i]
+		if ds != 0.0:
+			rrot[i] += ds * spin[k] / kr[rkind[i]]
+			rlast[i] = s
 
 
 ## Riders can't overlap: the one behind is stopped by the one in front
@@ -248,6 +265,7 @@ func take(i: int) -> Array:
 	rframe.remove_at(i)
 	rtag.remove_at(i)
 	rdie.remove_at(i)
+	rlast.remove_at(i)
 	return out
 
 
@@ -263,6 +281,7 @@ func insert(s: float, v: float, rot: float, kind: int, frame: int, tag := 0, die
 	rframe.insert(i, frame)
 	rtag.insert(i, tag)
 	rdie.insert(i, die)
+	rlast.insert(i, s)
 	return i
 
 
@@ -290,6 +309,7 @@ func clear_riders() -> void:
 	rframe.clear()
 	rtag.clear()
 	rdie.clear()
+	rlast.clear()
 
 
 

@@ -28,6 +28,7 @@ static func _lane(t, i: int, cfg: Dictionary, lanes: Array) -> void:
 		# the first 200 px are measured, the rest is runway
 		var c: Node2D = preload("res://scenes/chute.gd").new()
 		c.has_lip = false
+		c.on_track = false   # a physics lab: the chute stays physics (scenes/chute.gd is track now)
 		c.end_offset = Vector2(length + 200.0, drop * 2.0)
 		c.position = origin
 		t.main.add_child(c)

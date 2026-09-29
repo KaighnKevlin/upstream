@@ -213,6 +213,12 @@ const TRACK_LAYER := 64
 const TRACK_ANGULAR_DAMP := 0.1   # replaces the damping (default 1.0 + own 1.5)
 var _on_track := false
 var _loose_angular_damp := 1.5
+var _touching := false        # resting on something (ground or track) this tick
+## Barely moving but still in contact: its spin is bled off (fraction kept per
+## tick), so a piece pinned against a stop or wedged in a dip doesn't sit
+## spinning in place with the light on-track damping. Rolling isn't touched.
+const REST_SPEED := 4.0
+const REST_SPIN_KEEP := 0.6
 
 
 func _roll_on_track() -> void:
@@ -227,6 +233,7 @@ func _roll_on_track() -> void:
 				ground = true
 			elif b is CollisionObject2D and b.collision_layer & TRACK_LAYER:
 				track = true
+		_touching = ground or track
 		if ground:
 			want = false
 		elif track:
@@ -246,6 +253,8 @@ func _roll_on_track() -> void:
 
 func _physics_process(delta: float) -> void:
 	_roll_on_track()
+	if _touching and absf(angular_velocity) > 0.01 and linear_velocity.length_squared() < REST_SPEED * REST_SPEED:
+		angular_velocity *= REST_SPIN_KEEP
 	_knock_cooldown -= delta
 	_puff_cooldown -= delta
 	_hurt_cooldown -= delta
