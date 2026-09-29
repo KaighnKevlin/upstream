@@ -141,7 +141,7 @@ func _exit_tree() -> void:
 	for t in _tags.keys():
 		_drop_tag(t)
 	var root := get_parent()
-	if root and root.get_meta("track_net", null) == self:
+	if root and root.has_meta("track_net") and root.get_meta("track_net") == self:
 		root.remove_meta("track_net")
 
 
@@ -176,6 +176,7 @@ func remove_track(tr: Track) -> void:
 	tr.sink = null
 	_dirty = true
 	_zones_dirty = true
+	_retire_if_idle()
 
 
 func set_track_path(tr: Track, path: PackedVector2Array) -> void:
@@ -196,6 +197,7 @@ func add_sink(node: Object, inlet: Vector2) -> void:
 func remove_sink(node: Object) -> void:
 	_sinks = _sinks.filter(func(e): return e[0] != node)
 	_dirty = true
+	_retire_if_idle()
 
 
 ## `node.track_tick(net, tick)` runs first thing every tick.
@@ -205,6 +207,17 @@ func add_ticker(node: Object) -> void:
 
 func remove_ticker(node: Object) -> void:
 	_tickers.erase(node)
+	_retire_if_idle()
+
+
+## The last piece gone: the net goes too (the next piece makes a fresh one,
+## its clock from 0: a layout built again runs the same).
+func _retire_if_idle() -> void:
+	if tracks.is_empty() and _sinks.is_empty() and _tickers.is_empty() and not is_queued_for_deletion():
+		var root := get_parent()
+		if root and root.has_meta("track_net") and root.get_meta("track_net") == self:
+			root.remove_meta("track_net")
+		queue_free()
 
 
 ## A world point near a track end (for a start) or start (for an end), to
@@ -290,7 +303,8 @@ func eject_near(pos: Vector2, radius: float, kinds: Array = []) -> Array:
 static func find_net(from: Node) -> Node:
 	if from == null or not from.is_inside_tree() or from.get_tree().current_scene == null:
 		return null
-	var n = from.get_tree().current_scene.get_meta("track_net", null)
+	var cs := from.get_tree().current_scene
+	var n = cs.get_meta("track_net") if cs.has_meta("track_net") else null
 	return n if is_instance_valid(n) and not n.is_queued_for_deletion() else null
 
 
@@ -477,6 +491,8 @@ func _physics_process(delta: float) -> void:
 	_catch_ore()
 	if tick % 30 == 0:
 		_age()
+	if tick % 4 == 0:
+		_sync_parked()
 	_render_dirty = true
 	tick_usec = Time.get_ticks_usec() - t0
 	if snap_every > 0 and tick % snap_every == 0:
@@ -715,6 +731,18 @@ func _catch_ore() -> void:
 				continue
 			var s: float = hit[0]
 			var sg: int = hit[1]
+			if tr.solid and o is RigidBody2D and not o.freeze and o.is_in_group("ore"):
+				# let go just under the running surface, not coming up from below
+				# (a wheel's bucket tipping onto the rail): it sits on the rail. A
+				# line of loose ore used to shove such pieces up; riders don't.
+				var r0: float = ORE_KINDS[o.kind].radius if ORE_KINDS.has(o.kind) else 6.5
+				var above0: float = (p - tr.pts[sg]).dot(tr.nrm[sg])
+				var vn: float = o.linear_velocity.dot(tr.nrm[sg])
+				if above0 < r0 - 2.0 and above0 > -8.0 and vn <= 40.0:
+					o.global_position = p + tr.nrm[sg] * (r0 - above0)
+					if vn < 0.0:
+						o.linear_velocity -= tr.nrm[sg] * vn
+					p = o.global_position
 			var ok := _catchable(o)
 			if ok:
 				var r: float = KR[KID[o.kind]]
@@ -802,6 +830,22 @@ func _age() -> void:
 			i -= 1
 
 
+## Parked bodies follow their riders (a few times a second): anything that
+## kept hold of one (a magpie's target, a test) sees about where it is.
+func _sync_parked() -> void:
+	for tr in tracks:
+		var rt: PackedInt32Array = tr.rtag
+		for i in rt.size():
+			var t: int = rt[i]
+			if t == 0:
+				continue
+			var o = _tags.get(t)
+			if o != null and is_instance_valid(o):
+				var sg: int = tr.seg_at(tr.rs[i])
+				o.position = tr.center_at(tr.rs[i], KR[tr.rkind[i]])
+				o.linear_velocity = tr.tan[sg] * tr.rv[i]
+
+
 func _noise(amount: float) -> void:
 	if is_inside_tree():
 		for m in get_tree().get_nodes_in_group("noise_meters"):
@@ -820,7 +864,8 @@ func _on_node_changed(n: Node) -> void:
 				return        # a walker's or a loose body's: not a watcher
 			p = p.get_parent()
 		_zones_dirty = true
-	elif n.get_parent() == _root and n is Node2D and not (n is RigidBody2D) and n.scene_file_path.begins_with("res://scenes/"):
+	elif n.get_parent() == _root and n is Node2D and not (n is RigidBody2D) and not (n is CharacterBody2D) \
+			and n.scene_file_path.begins_with("res://scenes/"):
 		_zones_dirty = true
 
 
