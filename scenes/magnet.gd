@@ -135,3 +135,11 @@ func _switch(to_on: bool) -> void:
 		_holding.clear()
 		SFX.play_small(self, SFX.sfx_clink(), -8.0, 0.5)
 		FX.burst(get_parent(), to_global(FACE), Color(0.6, 0.85, 1.0, 0.7), 6, 40.0, 0.3, 1.2)
+
+
+## Where this looks at ore (world rects), for the track net: a chute
+## running through here drops its riders to physics ore over this stretch
+## (scripts/track/track_net.gd, zones), so it sees and moves them as before.
+func ore_watch() -> Array:
+	var r := reach() + 8.0
+	return [Rect2(to_global(FACE) - Vector2(r, r), Vector2(r, r) * 2.0)]

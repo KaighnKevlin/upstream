@@ -143,3 +143,12 @@ func _draw_span(from: Vector2, dir: float, ln: float) -> void:
 	# hinge pins at the ends
 	draw_rect(Rect2(a + Vector2(-1.5, 1), Vector2(3, 3)), BRASS)
 	draw_rect(Rect2(b + Vector2(-1.5, 1), Vector2(3, 3)), BRASS)
+
+
+## Where this looks at ore (world rects), for the track net: a chute
+## running through here drops its riders to physics ore over this stretch
+## (scripts/track/track_net.gd, zones), so it sees and moves them as before.
+func ore_watch() -> Array:
+	var x0 := global_position.x
+	var x1 := x0 + side * span
+	return [Rect2(minf(x0, x1) - 4.0, global_position.y - 20.0, absf(x1 - x0) + 8.0, 32.0)]

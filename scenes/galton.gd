@@ -162,3 +162,11 @@ func _choose(n: int, k: int) -> float:
 	for i in k:
 		r = r * (n - i) / (i + 1)
 	return r
+
+
+## Where this looks at ore (world rects), for the track net: a chute
+## running through here drops its riders to physics ore over this stretch
+## (scripts/track/track_net.gd, zones), so it sees and moves them as before.
+func ore_watch() -> Array:
+	var w := (ROWS * 0.5 + 1.0) * PITCH
+	return [Rect2(global_position.x - w, global_position.y - 24.0, w * 2.0, _bins_top() + BIN_H + 24.0)]

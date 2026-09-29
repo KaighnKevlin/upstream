@@ -2,7 +2,7 @@ extends "res://scenes/chute.gd"
 ## Felt chute: a chute lined with green baize. Marbles landing on it and
 ## rolling along it make no clatter (the noise meter doesn't hear them), but
 ## the felt drags at them, so a felt run is quiet and slow where steel is
-## loud and quick.
+## loud and quick. On the track net: a muffled track with DRAG more drag.
 
 const DRAG := 1.1                # per second, while on the felt
 const FELT := Color(0.2, 0.45, 0.28)
@@ -24,6 +24,11 @@ func _ready() -> void:
 	_art.draw.connect(_draw_art)
 	add_child(_art)
 	super._ready()
+
+
+func _track_ready() -> void:
+	track.extra_damp = DRAG
+	track.muffled = true
 
 
 func _rebuilt() -> void:

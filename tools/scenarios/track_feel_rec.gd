@@ -2,7 +2,8 @@ extends RefCounted
 ## Track net feel: the same run built twice, one above the other: physics
 ## chutes on top, track rails below. A steep drop, a near-level stretch, a
 ## gentle downhill, an uphill kick off the end. The same marble is let go
-## at rest at the top of each; logs time and speed at matching points along
+## at rest at the top of each (the reference chutes opt out of the track:
+## on_track = false); logs time and speed at matching points along
 ## the run, and how it leaves the kick. Copper, then iron.
 
 const MW = preload("res://scripts/marble_works.gd")
@@ -21,7 +22,7 @@ static func run(t) -> void:
 	t.main.get_node("Player").global_position = Vector2(960, 540)
 	var rails := []
 	for i in RUN.size() - 1:
-		MW._piece(t.main, "res://scenes/chute.tscn", TOP_PHYS + RUN[i], {"end_offset": RUN[i + 1] - RUN[i], "has_lip": false})
+		MW._piece(t.main, "res://scenes/chute.tscn", TOP_PHYS + RUN[i], {"end_offset": RUN[i + 1] - RUN[i], "has_lip": false, "on_track": false})
 		rails.append(MW._piece(t.main, "res://scenes/track_rail.tscn", TOP_TRACK + RUN[i], {"end_offset": RUN[i + 1] - RUN[i]}))
 	var cam: Camera2D = t.main.get_node("Player/Camera2D")
 	cam.top_level = true

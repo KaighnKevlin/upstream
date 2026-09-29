@@ -93,6 +93,7 @@ func _physics_process(delta: float) -> void:
 			hits += 1
 			FX.burst(get_parent(), b, Color(0.85, 0.95, 1.0), 5, 90.0, 0.15, 1.5, 0.0)
 			SFX.play_small(self, SFX.sfx_enemy_hit(), -6.0, 0.8)
+	load("res://scripts/track/track_net.gd").eject_at(self, b, BALL + 6.0)   # riders there are knocked off the track too
 	for o in get_tree().get_nodes_in_group("ore"):
 		if is_instance_valid(o) and not o.freeze and o.global_position.distance_to(b) < BALL + 6.0 \
 				and o.get_meta("flail_until", 0.0) < now:

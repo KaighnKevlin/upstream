@@ -153,6 +153,7 @@ func _strike() -> void:
 		var c: Vector2 = e.hit_center() if e.has_method("hit_center") else e.global_position
 		if c.distance_to(at) < SPLASH:
 			e.take_damage(STRIKE_DAMAGE)
+	load("res://scripts/track/track_net.gd").eject_at(self, at, SPLASH)   # riders there are knocked off the track too
 	for o in get_tree().get_nodes_in_group("ore"):
 		if is_instance_valid(o) and not o.freeze and o.global_position.distance_to(at) < SPLASH \
 				and o.get("kind") in ["copper", "iron", "scrap", "grit"]:

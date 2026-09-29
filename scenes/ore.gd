@@ -213,6 +213,12 @@ const TRACK_LAYER := 64
 const TRACK_ANGULAR_DAMP := 0.1   # replaces the damping (default 1.0 + own 1.5)
 var _on_track := false
 var _loose_angular_damp := 1.5
+var _touching := false        # resting on something (ground or track) this tick
+## Barely moving but still in contact: its spin is bled off (fraction kept per
+## tick), so a piece pinned against a stop or wedged in a dip doesn't sit
+## spinning in place with the light on-track damping. Rolling isn't touched.
+const REST_SPEED := 4.0
+const REST_SPIN_KEEP := 0.6
 
 
 func _roll_on_track() -> void:
@@ -227,6 +233,7 @@ func _roll_on_track() -> void:
 				ground = true
 			elif b is CollisionObject2D and b.collision_layer & TRACK_LAYER:
 				track = true
+		_touching = ground or track
 		if ground:
 			want = false
 		elif track:
@@ -246,6 +253,8 @@ func _roll_on_track() -> void:
 
 func _physics_process(delta: float) -> void:
 	_roll_on_track()
+	if _touching and absf(angular_velocity) > 0.01 and linear_velocity.length_squared() < REST_SPEED * REST_SPEED:
+		angular_velocity *= REST_SPIN_KEEP
 	_knock_cooldown -= delta
 	_puff_cooldown -= delta
 	_hurt_cooldown -= delta
@@ -334,6 +343,7 @@ func explode() -> void:
 			e.take_damage(maxi(2, int(BLAST_DAMAGE * k * (1.0 - d / (radius * 1.5)))))
 			if is_instance_valid(e) and e.has_method("knock"):
 				e.knock((c - at).normalized() * 200.0 + Vector2(0, -180))
+	load("res://scripts/track/track_net.gd").eject_at(self, at, radius * 1.5)   # riders there are blown off the track too
 	for o in get_tree().get_nodes_in_group("ore"):
 		if not is_instance_valid(o) or o == self or o.freeze or o.has_meta("store_material"):
 			continue

@@ -133,6 +133,7 @@ func _physics_process(delta: float) -> void:
 					FX.burst(get_parent(), b, Color(0.85, 0.95, 1.0), 10, 140.0, 0.2, 2.0, 0.0)
 					FX.shake(self, 5.0, 0.25)
 					SFX.play(get_tree().current_scene, SFX.sfx_mine_break(), -2.0, 0.7)
+			load("res://scripts/track/track_net.gd").eject_at(self, b, R + 6.0)   # riders there are knocked off the track too
 			for o in get_tree().get_nodes_in_group("ore"):
 				if is_instance_valid(o) and not o.freeze and o.global_position.distance_to(b) < R + 6.0:
 					o.sleeping = false

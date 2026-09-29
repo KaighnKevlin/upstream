@@ -97,3 +97,11 @@ func _draw() -> void:
 	var font := ThemeDB.fallback_font
 	draw_string(font, watch + Vector2(-8, -22), "%d/%d" % [_held, full], HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.9, 0.8, 0.55))
 	draw_string(font, Vector2(side * 14 - 4, -28), "1st", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.9, 0.8, 0.55))
+
+
+## Where this looks at ore (world rects), for the track net: its own place
+## and the spot it watches, so a line queueing there is real bodies it can
+## count (scripts/track/track_net.gd, zones).
+func ore_watch() -> Array:
+	return [Rect2(global_position - Vector2(40, 40), Vector2(80, 80)),
+		Rect2(global_position + watch - Vector2(30, 30), Vector2(60, 60))]

@@ -19,6 +19,8 @@ const SWEEP := PI * 1.5          # the needle's travel, 0 to full scale
 
 @export var mode := 0
 
+const TrackNet = preload("res://scripts/track/track_net.gd")
+
 var passed := 0                  # tests: everything counted since it was built
 var _hits := []                  # [time, kind], the last WINDOW s
 var _clock := 0.0
@@ -57,6 +59,28 @@ func _ready() -> void:
 	a.add_child(cs)
 	add_child(a)
 	a.body_entered.connect(_passing)
+	# over a track it reads the riders themselves (below): no zone, so the
+	# marbles it counts stay riders and nothing about the run changes
+	a.set_meta("track_ignore", true)
+
+
+## For the track net: it watches nothing as physics (it counts riders).
+func ore_watch() -> Array:
+	return []
+
+
+## Riders under the feeler (scripts/track/track_net.gd): counted as the
+## bodies they are, like one passing through the strip.
+func _count_riders() -> void:
+	var net: Node = TrackNet.find_net(self)
+	if net == null:
+		return
+	var f := global_position + Vector2(0, 14)
+	for r in net.riders_near(f, 24.0):
+		var d: Vector2 = r.pos - f
+		var rad: float = net.KR[net.KID[r.kind]]
+		if absf(d.x) <= 3.0 + rad and absf(d.y) <= 18.0 + rad:
+			_passing(net.rider_body(r.track, r.index))
 
 
 func _passing(b) -> void:
@@ -88,6 +112,7 @@ func _physics_process(delta: float) -> void:
 	if not _live:
 		return
 	_clock += delta
+	_count_riders()
 	while not _hits.is_empty() and _hits[0][0] < _clock - WINDOW:
 		_hits.pop_front()
 	if _last.size() > 64:

@@ -234,3 +234,11 @@ func _draw() -> void:
 	var font := ThemeDB.fallback_font
 	var label := "%.1fs" % ((l - _s) / SPEED) if burning else "%.1fs" % (l / SPEED)
 	draw_string(font, Vector2(-8, -8), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.9, 0.8, 0.55) if _ash <= 0 else Color(0.6, 0.56, 0.5))
+
+
+## Where this looks at ore (world rects), for the track net: a chute
+## running through here drops its riders to physics ore over this stretch
+## (scripts/track/track_net.gd, zones), so it sees and moves them as before.
+func ore_watch() -> Array:
+	var lo := Vector2(minf(0.0, end_offset.x), minf(0.0, end_offset.y)) - Vector2(16, 16)
+	return [Rect2(global_position + lo, end_offset.abs() + Vector2(32, 32 + _sag()))]

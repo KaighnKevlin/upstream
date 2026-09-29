@@ -8,17 +8,34 @@ extends Node2D
 ##
 ## Placed by its top end; click it, then drag the end handle to set the
 ## slope and length.
+##
+## It's track (scripts/track/track_net.gd): ore on it isn't a physics body
+## but a rider, rolled along it in 1D from its high end to its low end
+## (queueing nose to tail, backpressure for free), and one flying off its
+## open low end becomes physics ore again, landing where it always did.
+## Ore landing on it is caught as a rider. Where a piece watches the ore
+## going by (a kicker, a tally, a magnet over it), riders drop to physics
+## for that stretch, on the rail's own collision, and are caught again
+## after. The rail keeps its collision for whatever isn't caught (bombs,
+## shells, ingots). `on_track = false` keeps it all physics (a furnace
+## rail, which times ore on its grate).
 
 const ORE_ONLY := 64          # physics layer 7: ore and ingots collide with it
 const LEN_MIN := 32.0
 const LEN_MAX := 220.0
 const POST_MAX := 220.0
 const LIP := 7.0              # little stop at the high end so landings don't roll off backwards
+const TrackNet = preload("res://scripts/track/track_net.gd")
 
 ## The other end of the rail, relative to where it was placed.
 @export var end_offset := Vector2(84, 36)
 
+## On the track net (riders); false: every piece on it a physics body.
+@export var on_track := true
+
 var has_lip := true          # belts carry ore up past their high end: no stop
+var track = null             # its Track on the net (scripts/track/track.gd), when on_track
+var _net: Node = null
 var _body: StaticBody2D
 var _posts: Array[Line2D] = []
 var _selected := false
@@ -44,6 +61,35 @@ func _ready() -> void:
 	_body.physics_material_override = _steel
 	add_child(_body)
 	_rebuild()
+	if on_track:
+		_net = TrackNet.get_net(self)
+		if _net != null:
+			track = _net.add_track(self, _track_path())
+			track.solid = true
+			track.lip_mode = 1 if has_lip else 0
+			_track_ready()
+
+
+func _exit_tree() -> void:
+	if track != null and is_instance_valid(_net):
+		_net.remove_track(track)
+	track = null
+
+
+## The way riders run: from the high end (where the stop is) to the low
+## end. Belts and boosters override it: the way they drive.
+func _track_path() -> PackedVector2Array:
+	var e := _ends()
+	var a: Vector2 = e[0]
+	var b: Vector2 = e[1]
+	var high := a if a.y < b.y else b
+	var low := b if high == a else a
+	return PackedVector2Array([to_global(high), to_global(low)])
+
+
+## For subclasses: set the track up (drive, drag, a speed cap).
+func _track_ready() -> void:
+	pass
 
 
 ## Endpoints left to right (the one-way side is always the top).
@@ -82,6 +128,10 @@ func _rebuild() -> void:
 		_body.add_child(lip)
 	_rebuilt()
 	_build_posts()
+	if track != null and track.lip_mode != (1 if has_lip else 0):
+		track.lip_mode = 1 if has_lip else 0   # has_lip changed after it was placed
+		if is_instance_valid(_net):
+			_net._dirty = true
 
 
 ## For subclasses (the belt adds its grip area).
@@ -190,6 +240,8 @@ func set_end(offset: Vector2) -> void:
 	var l := clampf(offset.length(), LEN_MIN, LEN_MAX)
 	end_offset = offset.normalized() * l if offset.length() > 0.1 else Vector2(LEN_MIN, 0)
 	_rebuild()
+	if track != null and is_instance_valid(_net):
+		_net.set_track_path(track, _track_path())
 
 
 func _input(event: InputEvent) -> void:
