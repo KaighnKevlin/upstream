@@ -7,6 +7,15 @@ extends "res://scenes/rocker.gd"
 ## as they're used. Feed a machine first and send only the surplus on.
 ## Drag its ring onto the spot to watch. (Loose ore passes through ore, so
 ## lines never queue back to the gate: it has to look where they end.)
+##
+## Rate: up to 10 a second.
+##
+## On a track (a chute ending at its funnel: see scenes/rocker.gd) the
+## queue does reach it: every rider goes the primary way until that branch
+## is backed up (whatever it feeds is full), then the secondary way, and
+## back to the primary the moment it has room: priority by backpressure,
+## exact, no ring needed (the ring still works, for a line that ends in
+## physics). Both backed up, the queue waits behind it.
 
 const STILL := 25.0              # px/s: slower than this is queued, not passing
 const HOLD := 0.3                # s a piece must sit before it counts
@@ -20,6 +29,7 @@ var primary := 0
 var _still_t := 0.0
 var _held := 0
 var _dragging := false
+var _blocked_t := 0              # net tick until which the primary way counts as backed up (for the lean)
 
 
 ## Drag the watch ring onto where the primary line ends.
@@ -52,6 +62,11 @@ func _count_held() -> int:
 	for b in get_tree().get_nodes_in_group("ore"):
 		if is_instance_valid(b) and b.global_position.distance_to(at) < 18.0 and b.linear_velocity.length() < STILL:
 			n += 1
+	# riders queued there too (a line on the track net)
+	if _fork and _fork.net != null and is_instance_valid(_fork.net):
+		for r in _fork.net.riders_near(at, 18.0):
+			if absf(r.v) < STILL:
+				n += 1
 	return n
 
 
@@ -64,11 +79,33 @@ func _physics_process(delta: float) -> void:
 		_held = h
 		queue_redraw()
 	_still_t = _still_t + delta if _held >= full else 0.0
-	var want := -side if _still_t > HOLD else side
+	var backed: bool = _fork != null and _fork.linked() and _fork.net.tick < _blocked_t
+	var want := -side if _still_t > HOLD or backed else side
 	if want != tilt:
 		tilt = want
 		_apply()
 		SFX.play_small(self, SFX.sfx_latch(), -16.0, 1.1)
+
+
+## The primary way (0 left, 1 right) unless the ring says it's full.
+func _want(_kind: String) -> int:
+	var primary_i := 1 if side > 0 else 0
+	return primary_i if _still_t <= HOLD else 1 - primary_i
+
+
+func pick(kind: String, free: Array) -> int:
+	var primary_i := 1 if side > 0 else 0
+	if not free[primary_i]:
+		_blocked_t = _fork.net.tick + 20
+	return super.pick(kind, free)
+
+
+func _went(i: int, _kind: String) -> void:
+	_next = _fork.net.tick + 6   # it doesn't rock per marble: at most 10/s
+	if (i == 1) == (side > 0):
+		primary += 1
+	else:
+		overflowed += 1
 
 
 func _on_leave(b) -> void:
@@ -97,6 +134,13 @@ func _draw() -> void:
 	var font := ThemeDB.fallback_font
 	draw_string(font, watch + Vector2(-8, -22), "%d/%d" % [_held, full], HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.9, 0.8, 0.55))
 	draw_string(font, Vector2(side * 14 - 4, -28), "1st", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.9, 0.8, 0.55))
+
+
+## On the track net (fed by a track, so its own tracks aren't zones): only
+## the spot it watches is physics, so a line settling there is real bodies
+## it can count (scripts/track/track_net.gd: ore_watch_owned).
+func ore_watch_owned() -> Array:
+	return [Rect2(global_position + watch - Vector2(30, 30), Vector2(60, 60))]
 
 
 ## Where this looks at ore (world rects), for the track net: its own place

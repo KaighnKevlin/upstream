@@ -5,21 +5,39 @@ extends Node2D
 ## underside and drop off behind it; copper and stone don't feel it and fly
 ## on. Two piles from one stream, by kind. Put the node where the stream
 ## leaves the chute; `side` is the way the stream is going.
+##
+## Rate: sorts every one exactly, any rate; it carries any number round at
+## once (about half a second each, round to where it lets go).
+##
+## On a track (scripts/track/track_net.gd): when a track's open end is at
+## its face (MOUTH: the chute's low end it's set at), that end is a junction
+## on the net (scripts/track/track_fork.gd) and the drum picks by kind:
+## iron things take a short branch onto its face, where it takes them as it
+## always did and carries them round and under; everything else takes a
+## short branch straight on, flying off its end as off the chute (or onto
+## track laid from it). A way that's backed up holds the rider (a sorter
+## doesn't send it the wrong way) and the queue behind it. No zone. Ore
+## flying past it from the air is sorted by the field as before.
 
 const Hold = preload("res://scripts/hold.gd")
 const Magnet = preload("res://scenes/magnet.gd")
 const SFX = preload("res://scripts/sfx.gd")
+const TrackFork = preload("res://scripts/track/track_fork.gd")
 const R := 11.0                  # drum radius
 const GRAB := 10.0               # reach beyond its face
 const SPIN := 5.0                # rad/s: how fast it carries what clings
+const MOUTH := Rect2(-32, -32, 64, 44)   # the feeding chute's end in here makes it a junction
+const ON := 12.0                 # the straight-on branch's length (a chute laid from its end is clear of the feeding end)
 
 @export var side := 1.0
 
 var pulled := 0                  # tests
+var sorted := [0, 0]             # tests: riders sent on, onto the drum (on the track)
 var _riders := {}                # id -> [body, angle]
 var _phase := 0.0
 var _time := 0.0
 var _drum: Sprite2D
+var _fork = null                 # its junction on the track net (TrackFork)
 
 
 func _ready() -> void:
@@ -37,11 +55,37 @@ func _ready() -> void:
 	_drum.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_drum.show_behind_parent = true
 	add_child(_drum)
+	if not has_meta("ghost"):
+		_fork = TrackFork.new(self, MOUTH)
+
+
+func _exit_tree() -> void:
+	if _fork:
+		_fork.teardown()
+
+
+## TrackFork: two branches from the chute's end: 0 straight on, 1 onto its face.
+func fork_paths(src: Vector2, tangent: Vector2) -> Dictionary:
+	var c := global_position
+	var face := c + (src - c).normalized().rotated(side * 0.5) * (R + 2.0)
+	return {"branches": [PackedVector2Array([src, src + tangent * ON]), PackedVector2Array([src, face])], "open": [false, true]}
+
+
+## Junction router: iron things onto the drum, the rest straight on; a
+## backed-up way holds the rider (-1).
+func pick(kind: String, free: Array) -> int:
+	var w := 1 if kind in Magnet.METAL else 0
+	return w if free[w] else -1
+
+
+func passed(i: int, _kind: String) -> void:
+	sorted[i] += 1
 
 
 func _physics_process(delta: float) -> void:
 	if has_meta("ghost"):
 		return
+	_fork.update()
 	_phase += delta * SPIN * side
 	_drum.rotation = _phase
 	_time += delta

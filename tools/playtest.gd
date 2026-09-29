@@ -95,7 +95,7 @@ func status() -> String:
 	return "player=(%d,%d) hp=%d dome=%d wave=%d ammo=%d enemies=%d ore=%d" % [
 		p.global_position.x, p.global_position.y, p.hp, main.dome_hp,
 		main.wave_number, main.get_node("Receiver").buffer,
-		get_nodes_in_group("enemies").size(), get_nodes_in_group("ore").size()]
+		get_nodes_in_group("enemies").size(), get_nodes_in_group("ore").size() + (main.get_meta("track_net").rider_count() if main.has_meta("track_net") and is_instance_valid(main.get_meta("track_net")) else 0)]
 
 
 func key(code: Key, pressed := true) -> void:

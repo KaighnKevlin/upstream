@@ -5,9 +5,17 @@ extends Node2D
 ## wire if it has one (drag the wire's end), like a tripwire. Counting for
 ## the marble machine: every tenth ore opens the sluice, every fifth trips
 ## the barricade. Put its node just over the chute.
+##
+## Rate: counts every one, whatever the rate (no limit of its own).
+##
+## On a track (scripts/track/track_net.gd) it reads the riders passing
+## under it (a mark on the chute, scripts/track/track_mark.gd): each counted
+## once as it goes by, no zone, nothing about the run changes. Physics ore
+## rolling under it turns the wheel as before.
 
 const SFX = preload("res://scripts/sfx.gd")
 const Tripwire = preload("res://scenes/tripwire.gd")
+const TrackMark = preload("res://scripts/track/track_mark.gd")
 const EVERY := [3, 5, 10]
 
 @export var mode := 0
@@ -19,6 +27,7 @@ var _turn := 0.0
 var _flash := 0.0
 var _last := {}
 var _dragging := false
+var _mark = null                 # where it reads the riders on the track under it (TrackMark)
 var _wheel: Sprite2D             # turns a notch per piece
 
 
@@ -51,6 +60,30 @@ func _ready() -> void:
 	a.add_child(cs)
 	add_child(a)
 	a.body_entered.connect(_notch)
+	a.set_meta("track_ignore", true)
+	_mark = TrackMark.new(self, Vector2.ZERO, 2.0, 28.0)
+
+
+func _exit_tree() -> void:
+	if _mark:
+		_mark.drop()
+
+
+## For the track net's zones: none while it reads the track, a watch round
+## it while it isn't.
+func ore_watch() -> Array:
+	return _mark.watching() if _mark else []
+
+
+func _physics_process(_delta: float) -> void:
+	if _mark:
+		_mark.update()
+
+
+## The net: a rider rolled under it.
+func mark_event(_m, _kind: String, _v: float, ev: int) -> void:
+	if ev == 1:
+		_count_one()
 
 
 func _notch(b) -> void:
@@ -60,6 +93,10 @@ func _notch(b) -> void:
 	if _last.get(b.get_instance_id(), 0.0) > now:
 		return
 	_last[b.get_instance_id()] = now + 1.0
+	_count_one()
+
+
+func _count_one() -> void:
 	count += 1
 	_turn += TAU / 8.0
 	SFX.play_small(self, SFX.sfx_ratchet(), -16.0, 1.0)

@@ -166,6 +166,12 @@ func _physics_process(delta: float) -> void:
 		if phi > deg_to_rad(DUMP_AT) and phi < deg_to_rad(DUMP_AT + 60):
 			_buckets[k] = null
 			o.freeze = false
+			# and the physics server told where it is now: carried frozen
+			# (moved by setting its position), unfreezing it otherwise snaps
+			# it back to wherever a script last put it (the Beam tap's spout,
+			# a tapper's muzzle): iron vanished from under the wheel into the
+			# Beam and was tapped again (scripts/marble_works.gd)
+			PhysicsServer2D.body_set_state(o.get_rid(), PhysicsServer2D.BODY_STATE_TRANSFORM, o.global_transform)
 			o.remove_meta("caught_by")
 			o.set_meta("wheel_cool", now + 0.6)
 			o.sleeping = false

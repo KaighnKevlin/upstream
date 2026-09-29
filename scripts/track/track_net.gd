@@ -14,6 +14,14 @@ extends Node2D
 ## a real ore RigidBody2D, and physics takes over. A physics ore coming down
 ## onto a track (each track has a catch area) becomes a rider again.
 ##
+## Pieces that act on the riders natively: a junction's piece picks the way
+## (pick(kind, free), or pick_at(track, kind, free) when it has several
+## junctions); a sink takes them off an end; a mark (add_mark) is a point
+## part way along a track where a piece gates them (a pin that lets n by,
+## one way or both: escapement, sluice, check valve) or counts them (tally,
+## speed trap), told of each by mark_event(mark, kind, v, ev); see
+## scripts/track/track_mark.gd and track_fork.gd for the pieces' side.
+##
 ## Where a piece watches the ore going by (anything with an Area2D that
 ## sees ore over a track, or any piece within WATCH_R of it, or the region a
 ## piece names with ore_watch()), the track is a zone: riders reaching one
@@ -29,7 +37,9 @@ extends Node2D
 ## Tick (60 Hz, deterministic: tracks by id, riders by s):
 ##   1. tickers (sources, escapements) in the order they joined
 ##   2. every track: gravity or drive, drag, move
-##   3. every track: the lead off the end (next track / sink / fly off), the
+##   3. every track: its marks (a rider that crossed a shut one is stopped
+##      at it, one that crossed an open one is counted), the lead off the
+##      end (next track / sink / fly off), the
 ##      last back off the start (previous track / lip / fly off), then the
 ##      queue: nobody overlaps the one in front (momentum shared, a clack)
 ##   4. physics ore landing on tracks caught as riders
@@ -172,6 +182,7 @@ func remove_track(tr: Track) -> void:
 	while tr.count() > 0 and is_inside_tree():
 		_release(tr, tr.count() - 1, true)
 	tr.clear_riders()
+	tr.marks.clear()
 	tracks.erase(tr)
 	if tr.has_meta("area") and is_instance_valid(tr.get_meta("area")):
 		tr.get_meta("area").queue_free()
@@ -256,6 +267,86 @@ func add_rider(tr: Track, s: float, v: float, kind: String, frame := -1) -> bool
 	tr.insert(s, v, 0.0, k, frame)
 	_render_dirty = true
 	return true
+
+
+## A mark on `tr` at s for `piece` (scripts/track/track_mark.gd): a
+## Dictionary the piece keeps and edits: fwd (-1 open, 0 shut, n: let n more
+## by), back (riders rolling back pass). The net calls
+## piece.mark_event(mark, kind, v, ev) as riders pass (ev 1 forward, -1
+## back) or are stopped by it (2 going forward, -2 going back).
+func add_mark(tr: Track, s: float, piece: Object) -> Dictionary:
+	var m := {"track": tr, "s": clampf(s, 0.0, tr.length), "fwd": -1, "back": true, "piece": piece}
+	tr.marks.append(m)
+	return m
+
+
+func remove_mark(m: Dictionary) -> void:
+	var tr = m.get("track")
+	if tr != null:
+		tr.marks.erase(m)
+
+
+## The track whose rail runs under (or at) world point `pos`, between `up`
+## px above it and `down` px below: [track, s], the nearest, or []. Steep
+## stretches (a lift) don't count; a point just past an end counts as the
+## end (a gate set at a chute's low end).
+func mark_at(pos: Vector2, up: float, down: float, exclude: Object = null) -> Array:
+	var best := []
+	var bd := INF
+	for tr in tracks:
+		if tr.piece == exclude or not tr.bounds.grow(maxf(up, down) + 8.0).has_point(pos):
+			continue
+		var last: int = tr.tan.size() - 1
+		for sg in tr.tan.size():
+			var t: Vector2 = tr.tan[sg]
+			if absf(t.x) < 0.35:
+				continue
+			var a: Vector2 = tr.pts[sg]
+			var along: float = (pos.x - a.x) / t.x
+			var seg_len: float = tr.cum[sg + 1] - tr.cum[sg]
+			var lo := -6.0 if sg == 0 else 0.0
+			var hi := seg_len + (6.0 if sg == last else 0.0)
+			if along < lo or along > hi:
+				continue
+			var dy: float = (a.y + t.y * along) - pos.y
+			var s: float = clampf(tr.cum[sg] + along, 0.0, tr.length)
+			# a point at a track's very start is the end of the one feeding
+			# it (riders come onto a track past its start): that one first
+			var score: float = absf(dy) + (100.0 if s < 2.0 else 0.0)
+			if dy < -up or dy > down or score >= bd:
+				continue
+			bd = score
+			best = [tr, s]
+	return best
+
+
+## The open track end nearest the middle of world rect `box` (one that feeds
+## no other track and no sink, but may feed `piece`'s own): [track, point],
+## or []. A piece with a mouth (scripts/track/track_fork.gd) asks this.
+func open_end_in(box: Rect2, piece: Object) -> Array:
+	var best := []
+	var bd := INF
+	for tr in tracks:
+		if tr.piece == piece or tr.ends_open:
+			continue
+		var e: Vector2 = tr.pts[tr.pts.size() - 1]
+		if not box.has_point(e) or e.distance_to(box.get_center()) >= bd:
+			continue
+		var used := false
+		for o in tracks:
+			if o != tr and o.piece != piece and o.pts[0].distance_to(e) <= SNAP:
+				used = true
+				break
+		if not used:
+			for sk in _sinks:
+				if sk[0] != piece and is_instance_valid(sk[0]) and (sk[1] as Vector2).distance_to(e) <= SINK_SNAP:
+					used = true
+					break
+		if used:
+			continue
+		bd = e.distance_to(box.get_center())
+		best = [tr, e]
+	return best
 
 
 ## Riders within `radius` of pos: [{track, index, pos, kind, v}]. Pieces use
@@ -414,6 +505,8 @@ func _rebuild_graph() -> void:
 		tr.router = null
 		tr.sink = null
 	for tr in tracks:
+		if tr.ends_open:
+			continue
 		var e: Vector2 = tr.pts[tr.pts.size() - 1]
 		var outs := []
 		for o in tracks:
@@ -422,7 +515,7 @@ func _rebuild_graph() -> void:
 		if outs.size() > 1:
 			# a junction: the piece whose tracks start there picks the way
 			var p: Object = outs[0].piece
-			if p != null and p.has_method("pick") and outs.all(func(o): return o.piece == p):
+			if p != null and (p.has_method("pick") or p.has_method("pick_at")) and outs.all(func(o): return o.piece == p):
 				tr.router = p
 			else:
 				outs = [outs[0]]
@@ -506,6 +599,8 @@ func _physics_process(delta: float) -> void:
 
 
 func _resolve(tr: Track) -> void:
+	if not tr.marks.is_empty() and tr.count() > 0:
+		_apply_marks(tr)
 	var guard := 0
 	while tr.count() > 0 and tr.rs[tr.count() - 1] >= tr.length and guard < 6:
 		guard += 1
@@ -559,6 +654,53 @@ func _resolve(tr: Track) -> void:
 		i += 2
 
 
+## Marks: every rider that crossed one this tick (from where it was at the
+## end of the last, rlast, to where it's moved to) is counted as it passes,
+## or, the way being shut, stopped against the pin: its front (going
+## forward) or back (rolling back) at the mark, bouncing off it like an end
+## stop. Only one that was clear of the pin is stopped: one already under
+## it when it shut goes on through.
+func _apply_marks(tr: Track) -> void:
+	for m in tr.marks:
+		var sp: float = m.s
+		var i: int = tr.count() - 1
+		while i >= 0:
+			var s0: float = tr.rlast[i]
+			var s1: float = tr.rs[i]
+			var k: int = tr.rkind[i]
+			var r: float = KR[k]
+			if s1 > s0:
+				if s0 + r <= sp + 0.01 and s1 + r > sp and int(m.fwd) == 0:
+					var v := tr.rv[i]
+					tr.set_sv(i, sp - r, -v * (E_STOP if v > Track.REST_MIN else 0.0))
+					if v > 60.0:
+						_clack(tr, sp, v)
+					_mark_event(m, k, v, 2)
+				elif s0 < sp and s1 >= sp:
+					if int(m.fwd) > 0:
+						m.fwd = int(m.fwd) - 1
+					_mark_event(m, k, tr.rv[i], 1)
+			elif s1 < s0:
+				if s0 - r >= sp - 0.01 and s1 - r < sp and not m.back:
+					var v := tr.rv[i]
+					tr.set_sv(i, sp + r, -v * (E_STOP if -v > Track.REST_MIN else 0.0))
+					if -v > 60.0:
+						_clack(tr, sp, -v)
+					_mark_event(m, k, v, -2)
+				elif s0 >= sp and s1 < sp:
+					_mark_event(m, k, tr.rv[i], -1)
+			i -= 1
+		# stopped ones may now sit out of order: the queue sorts itself
+		# out in contacts(), which only needs them non-decreasing
+		tr.keep_order()
+
+
+func _mark_event(m: Dictionary, k: int, v: float, ev: int) -> void:
+	var p = m.piece
+	if is_instance_valid(p) and p.has_method("mark_event"):
+		p.mark_event(m, NAMES[k], v, ev)
+
+
 ## The lead is past the end. Returns whether it left.
 func _exit_end(tr: Track) -> bool:
 	var li := tr.count() - 1
@@ -582,7 +724,10 @@ func _exit_end(tr: Track) -> bool:
 			free.append(o.room_at_start(r, KR) >= 0.0)
 		var pick := -1
 		if tr.router != null and is_instance_valid(tr.router):
-			pick = tr.router.pick(NAMES[k], free)
+			if tr.router.has_method("pick_at"):
+				pick = tr.router.pick_at(tr, NAMES[k], free)
+			else:
+				pick = tr.router.pick(NAMES[k], free)
 		elif free[0]:
 			pick = 0
 		if pick < 0:
@@ -593,9 +738,14 @@ func _exit_end(tr: Track) -> bool:
 		var d := tr.take(li)
 		var last := tr.tan.size() - 1
 		var v: float = d[1] * _joint(tr.tan[last], tr.nrm[last], dst.tan[0], KB[k])
-		dst.insert(minf(over, dst.room_at_start(r, KR)), v, d[2], d[3], d[4], d[5], d[6])
-		if tr.router != null and tr.router.has_method("passed"):
-			tr.router.passed(pick, NAMES[k])
+		var ns: float = minf(over, dst.room_at_start(r, KR))
+		var j: int = dst.insert(ns, v, d[2], d[3], d[4], d[5], d[6])
+		dst.set_last(j, ns - over)        # where it was, as far as the new track's marks go
+		if tr.router != null and is_instance_valid(tr.router):
+			if tr.router.has_method("passed_at"):
+				tr.router.passed_at(tr, pick, NAMES[k])
+			elif tr.router.has_method("passed"):
+				tr.router.passed(pick, NAMES[k])
 		_passed(tr, k)
 		return true
 	_passed(tr, k)
@@ -611,7 +761,8 @@ func _exit_start(tr: Track) -> bool:
 		var least := pv.room_at_end(KR[k], KR)
 		if least <= pv.length:
 			var d := tr.take(0)
-			pv.insert(maxf(pv.length + d[0], least), d[1], d[2], d[3], d[4], d[5], d[6])
+			var j: int = pv.insert(maxf(pv.length + d[0], least), d[1], d[2], d[3], d[4], d[5], d[6])
+			pv.set_last(j, pv.length)
 			return true
 		var hit := tr.hold_first(0.0, E_STOP)
 		if hit > 60.0:
@@ -697,6 +848,8 @@ func _release(tr: Track, i: int, deferred := false) -> void:
 				var sz: float = ORE_KINDS[NAMES[k]].size
 				c.texture.region.position.x = d[4] * sz   # the same chunk of rock it was
 	last_released = o
+	if is_instance_valid(tr.piece) and tr.piece.has_method("rider_released"):
+		tr.piece.rider_released(tr, o)
 
 
 static func _add_released(o, parent) -> void:
@@ -962,16 +1115,31 @@ func _rebuild_zones() -> void:
 		if is_instance_valid(tk):
 			own[tk] = true
 	var rects := []
+	var owners := []                   # per rect: a piece whose own tracks it isn't a zone on
 	if is_instance_valid(_root):
 		for n in _root.get_children():
-			if is_instance_valid(n) and _is_watcher(n, own):
-				rects.append_array(_watch_rects(n))
+			if not is_instance_valid(n):
+				continue
+			if _is_watcher(n, own):
+				for r in _watch_rects(n):
+					rects.append(r)
+					owners.append(null)
 				_watch_sig.append([n, _signature(n)])
+			elif own.has(n) and n.has_method("ore_watch_owned"):
+				# a piece on the net that still wants physics ore somewhere
+				# else (an overflow gate's ring over the line it feeds)
+				for r in n.ore_watch_owned():
+					rects.append(r)
+					owners.append(n)
+				_watch_sig.append([n, [n.global_transform, n.ore_watch_owned()], true])
 	zone_count = 0
 	for tr in tracks:
 		var z := PackedFloat64Array()
 		if tr.solid:
-			for r in rects:
+			for ri in rects.size():
+				var r: Rect2 = rects[ri]
+				if owners[ri] != null and owners[ri] == tr.piece:
+					continue
 				if tr.bounds.intersects(r):
 					_zone_of(tr, r, z)
 		tr.zones = _merge(z, tr.length)
@@ -1027,7 +1195,11 @@ static func _merge(z: PackedFloat64Array, length: float) -> PackedFloat64Array:
 func _check_watchers() -> void:
 	for w in _watch_sig:
 		var n = w[0]
-		if not is_instance_valid(n) or n.is_queued_for_deletion() or _signature(n) != w[1]:
+		if not is_instance_valid(n) or n.is_queued_for_deletion():
+			_zones_dirty = true
+			return
+		var sig: Array = [n.global_transform, n.ore_watch_owned()] if w.size() > 2 else _signature(n)
+		if sig != w[1]:
 			_zones_dirty = true
 			return
 
