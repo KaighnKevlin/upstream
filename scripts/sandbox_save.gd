@@ -6,17 +6,22 @@ extends RefCounted
 ## One slot, in user://sandbox_save.json.
 
 const PATH := "user://sandbox_save.json"
+## Where it goes (tests point it elsewhere so they don't eat the player's save).
+static var path := PATH
+## 2: "mode" (sandbox / factory) and "tree_progress" (Factory research, per
+## science kind). Version 1 saves still load (as sandbox).
+const VERSION := 2
 ## Settings worth keeping, on whichever pieces have them.
 const PROPS := ["bounce_angle", "bounce_force", "eject_angle", "eject_force", "aim_angle", "aim", "wire_l", "wire_r", "upper", "lower",
 	"throw_speed", "end_offset", "mode", "plate_offset_x", "lift_speed", "wind_speed", "mirrored", "recipe", "research", "segments", "spill",
 	"fuel", "charge", "ammo",   # what's loaded: flamer / steam engine fuel, tesla charge, harpoon ammo
 	# the marble pieces: which way they face or lean, springs, notes, wires, targets
 	"side", "heavy_side", "tilt", "springs", "angle_deg", "note", "watch", "full", "wire_to",
-	"kinds", "stored", "target", "accept", "backboard", "muffled", "steps", "limit", "depth", "turns", "raised", "on", "wire_1", "wire_2", "wire_3", "outlets"]
+	"kinds", "stored", "target", "accept", "backboard", "muffled", "steps", "limit", "depth", "turns", "raised", "on", "wire_1", "wire_2", "wire_3", "outlets", "tree_id"]
 
 
 static func has_save() -> bool:
-	return FileAccess.file_exists(PATH)
+	return FileAccess.file_exists(path)
 
 
 static func save(main: Node) -> int:
@@ -36,8 +41,10 @@ static func save(main: Node) -> int:
 				props[p] = [v.x, v.y] if v is Vector2 else v
 		pieces.append({"scene": b.scene_file_path, "pos": [b.global_position.x, b.global_position.y], "props": props})
 	var player: Node2D = main.get_node("Player")
-	var data := {"version": 1, "tiles": tiles, "pieces": pieces,
+	var data := {"version": VERSION, "tiles": tiles, "pieces": pieces,
 		"tech": preload("res://scripts/tech.gd").levels, "lab_progress": preload("res://scenes/lab.gd").progress,
+		"tree_progress": preload("res://scenes/lab.gd").tree_progress,
+		"mode": "factory" if main.get("factory") else "sandbox",
 		"player": [player.global_position.x, player.global_position.y]}
 	var dn := main.get_node_or_null("DayNight")
 	if dn:
@@ -45,7 +52,7 @@ static func save(main: Node) -> int:
 	var fog := main.get_node_or_null("Fog")
 	if fog:
 		data["fog"] = Marshalls.raw_to_base64(fog._img.save_png_to_buffer())   # what's been explored
-	var f := FileAccess.open(PATH, FileAccess.WRITE)
+	var f := FileAccess.open(path, FileAccess.WRITE)
 	if f == null:
 		return -1
 	f.store_string(JSON.stringify(data))
@@ -57,7 +64,7 @@ static func save(main: Node) -> int:
 static func load_into(main: Node) -> int:
 	if not has_save():
 		return -1
-	var data = JSON.parse_string(FileAccess.get_file_as_string(PATH))
+	var data = JSON.parse_string(FileAccess.get_file_as_string(path))
 	if typeof(data) != TYPE_DICTIONARY:
 		return -1
 	var tree := main.get_tree()
@@ -124,8 +131,25 @@ static func load_into(main: Node) -> int:
 		tech.levels[k] = int(data.tech[k])
 	var lab := preload("res://scenes/lab.gd")
 	lab.progress.clear()
+	lab.tree_progress.clear()
 	for k in data.get("lab_progress", {}):
-		lab.progress[k] = int(data.lab_progress[k])
+		var v = data.lab_progress[k]
+		if v is Dictionary:
+			lab.tree_progress[k] = _kinds(v)   # per-kind progress filed under the old key
+		else:
+			lab.progress[k] = int(v)
+	for k in data.get("tree_progress", {}):
+		if data.tree_progress[k] is Dictionary:
+			lab.tree_progress[k] = _kinds(data.tree_progress[k])
+	# the mode it was saved in (a version 1 save is a sandbox one)
+	if data.get("mode", "sandbox") == "factory":
+		if main.has_method("enter_factory"):
+			main.enter_factory()
+	elif main.has_method("leave_factory"):
+		main.leave_factory()
+	for b in bs._placed_buildings:
+		if b.get_script() == lab:
+			b._update_label()   # labs: their research's progress, restored just now
 	var dn := main.get_node_or_null("DayNight")
 	if dn and data.has("clock"):
 		dn.clock = float(data.clock)
@@ -141,3 +165,10 @@ static func load_into(main: Node) -> int:
 	if "velocity" in player:
 		player.velocity = Vector2.ZERO
 	return n
+
+
+static func _kinds(d: Dictionary) -> Dictionary:
+	var out := {}
+	for k in d:
+		out[k] = int(d[k])
+	return out
