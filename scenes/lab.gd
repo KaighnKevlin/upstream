@@ -5,6 +5,11 @@ extends Node2D
 ## upgrade applies at once to every machine it affects (scripts/tech.gd).
 ## Click it to open the research screen. Anything that isn't a flask is spat
 ## back out.
+## Factory mode (main.factory): it works on a Tech.TREE tech instead
+## (tree_id), whose cost can be several kinds of science ({flask: 5,
+## flask_clock: 5}); it takes only flasks that tech still needs, and when
+## every kind is paid the tech is researched, its pieces unlock on the build
+## bar (main.refresh_unlocks) and it moves on to the next it can do.
 ## Art: tools/art/gen_lab.py (4 frames of 48x58, feet at the bottom).
 
 const Power = preload("res://scripts/power.gd")
@@ -17,8 +22,11 @@ const HOLD := 8
 const WORK := 2.5            # seconds per flask at full power
 
 @export var research := 0    # index into Tech.TECHS
+@export var tree_id := ""    # Factory: the Tech.TREE tech being researched ("" none)
 
 var _flasks := 0
+var _held := {}              # Factory: science kind -> flasks waiting in the jar
+var _kind := ""              # Factory: the kind of the flask being worked
 var _work := 0.0
 var _spr: AnimatedSprite2D
 var _label: Label
@@ -26,6 +34,7 @@ var _intake: Area2D
 var _rate := Power.UNPOWERED
 var _rate_t := 0.0
 static var progress := {}    # tech id -> flasks put into the current level
+static var tree_progress := {}   # Factory: TREE tech id -> {science kind: flasks put in}
 
 
 func _ready() -> void:
@@ -90,6 +99,8 @@ func _ready() -> void:
 	add_child(_intake)
 	_intake.body_entered.connect(_on_intake, CONNECT_DEFERRED)
 	_pick_unfinished()
+	if _tree_mode() and not Tech.researchable(tree_id):
+		_pick_tree()
 	_update_label()
 
 
@@ -116,8 +127,42 @@ func _pick_unfinished() -> void:
 			return
 
 
+## Factory rules: research the unlock tree, not the upgrades.
+func _tree_mode() -> bool:
+	if not is_inside_tree():
+		return false
+	var m := get_tree().current_scene
+	return m != null and m.get("factory") == true
+
+
+## The first tree tech this lab can take on ("" when there's none yet).
+func _pick_tree() -> void:
+	tree_id = ""
+	for t in Tech.TREE:
+		if Tech.researchable(t.id):
+			tree_id = t.id
+			return
+
+
+## "2/5", or per kind "r 2/5 c 0/5".
+func tree_cost_text(id: String) -> String:
+	var cost := Tech.cost_of(Tech.tree_tech(id))
+	var prog: Dictionary = tree_progress.get(id, {})
+	var parts := []
+	for k in cost:
+		var n := "%d/%d" % [prog.get(k, 0), cost[k]]
+		parts.append(n if cost.size() == 1 else "%s %s" % [Tech.kind_name(k).left(1), n])
+	return " ".join(parts)
+
+
 func _update_label() -> void:
 	if _label == null:
+		return
+	if _tree_mode():
+		if tree_id == "":
+			_label.text = "click: pick research"
+		else:
+			_label.text = "%s  [%s]" % [Tech.title(Tech.tree_tech(tree_id)), tree_cost_text(tree_id)]
 		return
 	var t := _tech()
 	if Tech.maxed(t.id):
@@ -128,6 +173,15 @@ func _update_label() -> void:
 
 func _on_intake(b) -> void:   # untyped: a deferred call can arrive after the body was freed
 	if not is_instance_valid(b) or not b is RigidBody2D:
+		return
+	if _tree_mode():
+		var k = b.get("kind")
+		if k is String and _wants(k):
+			_held[k] = _held.get(k, 0) + 1
+			b.queue_free()
+			SFX.play_small(self, SFX.sfx_ore_knock("ore"), -8.0, 1.4)
+		else:
+			(b as RigidBody2D).linear_velocity = Vector2(-120.0, -220.0)
 		return
 	if b.get("kind") == "flask" and _flasks < HOLD:
 		_flasks += 1
@@ -144,6 +198,9 @@ func _physics_process(delta: float) -> void:
 	if _rate_t <= 0:
 		_rate_t = 0.25
 		_rate = Power.rate_at(get_tree(), global_position)
+	if _tree_mode():
+		_tree_tick(delta)
+		return
 	var t := _tech()
 	if Tech.maxed(t.id):
 		_spr.stop()
@@ -170,6 +227,81 @@ func _physics_process(delta: float) -> void:
 			if Tech.maxed(t.id):
 				_pick_unfinished()
 		_update_label()
+
+
+## Factory: does the tech on hand still need a flask of this kind (counting
+## those put in, waiting and being worked)?
+func _wants(kind: String) -> bool:
+	if tree_id == "" or Tech.researched(tree_id):
+		return false
+	var cost := Tech.cost_of(Tech.tree_tech(tree_id))
+	if not cost.has(kind):
+		return false
+	var waiting := 0
+	for k in _held:
+		waiting += _held[k]
+	if waiting >= HOLD:
+		return false
+	var have: int = tree_progress.get(tree_id, {}).get(kind, 0) + _held.get(kind, 0) + (1 if _work > 0 and _kind == kind else 0)
+	return have < int(cost[kind])
+
+
+func _tree_tick(delta: float) -> void:
+	if tree_id != "" and Tech.researched(tree_id):
+		# done by another lab: a flask part-worked goes back in the jar
+		if _work > 0 and _kind != "":
+			_held[_kind] = _held.get(_kind, 0) + 1
+		_work = 0.0
+		tree_id = ""
+	if tree_id == "":
+		if _rate_t == 0.25:   # just refreshed: look for one now and then
+			_pick_tree()
+			_update_label()
+		if tree_id == "":
+			_spr.stop()
+			return
+	var t := Tech.tree_tech(tree_id)
+	var cost := Tech.cost_of(t)
+	var prog: Dictionary = tree_progress.get(tree_id, {})
+	if _work <= 0:
+		_kind = ""
+		for k in cost:
+			if _held.get(k, 0) > 0 and prog.get(k, 0) < int(cost[k]):
+				_kind = k
+				break
+		if _kind == "":
+			_spr.stop()
+			return
+		_held[_kind] -= 1
+		_work = WORK
+		_spr.play()
+	_work -= delta * _rate
+	_spr.speed_scale = 0.5 + _rate
+	if _work > 0:
+		return
+	prog[_kind] = prog.get(_kind, 0) + 1
+	tree_progress[tree_id] = prog
+	FX.burst(get_parent(), global_position + Vector2(0, -40), Color(1.0, 0.55, 0.4, 0.8), 5, 30.0, 0.6, 1.8, -40.0)
+	var done := true
+	for k in cost:
+		if prog.get(k, 0) < int(cost[k]):
+			done = false
+	if done:
+		_finish_tree(t)
+	_update_label()
+
+
+func _finish_tree(t: Dictionary) -> void:
+	tree_progress.erase(t.id)
+	Tech.levels[t.id] = 1
+	SFX.play(self, SFX.sfx_ammo_received())
+	var main := get_tree().current_scene
+	if main.has_method("refresh_unlocks"):
+		main.refresh_unlocks()
+	if main.has_method("_show_banner"):
+		var names := Tech.unlock_names(t)
+		main._show_banner("UNLOCKED", "%s: %s" % [Tech.title(t), ", ".join(names)] if not names.is_empty() else "%s (no pieces yet)" % Tech.title(t))
+	_pick_tree()
 
 
 func _input(event: InputEvent) -> void:
