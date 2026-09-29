@@ -239,7 +239,7 @@ func _show_title() -> void:
 	sub.position = Vector2(0, 150 + sz.y + 18)
 	root.add_child(sub)
 	# two ways in: the sandbox (showcase + god tools) or survival (waves)
-	for i in 12:
+	for i in 13:
 		var spec: Array = [["1  SANDBOX", "a working showcase, god tools, no waves until you ask"],
 			["2  SURVIVAL", "a bare world: get an ingot into the dome and the waves begin"],
 			["3  MARBLE WORKS", "the Beam and a marble machine, under the dome"],
@@ -251,7 +251,8 @@ func _show_title() -> void:
 			["9  CLATTER", "the busier the machine, the more it draws in"],
 			["0  MUSIC BOX", "every marble plays the tune on the way down"],
 			["-  PACHINKO", "hold and release the plunger: aim for the 200"],
-			["=  MARBLE SIEGE", "the machine re-arms the traps: hold 7 waves"]][i]
+			["=  MARBLE SIEGE", "the machine re-arms the traps: hold 7 waves"],
+			["F  FACTORY", "start with the basics: the lab unlocks the rest"]][i]
 		# rows of five
 		var x := 20.0 + (i % 5) * 250.0
 		var y := 378.0 + (i / 5) * 58.0
@@ -317,6 +318,8 @@ func _on_title_input(event: InputEvent) -> void:
 		or (event is InputEventMouseButton and _title_opts.size() > 10 and _title_opts[10].has_point(event.position))
 	var siege: bool = (event is InputEventKey and event.keycode == KEY_EQUAL) \
 		or (event is InputEventMouseButton and _title_opts.size() > 11 and _title_opts[11].has_point(event.position))
+	var factory_go: bool = (event is InputEventKey and event.keycode == KEY_F) \
+		or (event is InputEventMouseButton and _title_opts.size() > 12 and _title_opts[12].has_point(event.position))
 	if survival:
 		start_survival()
 	elif marble:
@@ -339,6 +342,8 @@ func _on_title_input(event: InputEvent) -> void:
 		start_pachinko_works()
 	elif siege:
 		start_siege_works()
+	elif factory_go:
+		start_factory()
 	_title.accept_event()
 	var title := _title
 	_title = null
@@ -532,6 +537,53 @@ func start_survival() -> void:
 	add_child(goals)
 
 
+## Factory: the normal world (no showcase), no god tools, no waves, and a
+## build bar of only the pieces research has unlocked (scripts/tech.gd START
+## plus the TREE techs done). Labs research TREE techs here; each one done
+## calls refresh_unlocks(). F5 / F9 save and load, as in the sandbox.
+var factory := false
+
+func start_factory() -> void:
+	preload("res://scripts/sandbox_showcase.gd").clear(self)
+	enter_factory()
+	_show_banner("FACTORY", "the basics to start: a lab unlocks the rest")
+
+
+## Factory rules on, the world left as it is (a loaded Factory save too).
+func enter_factory() -> void:
+	sandbox = false
+	factory = true
+	if _god_label:
+		_god_label.queue_free()
+		_god_label = null
+	_waves_started = false
+	_wave_label.text = "FACTORY - research unlocks pieces (F5 save, F9 load)"
+	refresh_unlocks()
+
+
+## Back to the sandbox's full bar and god tools (loading a sandbox save).
+func leave_factory() -> void:
+	if not factory:
+		return
+	factory = false
+	sandbox = true
+	_wave_label.text = "SANDBOX - god tools top right"
+	if _god_label == null:
+		_make_god_label()
+	for c in $CanvasLayer.get_children():
+		if c.get_script() == preload("res://scripts/build_bar.gd"):
+			c.set_allowed([])
+
+
+## The build bar shows what's unlocked now (Factory mode only).
+func refresh_unlocks() -> void:
+	if not factory:
+		return
+	for c in $CanvasLayer.get_children():
+		if c.get_script() == preload("res://scripts/build_bar.gd"):
+			c.set_allowed(preload("res://scripts/tech.gd").unlocked_types())
+
+
 func _hud_label(text: String, size: int, color: Color) -> Label:
 	var l := Label.new()
 	l.text = text
@@ -597,6 +649,13 @@ func _build_banner_and_markers() -> void:
 func _show_banner(title: String, sub: String) -> void:
 	_banner_title.text = title
 	_banner_sub.text = sub
+	# a long line (a Factory unlock's piece list) wraps small inside the plate
+	var long := sub.length() > 48
+	if long:
+		_banner_sub.text = preload("res://scripts/tech.gd").wrap_text(sub, 80)
+	_banner_sub.add_theme_font_size_override("font_size", 12 if long else 20)
+	_banner_sub.size = Vector2(500, 40) if long else Vector2(500, 24)
+	_banner_sub.position = Vector2(0, 54) if long else Vector2(0, 58)
 	var tween := create_tween()
 	tween.tween_property(_banner, "position:y", 96.0, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_interval(1.8)
@@ -1228,7 +1287,7 @@ func damage_dome(amount: int) -> void:
 
 func _on_ammo_changed(current: int, max_ammo: int) -> void:
 	_ammo_label.text = "Ingots in dome: %d/%d  (repair stock)" % [current, max_ammo]
-	if not _waves_started and current > 0:
+	if not _waves_started and current > 0 and not factory:
 		_waves_started = true
 		_wave_timer = 0.0
 
@@ -1551,6 +1610,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_spawn_wave()
 		if sandbox and not _game_over:
 			_god_key(event)
+		elif factory and not _game_over and event.keycode in [KEY_F5, KEY_F9]:
+			_god_key(event)   # save / load only
 		if event.keycode == KEY_F8 and not event.echo:
 			toggle_music()
 		if event.keycode == KEY_F1 and not event.echo:
