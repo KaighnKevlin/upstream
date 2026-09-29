@@ -320,7 +320,7 @@ static func eject_at(from: Node, pos: Vector2, radius: float, kinds: Array = [])
 func rider_body(tr: Track, i: int) -> RigidBody2D:
 	var t: int = tr.rtag[i]
 	var o: RigidBody2D = null
-	if t != 0 and _tags.has(t) and is_instance_valid(_tags[t]):
+	if t != 0 and _tags.has(t) and is_instance_valid(_tags[t]) and not _tags[t].is_queued_for_deletion():
 		o = _tags[t]
 	else:
 		o = ORE_SCENE.instantiate()
@@ -657,12 +657,13 @@ func _release(tr: Track, i: int, deferred := false) -> void:
 	var tag: int = d[5]
 	var o: RigidBody2D = null
 	if tag != 0 and _tags.has(tag):
-		o = _tags[tag]
+		var parked = _tags[tag]
 		_tags.erase(tag)
-		if is_instance_valid(o):
+		if not is_instance_valid(parked) or parked.is_queued_for_deletion():
+			return   # freed while it rode (a despawn, a test tidying up): it's gone
+		if not parked.is_inside_tree():
+			o = parked
 			o.remove_meta("track_tag")
-		if not is_instance_valid(o) or o.is_queued_for_deletion() or o.is_inside_tree():
-			o = null
 	var fresh := o == null
 	if fresh:
 		o = ORE_SCENE.instantiate()
@@ -846,15 +847,23 @@ func _age() -> void:
 func _sync_parked() -> void:
 	for tr in tracks:
 		var rt: PackedInt32Array = tr.rtag
-		for i in rt.size():
+		var i: int = rt.size() - 1
+		while i >= 0:
 			var t: int = rt[i]
+			i -= 1
 			if t == 0:
 				continue
 			var o = _tags.get(t)
-			if o != null and is_instance_valid(o):
-				var sg: int = tr.seg_at(tr.rs[i])
-				o.position = tr.center_at(tr.rs[i], KR[tr.rkind[i]])
-				o.linear_velocity = tr.tan[sg] * tr.rv[i]
+			if o == null or not is_instance_valid(o) or o.is_queued_for_deletion():
+				# its body was freed while it rode: the ore is gone
+				tr.take(i + 1)
+				_tags.erase(t)
+				_render_dirty = true
+				continue
+			var j := i + 1
+			var sg: int = tr.seg_at(tr.rs[j])
+			o.position = tr.center_at(tr.rs[j], KR[tr.rkind[j]])
+			o.linear_velocity = tr.tan[sg] * tr.rv[j]
 
 
 func _noise(amount: float) -> void:
@@ -900,7 +909,7 @@ func _watch_rects(n: Node2D) -> Array:
 	else:
 		out.append(Rect2(n.global_position - Vector2(WATCH_R, WATCH_R), Vector2(WATCH_R, WATCH_R) * 2.0))
 	for a in n.find_children("*", "Area2D", true, false):
-		if not (a.collision_mask & 2) or a.has_meta("track_catch"):
+		if not (a.collision_mask & 2) or a.has_meta("track_catch") or a.has_meta("track_ignore"):
 			continue
 		var skip := false
 		var p: Node = a.get_parent()
