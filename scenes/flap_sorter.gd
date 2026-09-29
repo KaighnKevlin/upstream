@@ -6,8 +6,25 @@ extends Node2D
 ## stream by weight: heaviest out first, the lightest roll off the end.
 ## Drawn from its high end (drag to set the low end, like a chute).
 ## Ore-only layer: walkers pass through.
+##
+## Rate: sorts every one exactly, any rate (a flap only opens for a piece
+## heavier than its spring).
+##
+## It's track (scripts/track/track_net.gd): the rail is a run of tracks
+## from flap to flap, and each flap is a junction whose two ways are the
+## rail on over it and a short drop through its hole (pick_at by the
+## rider's weight against the spring). Ore landing on it is caught as a
+## rider and sorted natively; what rolls off the low end flies off as ore
+## (or onto track laid from it), what drops through falls out of the hole
+## as ore (or onto track laid from the drop's end, drop_end(k)). A way
+## that's backed up holds the rider on the rail (a sorter doesn't send it
+## the wrong way), and the queue behind it. No zone. Ore it can't carry
+## (a bomb, a shell) still rolls and drops through the flaps as physics.
 
 const SFX = preload("res://scripts/sfx.gd")
+const TrackNet = preload("res://scripts/track/track_net.gd")
+const ORE_KINDS: Dictionary = preload("res://scenes/ore.gd").KINDS
+const DROP := Vector2(3, 12)     # the drop through a flap's hole (x along the rail's way)
 const ORE_ONLY := 64
 const LEN_MIN := 80.0
 const LEN_MAX := 260.0
@@ -26,6 +43,9 @@ var _body: StaticBody2D
 var _flaps: Array = []           # [CollisionShape2D, Area2D, open_timer, angle]
 var _end_area: Area2D
 var _art: Node2D                 # the rail and flaps, pixel art (nearest, tiled)
+var _net: Node = null
+var _rails: Array = []           # its tracks, flap to flap, high end first
+var _drops: Array = []           # a drop through each flap's hole
 
 
 func set_end(offset: Vector2) -> void:
@@ -114,7 +134,81 @@ func _rebuild() -> void:
 	_end_area.add_child(ecs)
 	add_child(_end_area)
 	_end_area.body_entered.connect(func(b): if b is RigidBody2D: passed += 1)
+	_build_tracks()
 	queue_redraw()
+
+
+# ── on the track net ───────────────────────────────────────────────────
+
+func _exit_tree() -> void:
+	_drop_tracks()
+
+
+func _drop_tracks() -> void:
+	if is_instance_valid(_net):
+		for tr in _rails + _drops:
+			_net.remove_track(tr)
+	_rails.clear()
+	_drops.clear()
+
+
+func _build_tracks() -> void:
+	_drop_tracks()
+	if not is_inside_tree():
+		return
+	_net = TrackNet.get_net(self)
+	if _net == null:
+		return
+	var d := end_offset.normalized()
+	var pts := [global_position]
+	for k in springs.size():
+		pts.append(to_global(d * _flap_at(k)))
+	pts.append(to_global(end_offset))
+	for j in pts.size() - 1:
+		var tr = _net.add_track(self, PackedVector2Array([pts[j], pts[j + 1]]))
+		tr.solid = true
+		tr.lip_mode = 1 if j == 0 else 0
+		_rails.append(tr)
+	for k in springs.size():
+		var dr = _net.add_track(self, PackedVector2Array([pts[k + 1], drop_end(k)]), false)
+		dr.lip_mode = 0
+		_drops.append(dr)
+
+
+## The end of flap k's drop, world space (lay a chute on from here).
+func drop_end(k: int) -> Vector2:
+	var d := end_offset.normalized()
+	return to_global(d * _flap_at(k)) + Vector2(DROP.x * signf(d.x), DROP.y)
+
+
+## The rail's low end, world space.
+func end_point() -> Vector2:
+	return to_global(end_offset)
+
+
+## Junction router at flap k (the net asks, with the rail track coming to
+## it): the drop for a rider heavier than the spring, on over it for a
+## lighter one; -1 (wait) if that way is backed up.
+func pick_at(tr, kind: String, free: Array) -> int:
+	var k := _rails.find(tr)
+	if k < 0 or k >= _drops.size():
+		return 0 if free[0] else -1
+	var heavy: bool = float(ORE_KINDS.get(kind, {}).get("mass", 1.0)) > float(springs[k])
+	var w: int = tr.outs.find(_drops[k] if heavy else _rails[k + 1])
+	if w < 0:
+		return -1
+	return w if free[w] else -1
+
+
+func passed_at(tr, i: int, _kind: String) -> void:
+	var k := _rails.find(tr)
+	if k < 0 or k >= _drops.size() or tr.outs[i] != _drops[k]:
+		return
+	dropped[k] += 1
+	var f: Array = _flaps[k]
+	f[0].set_deferred("disabled", true)   # pressed open, as a physics piece opens it
+	f[2] = 0.4
+	SFX.play_small(self, SFX.sfx_twang(), -14.0, 0.9 + k * 0.15)
 
 
 func _seg(a: Vector2, b: Vector2) -> CollisionShape2D:
