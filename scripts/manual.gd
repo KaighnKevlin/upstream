@@ -136,6 +136,7 @@ const TABS := [
 		["", "Panning box", "set in a flume: grit floating through is caught behind the riffles and washed, every 3 -> 1 copper nugget that floats on; other pieces pass over; dry, it does nothing"],
 		["", "Water wheel", "set over a flume so its paddles dip in the water: the current turns it steadily and it powers machines in reach"],
 		["", "Spinner", "vane hung just over a track: pieces rolling under spin it (and lose a little speed); powers machines in reach"],
+		["", "Portcullis", "a gate that slams down on a trigger or click, hurting walkers beneath, and holds them until 6 blows jam it up; four pieces in the counterweight bucket haul it back up"],
 		["", "Spring trap", "plate in the ground: flings the first walker up and back the way it came; 2 pieces dropped in its hopper re-cock it"],
 		["", "Wrecking ball", "hung from the ceiling, cocked by a latch: a trigger or click lets it swing through the walkers; 4 pieces in its winch bucket wind it back"],
 		["", "Rope bridge", "drag post to post: walkers, you and pieces cross; a trigger or a click on the near post cuts it, dropping what's on it; knits back in 5 s"],
