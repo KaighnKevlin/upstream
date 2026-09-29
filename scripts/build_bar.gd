@@ -140,6 +140,31 @@ func _ready() -> void:
 	bs.ui_rects.append(get_global_rect)
 
 
+## A curated bar (Marble Siege): only these build types show, in their usual
+## tabs (empty tabs drop out), and picking any other by its hotkey is
+## refused. An empty list puts the full bar back.
+var _all_cats: Array = []
+var allowed: Array = []
+
+
+func set_allowed(types: Array) -> void:
+	if _all_cats.is_empty():
+		_all_cats = CATS.duplicate(true)
+	allowed = types
+	if types.is_empty():
+		CATS = _all_cats.duplicate(true)
+	else:
+		CATS = []
+		for c in _all_cats:
+			var keep: Array = c[1].filter(func(t): return t in types)
+			if not keep.is_empty():
+				CATS.append([c[0], keep])
+	_cat = 0
+	_page = 0
+	_hover = -1
+	_layout()
+
+
 func _types() -> Array:
 	return CATS[_cat][1]
 
@@ -171,6 +196,9 @@ func _layout() -> void:
 
 
 func _on_build_mode(t: int) -> void:
+	if t != 0 and not allowed.is_empty() and not t in allowed:
+		get_node("/root/BuildSystem")._set_build.call_deferred(0)   # not on the curated bar
+		return
 	_current = t
 	if t != 0 and not t in _types():
 		for c in CATS.size():

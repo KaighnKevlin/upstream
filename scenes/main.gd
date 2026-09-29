@@ -239,7 +239,7 @@ func _show_title() -> void:
 	sub.position = Vector2(0, 150 + sz.y + 18)
 	root.add_child(sub)
 	# two ways in: the sandbox (showcase + god tools) or survival (waves)
-	for i in 11:
+	for i in 12:
 		var spec: Array = [["1  SANDBOX", "a working showcase, god tools, no waves until you ask"],
 			["2  SURVIVAL", "a bare world: get an ingot into the dome and the waves begin"],
 			["3  MARBLE WORKS", "the Beam and a marble machine, under the dome"],
@@ -250,7 +250,8 @@ func _show_title() -> void:
 			["8  DEFENCE", "marbles feed the turrets: hold the vault"],
 			["9  CLATTER", "the busier the machine, the more it draws in"],
 			["0  MUSIC BOX", "every marble plays the tune on the way down"],
-			["-  PACHINKO", "hold and release the plunger: aim for the 200"]][i]
+			["-  PACHINKO", "hold and release the plunger: aim for the 200"],
+			["=  MARBLE SIEGE", "the machine re-arms the traps: hold 7 waves"]][i]
 		# rows of five
 		var x := 20.0 + (i % 5) * 250.0
 		var y := 378.0 + (i / 5) * 58.0
@@ -314,6 +315,8 @@ func _on_title_input(event: InputEvent) -> void:
 		or (event is InputEventMouseButton and _title_opts.size() > 9 and _title_opts[9].has_point(event.position))
 	var pachinko: bool = (event is InputEventKey and event.keycode == KEY_MINUS) \
 		or (event is InputEventMouseButton and _title_opts.size() > 10 and _title_opts[10].has_point(event.position))
+	var siege: bool = (event is InputEventKey and event.keycode == KEY_EQUAL) \
+		or (event is InputEventMouseButton and _title_opts.size() > 11 and _title_opts[11].has_point(event.position))
 	if survival:
 		start_survival()
 	elif marble:
@@ -334,6 +337,8 @@ func _on_title_input(event: InputEvent) -> void:
 		start_music_works()
 	elif pachinko:
 		start_pachinko_works()
+	elif siege:
+		start_siege_works()
 	_title.accept_event()
 	var title := _title
 	_title = null
@@ -349,6 +354,8 @@ func _on_title_input(event: InputEvent) -> void:
 		cam.top_level = false
 		cam.position = Vector2.ZERO
 		cam.zoom = _title_cam_zoom
+		if _siege:
+			_frame_siege_cam()
 		get_tree().paused = false)
 
 
@@ -473,6 +480,41 @@ func start_pachinko_works() -> void:
 	await preload("res://scripts/pachinko_works.gd").build(self)
 	_player.global_position = Vector2(960, 540)
 	_show_banner("PACHINKO", "click and hold the plunger (bottom right), let go to fire")
+
+
+## Marble Siege: the playable slice. A cavern right of the dome, a marble
+## machine that re-arms and refills the traps along the walker lane, seven
+## waves for the vault (scripts/siege_works.gd, scripts/siege_director.gd).
+## No god tools, and a curated build bar (SIEGE_BAR); the camera holds the
+## whole machine in frame.
+var _siege: Node2D
+const SIEGE_BAR := [1, 9, 10, 28, 31, 47, 49, 59, 66, 109, 111, 112, 113, 114, 115, 117, 119, 120, 121, 122, 123, 126, 128, 130]
+
+func start_siege_works() -> void:
+	sandbox = false
+	if _god_label:
+		_god_label.queue_free()
+		_god_label = null
+	preload("res://scripts/sandbox_showcase.gd").clear(self)
+	_siege = await preload("res://scripts/siege_works.gd").build(self)
+	_siege.finished.connect(func(won: bool): _show_banner("VAULT HELD" if won else "VAULT BROKEN",
+		"the machine kept the traps armed" if won else "too many got through"))
+	_siege.wave_started.connect(func(n: int): _show_banner("WAVE %d" % n, "from the right"))
+	_player.global_position = Vector2(1200, 640)
+	_wave_label.text = "MARBLE SIEGE"
+	for c in $CanvasLayer.get_children():
+		if c.get_script() == preload("res://scripts/build_bar.gd"):
+			c.set_allowed(SIEGE_BAR)
+	_frame_siege_cam()
+	_show_banner("MARBLE SIEGE", "the machine re-arms the traps: hold the vault")
+
+
+func _frame_siege_cam() -> void:
+	var cam := _player.get_node("Camera2D") as Camera2D
+	cam.top_level = true
+	cam.global_position = Vector2(1624, 404)   # the whole cavern, between the HUD panels
+	cam.zoom = Vector2(1.0, 1.0)
+	cam.reset_smoothing()
 
 
 func start_survival() -> void:
