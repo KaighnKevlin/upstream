@@ -11,7 +11,7 @@ extends RefCounted
 ## seconds (default 0.5), and the loop repeats. Every step is appended to
 ## <out>/steps.jsonl; REPLAY=<steps.jsonl> plays a logged run back instead of
 ## polling (and REPLAY_THEN=poll carries on live from where it ends). No cmd
-## for 10 minutes: the scenario quits.
+## for IDLE seconds (default 600): the scenario quits.
 ##
 ## One small 1280x720-pixel window, off-screen. The real cursor is never
 ## moved: Pointer.fake makes the game read the mouse from Pointer.screen_pos,
@@ -43,7 +43,6 @@ extends RefCounted
 const Tech = preload("res://scripts/tech.gd")
 const Lab = preload("res://scenes/lab.gd")
 const Save = preload("res://scripts/sandbox_save.gd")
-const IDLE_LIMIT := 600.0   # s without a cmd before giving up
 const MAX_SEC := 120.0
 const FRAME_EVERY := 0.25
 const SIZE := Vector2i(1280, 720)
@@ -95,6 +94,7 @@ static func run(t) -> void:
 	var result := "start: title screen, pressed F"
 	var cmd: Dictionary = {}
 	var t0 := Time.get_ticks_msec()
+	var idle_limit := float(OS.get_environment("IDLE")) if OS.has_environment("IDLE") else 600.0   # s without a cmd
 	var game_s := 2.5   # the title and the F above
 	while true:
 		var shot := await _shot(t, step)
@@ -133,8 +133,8 @@ static func run(t) -> void:
 					break
 			await t.create_timer(0.1, true, false, true).timeout
 			waited += 0.1
-			if waited > IDLE_LIMIT:
-				t.log_line("no cmd for %d s: giving up" % int(IDLE_LIMIT))
+			if waited > idle_limit:
+				t.log_line("no cmd for %d s: giving up" % int(idle_limit))
 				cmd = {"action": "quit"}
 		Engine.time_scale = 1.0
 		if cmd.get("action") == "quit":

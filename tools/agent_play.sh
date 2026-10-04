@@ -1,8 +1,9 @@
 #!/bin/sh
 # Launch the blind-playtester harness (tools/scenarios/agent_rec.gd) in the
 # background, the CLAUDE.md way: muted, one small window off-screen, SEED=1,
-# caffeinated, and killed if no step lands for 25 minutes (the scenario itself
-# gives up after 10 without a cmd; a seq of long waits can take 20). Puts
+# caffeinated, and killed if no step lands for IDLE + 15 minutes (the scenario
+# itself gives up after IDLE s without a cmd, default 600; a seq of long waits
+# can take 20 min). Puts
 # manual.txt, step.sh and look.sh in <out_dir>.
 #   sh tools/agent_play.sh <out_dir>        REPLAY=<steps.jsonl> to replay,
 #                                           START_SAVE=<save.json> to start from a save
@@ -29,7 +30,7 @@ cp tools/agent_look.sh "$out/look.sh"
     # a parse error hangs it before the first step; later SCRIPT ERRORs are findings
     if grep -q 'Parse Error' "$out/godot.log" || { [ ! -f "$out/state.json" ] && grep -q 'SCRIPT ERROR' "$out/godot.log"; }; then echo "script error" >> "$out/godot.log"; kill $p; break; fi
     last=$(stat -f %m "$out/state.json" 2>/dev/null || echo "$started")
-    if [ $(( $(date +%s) - last )) -gt 1500 ]; then echo "watchdog: no step for 25 min" >> "$out/godot.log"; kill $p; break; fi
+    if [ $(( $(date +%s) - last )) -gt $(( ${IDLE:-600} + 900 )) ]; then echo "watchdog: no step for IDLE + 15 min" >> "$out/godot.log"; kill $p; break; fi
   done
   wait $p 2>/dev/null || true
   touch "$out/done"
