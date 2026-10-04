@@ -63,7 +63,7 @@ static func run(t) -> void:
 		fails.append("bar %s != START %s" % [shown_sorted, start_sorted])
 	await t.shot("factory_start_bar")
 
-	# 2. a locked hotkey (0: splitter, a Routing unlock) is refused; an unlocked one (2: tapper) works
+	# 2. a locked hotkey (0: the physics splitter, cut) is refused; an unlocked one (2: tapper) works
 	await t.tap(KEY_0)
 	await t.wait(0.2)
 	var refused: bool = bs.current_build == 0
@@ -72,7 +72,7 @@ static func run(t) -> void:
 	var tapper: bool = bs.current_build == 2
 	bs._set_build(0)
 	await t.wait(0.1)
-	t.log_line("hotkey 0 (splitter, locked) refused: %s; hotkey 2 (vein tapper) allowed: %s" % [refused, tapper])
+	t.log_line("hotkey 0 (splitter, cut) refused: %s; hotkey 2 (vein tapper) allowed: %s" % [refused, tapper])
 	if not refused or not tapper:
 		fails.append("hotkeys")
 
@@ -120,13 +120,14 @@ static func run(t) -> void:
 	var routing: Array = Tech.tree_tech("routing").unlocks
 	if gained.size() != routing.size() or not routing.all(func(id): return after.has(id)):
 		fails.append("bar after routing: gained %s, want %s" % [gained, routing])
-	if t.main._banner_title.text != "UNLOCKED" or not t.main._banner_sub.text.contains("Splitter"):
+	if t.main._banner_title.text != "UNLOCKED" or not t.main._banner_sub.text.to_lower().contains("splitter"):
 		fails.append("banner")
+	# the old physics splitter (hotkey 0) is cut from Factory: Routing gives the track splitter
 	await t.tap(KEY_0)
 	await t.wait(0.2)
-	t.log_line("hotkey 0 (splitter) after Routing: %s" % ["allowed" if bs.current_build == 10 else "refused"])
-	if bs.current_build != 10:
-		fails.append("splitter still refused")
+	t.log_line("hotkey 0 (cut physics splitter) after Routing: %s" % ["allowed" if bs.current_build == 10 else "refused"])
+	if bs.current_build == 10:
+		fails.append("cut splitter allowed")
 	bs._set_build(0)
 	await t.wait(0.1)
 

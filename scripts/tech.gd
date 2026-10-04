@@ -54,8 +54,7 @@ static func maxed(id: String) -> bool:
 ## Tier 0: what a Factory game starts with.
 const START := [
 	2,    # Vein tapper
-	9,    # Chute
-	132,  # Track rail (the chute's track-system successor)
+	132,  # Track rail
 	4,    # Upstream lift
 	38,   # Beam tap
 	75,   # Furnace rail
@@ -68,97 +67,154 @@ const START := [
 const TREE := [
 	# tier 1: red flasks
 	{"id": "routing", "name": "Routing", "tier": 1, "needs": [], "cost": {"flask": 5},
-		"unlocks": [10, 59, 66, 11, 13, 60, 62, 79, 107, 133],
-		"desc": "splitter, overflow gate, points; bumper, bellows, deflector, catch net, banked turn, check valve, track splitter"},
+		"unlocks": [133, 66, 59],
+		"desc": "track splitter, points switch, overflow gate"},
 	{"id": "buffers", "name": "Buffers & metering", "tier": 1, "needs": [], "cost": {"flask": 5},
-		"unlocks": [76, 40, 106, 65, 41, 134, 135],
-		"desc": "silo, escapement, flow meter, tally wheel; tipping bucket, track escapement, track bin"},
+		"unlocks": [135, 134, 106],
+		"desc": "track bin, track escapement, flow meter"},
 	{"id": "sorting", "name": "Sorting", "tier": 1, "needs": [], "cost": {"flask": 5},
 		"unlocks": [63, 42],
 		"desc": "magnet drum, sieve rail"},
 	{"id": "processing", "name": "Processing", "tier": 1, "needs": [], "cost": {"flask": 5},
-		"unlocks": [92, 94, 93],
-		"desc": "grindstone, gear stamp, pellet press"},
+		"unlocks": [94, 92, 93],
+		"desc": "gear stamp, grindstone, pellet press"},
 	{"id": "power_haul", "name": "Power & haul", "tier": 1, "needs": [], "cost": {"flask": 5},
-		"unlocks": [15, 113, 108, 1, 77],
-		"desc": "gravity wheel, spinner, mine cart, trampoline; ropeway"},
+		"unlocks": [15, 108],
+		"desc": "gravity wheel (falling marbles drive machines), mine cart"},
 	{"id": "defence_1", "name": "Defence I", "tier": 1, "needs": [], "cost": {"flask": 5},
-		"unlocks": [121, 126, 130, 114, 7, 27, 84, 102, 103, 31],
-		"desc": "spring trap, caltrop spreader, flak cannon, gabion; spikes, snare, bearing mat, iron plating, steam jet, lantern"},
+		"unlocks": [114, 121],
+		"desc": "gabion, spring trap"},
 	# tier 2: red + clockwork flasks
 	{"id": "forging", "name": "Forging", "tier": 2, "needs": ["processing"], "cost": {"flask": 5, "flask_clock": 5},
-		"unlocks": [131, 85, 74, 67],
-		"desc": "crucible, kicker, pair gate, brake rail"},
+		"unlocks": [131, 74],
+		"desc": "crucible, pair gate"},
+	{"id": "trajectory", "name": "Trajectory", "tier": 2, "needs": ["routing"], "cost": {"flask": 5, "flask_clock": 5},
+		"unlocks": [47, 62, 69],
+		"desc": "jump, catch net, crossover"},
 	{"id": "signals", "name": "Signals", "tier": 2, "needs": ["buffers"], "cost": {"flask": 5, "flask_clock": 5},
-		"unlocks": [28, 29, 98, 78, 64, 33, 20, 72, 96, 101],
-		"desc": "tripwire, pressure plate, latch, load cell, sluice; clockwork timer, trapdoor, flipper, drawbridge, ground listener"},
-	{"id": "defence_2", "name": "Heavy defence", "tier": 2, "needs": ["defence_1"], "cost": {"flask": 5, "flask_clock": 5},
-		"unlocks": [90, 23, 18, 5, 19, 22, 26, 35, 53, 89, 91, 116, 118],
-		"desc": "grapeshot mortar, harpoon ballista, tesla coil, drop hopper; flame turret, electromagnet, powder keg, barricade, marble cannon, bowling ramp, stamp press, rope bridge, flail"},
-	{"id": "sorting_2", "name": "Sorting II", "tier": 2, "needs": ["sorting", "routing"], "cost": {"flask": 5, "flask_clock": 5},
-		"unlocks": [115, 58, 71, 69, 119, 127],
-		"desc": "magnet rail, flap sorter, distributor, crossover, flume, panning box"},
-	{"id": "power_2", "name": "Power II", "tier": 2, "needs": ["power_haul"], "cost": {"flask": 5, "flask_clock": 5},
-		"unlocks": [70, 12, 97],
-		"desc": "flywheel, conveyor belt, transfer arm"},
+		"unlocks": [28, 64, 65],
+		"desc": "tripwire, sluice gate, tally wheel"},
+	{"id": "defence_2", "name": "Defence II", "tier": 2, "needs": ["defence_1"], "cost": {"flask": 5, "flask_clock": 5},
+		"unlocks": [130, 126],
+		"desc": "flak cannon, caltrop spreader"},
+	{"id": "haul_2", "name": "Long haul", "tier": 2, "needs": ["power_haul"], "cost": {"flask": 5, "flask_clock": 5},
+		"unlocks": [77],
+		"desc": "ropeway"},
 	# tier 3: red + clockwork + bronze flasks
 	{"id": "beam_optics", "name": "Beam optics", "tier": 3, "needs": ["forging"], "cost": {"flask": 5, "flask_clock": 5, "flask_bronze": 5},
 		"unlocks": [],
-		"desc": "no pieces yet: a flag for later beam work"},
-	{"id": "automata", "name": "Automata", "tier": 3, "needs": ["forging", "power_2"], "cost": {"flask": 5, "flask_clock": 5, "flask_bronze": 5},
-		"unlocks": [34, 32, 30],
-		"desc": "drone dock, brass sentry, steam borer"},
-	{"id": "spectacle", "name": "Spectacle", "tier": 3, "needs": ["power_2"], "cost": {"flask": 5, "flask_clock": 5, "flask_bronze": 5},
-		"unlocks": [117, 49, 47, 8, 122],
-		"desc": "balloon lift, loop-the-loop, jump, catapult, bowl feeder"},
-	{"id": "clockwork", "name": "Clockwork", "tier": 3, "needs": ["signals"], "cost": {"flask": 5, "flask_clock": 5, "flask_bronze": 5},
-		"unlocks": [99, 100, 125, 124, 129, 110],
-		"desc": "delay relay, relay hub, hourglass, balance, fuse cord, speed trap"},
+		"desc": "the lens: grows the beam (coming)"},
+	{"id": "defence_3", "name": "Heavy defence", "tier": 3, "needs": ["defence_2"], "cost": {"flask": 5, "flask_clock": 5, "flask_bronze": 5},
+		"unlocks": [90],
+		"desc": "grapeshot mortar"},
 ]
 
-## Not in Factory mode at all (still in the sandbox).
+## Not in Factory mode at all (still in the sandbox). The core set is the
+## 35 above, by four rules: nothing lifts but the beam, the only power is
+## falling marbles (gravity wheel), one piece per job (the track-native one),
+## and every defence eats marbles.
 const CUT := [
+	1,    # Trampoline
+	3,    # Laser smelter
+	5,    # Drop hopper
+	7,    # Spikes
+	8,    # Catapult
+	9,    # Chute
+	10,   # Splitter
+	11,   # Bumper
+	12,   # Conveyor belt
+	13,   # Bellows fan
+	14,   # Wrecking pendulum
+	18,   # Tesla coil
+	19,   # Flame turret
+	20,   # Trapdoor
+	21,   # Crusher
+	22,   # Electromagnet
+	23,   # Harpoon ballista
+	24,   # Seesaw
+	25,   # Pneumatic tube
+	26,   # Powder keg
+	27,   # Snare
+	29,   # Pressure plate
+	30,   # Steam borer
+	31,   # Lantern
+	32,   # Brass sentry
+	33,   # Clockwork timer
+	34,   # Drone dock
+	35,   # Pop-up barricade
 	36,   # Steam engine
-	81,   # Treadwheel
-	123,  # Water wheel
-	50,   # Dispenser
-	136,  # Track source
+	37,   # Domino row
+	39,   # Flip-flop
+	40,   # Escapement
+	41,   # Tipping bucket
 	43,   # Archimedes screw
+	44,   # Robotic arm
 	45,   # Stair lift
 	46,   # Ferris lift
-	73,   # Counterweight lift
-	56,   # Plunger
-	25,   # Pneumatic tube
-	61,   # Booster rail
-	80,   # Gauss cannon
-	111,  # Sling
-	44,   # Robotic arm
-	82,   # Trebuchet
-	39,   # Flip-flop (rocker)
-	105,  # Dice box
-	104,  # Trommel
-	52,   # Weigh scale
-	3,    # Laser smelter
-	21,   # Crusher
-	83,   # Paddle wheel
-	120,  # Wrecking ball
-	128,  # Portcullis
-	112,  # Igniter
-	109,  # Pop bumper
-	14,   # Wrecking pendulum
-	# toys
-	55,   # Chime bar
-	37,   # Domino row
+	48,   # Bell
+	49,   # Loop-the-loop
+	50,   # Dispenser
 	51,   # Goal cup
-	88,   # Volcano
-	95,   # Helix
+	52,   # Weigh scale
+	53,   # Marble cannon
+	54,   # Felt chute
+	55,   # Chime bar
+	56,   # Plunger
+	57,   # Vortex funnel
+	58,   # Flap sorter
+	60,   # Deflector plate
+	61,   # Booster rail
+	67,   # Brake rail
+	68,   # Teeter launcher
+	70,   # Flywheel
+	71,   # Rotary distributor
+	72,   # Flipper
+	73,   # Counterweight lift
+	76,   # Silo
+	78,   # Load cell
+	79,   # Banked turn
+	80,   # Gauss cannon
+	81,   # Treadwheel
+	82,   # Trebuchet
+	83,   # Paddle wheel
+	84,   # Ball-bearing mat
+	85,   # Kicker
 	86,   # Tiptube
 	87,   # Hammer
-	68,   # Teeter launcher
-	24,   # Seesaw
-	57,   # Vortex funnel
-	48,   # Bell
-	54,   # Felt chute
+	88,   # Volcano
+	89,   # Bowling ramp
+	91,   # Stamp press
+	95,   # Helix
+	96,   # Drawbridge
+	97,   # Transfer arm
+	98,   # Latch
+	99,   # Delay relay
+	100,  # Relay hub
+	101,  # Ground listener
+	102,  # Iron plating
+	103,  # Steam jet
+	104,  # Trommel
+	105,  # Dice box
+	107,  # Check valve
+	109,  # Pop bumper
+	110,  # Speed trap
+	111,  # Sling
+	112,  # Igniter
+	113,  # Spinner
+	115,  # Magnet rail
+	116,  # Rope bridge
+	117,  # Balloon lift
+	118,  # Flail
+	119,  # Flume
+	120,  # Wrecking ball
+	122,  # Bowl feeder
+	123,  # Water wheel
+	124,  # Balance
+	125,  # Hourglass
+	127,  # Panning box
+	128,  # Portcullis
+	129,  # Fuse cord
+	136,  # Track source
 ]
 
 ## What makes each kind (BuildType ints), for the reachability check only.
