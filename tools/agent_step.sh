@@ -11,7 +11,7 @@ i=0
 while :; do
   now=$(sed -n 's/.*"step": \([0-9]*\).*/\1/p' "$d/state.json" 2>/dev/null)
   if [ -n "$now" ] && [ "$now" != "$before" ]; then cat "$d/state.json"; echo; exit 0; fi
-  if [ ! -f "$d/cmd.json" ] && [ -f "$d/done" ]; then echo "GAME ENDED"; exit 1; fi
-  i=$((i + 1)); [ $i -gt 1200 ] && { echo "TIMEOUT: game did not answer in 120 s"; exit 1; }
+  if [ -f "$d/done" ]; then echo "GAME ENDED (see godot.log)"; exit 1; fi
+  i=$((i + 1)); [ $i -gt 9000 ] && { echo "TIMEOUT: game did not answer in 15 min"; exit 1; }
   sleep 0.1
 done
