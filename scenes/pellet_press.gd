@@ -155,7 +155,7 @@ func _eject() -> void:
 func _input(event: InputEvent) -> void:
 	if has_meta("ghost") or not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
 		return
-	var p := to_local(get_global_mouse_position())
+	var p := to_local(Pointer.world(self))
 	if absf(p.x) < 12 and p.y > THROAT and p.y < 0:
 		side = -side
 		get_viewport().set_input_as_handled()

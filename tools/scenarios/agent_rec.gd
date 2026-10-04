@@ -13,10 +13,9 @@ extends RefCounted
 ## polling (and REPLAY_THEN=poll carries on live from where it ends). No cmd
 ## for 10 minutes: the scenario quits.
 ##
-## The window is one small 1280x720-pixel window in the screen's bottom right
-## corner, not off-screen: placing pieces reads the real OS cursor, which
-## macOS won't move into an off-screen window. A mouse command borrows the
-## cursor for the command (and the shot after it) and then puts it back.
+## One small 1280x720-pixel window, off-screen. The real cursor is never
+## moved: Pointer.fake makes the game read the mouse from Pointer.screen_pos,
+## which the click/drag/move helpers set.
 ##
 ## Only what a person can do (screen pixels, 1280x720, origin top left):
 ##   {"action":"key",    "key":"D"}                     tap a key by name
@@ -47,7 +46,6 @@ const Save = preload("res://scripts/sandbox_save.gd")
 const IDLE_LIMIT := 600.0   # s without a cmd before giving up
 const MAX_SEC := 120.0
 const FRAME_EVERY := 0.25
-const MOUSE := ["click", "drag", "move", "scroll"]
 const SIZE := Vector2i(1280, 720)
 
 
@@ -63,14 +61,15 @@ static func run(t) -> void:
 				replay.append(rec.cmd)
 		t.log_line("replaying %d commands" % replay.size())
 	# project.godot asks for fullscreen and wins over --windowed: leaving it
-	# takes the macOS animation, then one small window in the corner
+	# takes the macOS animation, then one small window off-screen
 	for k in 2:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
 		await t.wait(0.6)
-		var usable := DisplayServer.screen_get_usable_rect()
 		DisplayServer.window_set_size(SIZE)
-		DisplayServer.window_set_position(usable.end - SIZE)
+		DisplayServer.window_set_position(Vector2i(4000, 4000))
 		await t.wait(0.3)
+	Pointer.fake = true
+	Pointer.screen_pos = Vector2(SIZE) / 2.0
 	t.log_line("window %s at %s" % [DisplayServer.window_get_size(), DisplayServer.window_get_position()])
 	DirAccess.remove_absolute(cmd_path)
 	FileAccess.open(log_path, FileAccess.WRITE).close()
@@ -80,7 +79,8 @@ static func run(t) -> void:
 	var live := {"frames": [], "worst_ms": 0.0, "fps_sum": 0.0, "fps_n": 0, "log_at": 0, "on": true}
 	_perf(t, out, live)
 	_hitches(t, live)
-	_film(t, live)
+	if OS.get_environment("FILM") != "0":   # FILM=0: clean perf numbers, no motion sheets
+		_film(t, live)
 
 	# the way a player starts: the title screen, then F (and F9 for a save)
 	t.main._show_title()
@@ -96,19 +96,9 @@ static func run(t) -> void:
 	var cmd: Dictionary = {}
 	var t0 := Time.get_ticks_msec()
 	var game_s := 2.5   # the title and the F above
-	var agent_mouse := Vector2(-1, -1)   # where the player's mouse is
-	var user_mouse := Vector2i(-1, -1)   # Kaighn's cursor, while it's borrowed
 	while true:
-		if _mouse_at(cmd).x >= 0 and user_mouse.x < 0:
-			user_mouse = DisplayServer.mouse_get_position()
-			t.root.warp_mouse(agent_mouse)
-			await t.process_frame
-			await t.process_frame
 		var shot := await _shot(t, step)
 		var motion := _sheet(t, step, live)
-		if user_mouse.x >= 0:
-			Input.warp_mouse(Vector2(user_mouse - DisplayServer.window_get_position()))
-			user_mouse = Vector2i(-1, -1)
 		var st := _state(t, step, result, shot, game_s, live)
 		st["motion"] = motion
 		_write(out + "/state.json", JSON.stringify(st, "  "))
@@ -156,19 +146,14 @@ static func run(t) -> void:
 		live.fps_n = 0
 		var run_from := Time.get_ticks_msec()
 		var then := clampf(float(cmd.get("then", 0.5)), 0.0, MAX_SEC)
-		if _mouse_at(cmd).x >= 0:
-			user_mouse = DisplayServer.mouse_get_position()
-			agent_mouse = _mouse_at(cmd)
 		result = await _do(t, cmd)
-		if user_mouse.x >= 0 and then > 1.0:   # don't hold the cursor through a long wait
-			Input.warp_mouse(Vector2(user_mouse - DisplayServer.window_get_position()))
-			user_mouse = Vector2i(-1, -1)
 		await t.wait(then)
 		game_s += (Time.get_ticks_msec() - run_from) / 1000.0
 		step += 1
 	live.on = false
 	Engine.time_scale = 1.0
 	Save.path = Save.PATH
+	Pointer.fake = false
 
 
 ## Grabs a small frame every FRAME_EVERY s of running game (not while frozen).
@@ -176,6 +161,7 @@ static func _film(t, live: Dictionary) -> void:
 	while live.on:
 		await t.create_timer(FRAME_EVERY, true, false, true).timeout
 		if Engine.time_scale > 0.0 and DisplayServer.get_name() != "headless":
+			RenderingServer.force_draw(false)   # macOS doesn't draw an off-screen window
 			var img: Image = t.root.get_texture().get_image()
 			img.resize(426, 240, Image.INTERPOLATE_BILINEAR)
 			live.frames.append(img)
@@ -259,20 +245,6 @@ static func _errors(t, live: Dictionary) -> Array:
 	if out.size() > 20:
 		out = out.slice(0, 20) + ["... %d more" % (out.size() - 20)]
 	return out
-
-
-## Where a command leaves the player's mouse, or (-1, -1) if it doesn't use it.
-static func _mouse_at(cmd: Dictionary) -> Vector2:
-	var at := Vector2(-1, -1)
-	if cmd.get("action") == "seq":
-		for sub in cmd.get("steps", []):
-			if sub is Dictionary and _mouse_at(sub).x >= 0:
-				at = _mouse_at(sub)
-	elif cmd.get("action") == "drag":
-		at = Vector2(float(cmd.get("x2", cmd.get("x", 640))), float(cmd.get("y2", cmd.get("y", 360))))
-	elif cmd.get("action") in MOUSE:
-		at = Vector2(float(cmd.get("x", 640)), float(cmd.get("y", 360)))
-	return at
 
 
 static func _write(path: String, s: String) -> void:

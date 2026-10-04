@@ -256,7 +256,7 @@ func _physics_process(delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if has_meta("ghost") or _body == null or not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
 		return
-	var p := to_local(get_global_mouse_position())
+	var p := to_local(Pointer.world(self))
 	var d := end_offset.normalized()
 	for k in springs.size():
 		if p.distance_to(d * _flap_at(k)) < 12:

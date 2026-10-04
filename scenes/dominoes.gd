@@ -135,7 +135,7 @@ func _input(event: InputEvent) -> void:
 	if has_node("/root/BuildSystem") and get_node("/root/BuildSystem").current_build != 0:
 		return
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		var m := get_global_mouse_position()
+		var m := Pointer.world(self)
 		for end in [global_position, global_position + Vector2(end_offset.x, 0)]:
 			if absf(m.x - end.x) < 10 and absf(m.y - _ground_y(end.x, end.y - 6) + 13) < 20:
 				stand_up()

@@ -154,11 +154,11 @@ func _force_handle_global() -> Vector2:
 
 
 func _mouse_near(point: Vector2) -> bool:
-	return get_global_mouse_position().distance_to(point) < HANDLE_GRAB_RADIUS
+	return Pointer.world(self).distance_to(point) < HANDLE_GRAB_RADIUS
 
 
 func _mouse_over_body() -> bool:
-	var mouse := get_global_mouse_position()
+	var mouse := Pointer.world(self)
 	return absf(mouse.x - global_position.x) < 22 and absf(mouse.y - global_position.y) < 8
 
 
@@ -201,7 +201,7 @@ func _input(event: InputEvent) -> void:
 				# Clicking the body while selected = start dragging body
 				if _mouse_over_body():
 					_drag_mode = DragMode.BODY
-					_drag_offset = global_position - get_global_mouse_position()
+					_drag_offset = global_position - Pointer.world(self)
 					get_viewport().set_input_as_handled()
 					return
 				# Clicked elsewhere — deselect
@@ -217,7 +217,7 @@ func _input(event: InputEvent) -> void:
 
 	# Mouse motion — handle dragging
 	if event is InputEventMouseMotion and _drag_mode != DragMode.NONE:
-		var mouse := get_global_mouse_position()
+		var mouse := Pointer.world(self)
 		match _drag_mode:
 			DragMode.BODY:
 				global_position = mouse + _drag_offset

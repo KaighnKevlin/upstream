@@ -123,7 +123,7 @@ func _physics_process(delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if has_meta("ghost") or not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
 		return
-	var m := get_global_mouse_position() - global_position
+	var m := Pointer.world(self) - global_position
 	if absf(m.x) < R + 6 and m.y > -8 and m.y < depth() + 8:
 		var k := TURNS.find(turns)
 		turns = TURNS[(k + 1) % TURNS.size()]

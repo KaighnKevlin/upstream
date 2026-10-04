@@ -147,7 +147,7 @@ func _physics_process(delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if has_meta("ghost") or not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
 		return
-	var m := get_global_mouse_position() - global_position
+	var m := Pointer.world(self) - global_position
 	var near_span := Geometry2D.get_closest_point_to_segment(m, hinge(), tip()).distance_to(m) < 8
 	var near_tower := absf(m.x - side * (SPAN + 4)) < 7 and m.y > -TOWER and m.y < 16
 	if near_span or near_tower:

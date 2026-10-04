@@ -56,7 +56,7 @@ func _physics_process(delta: float) -> void:
 		_timer -= delta
 
 	# Aim toward mouse
-	var mouse := get_global_mouse_position()
+	var mouse := Pointer.world(self)
 	var dir := (mouse - global_position).normalized()
 	rotation = dir.angle()
 	# keep the gun upright when aiming left

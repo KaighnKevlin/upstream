@@ -217,7 +217,7 @@ func _input(event: InputEvent) -> void:
 	if has_node("/root/BuildSystem") and get_node("/root/BuildSystem").current_build != 0:
 		return
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		var p := to_local(get_global_mouse_position())
+		var p := to_local(Pointer.world(self))
 		if Rect2(-16, -42, 32, 38).has_point(p):
 			recipe = (recipe + 1) % RECIPES.size()
 			_show_recipe()

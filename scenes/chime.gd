@@ -109,7 +109,7 @@ func _process(delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if has_meta("ghost") or not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
 		return
-	var p := to_local(get_global_mouse_position())
+	var p := to_local(Pointer.world(self))
 	var t := end_offset.normalized()
 	var along := p.dot(t)
 	if along > 0 and along < end_offset.length() and absf(p.dot(Vector2(t.y, -t.x))) < 8:

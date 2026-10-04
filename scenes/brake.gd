@@ -86,7 +86,7 @@ func _label_at() -> Vector2:
 ## own click-to-select-and-drag.
 func _input(event: InputEvent) -> void:
 	if _brush != null and event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT \
-			and to_local(get_global_mouse_position()).distance_to(_label_at()) < 10:
+			and to_local(Pointer.world(self)).distance_to(_label_at()) < 10:
 		mode = (mode + 1) % LIMITS.size()
 		queue_redraw()
 		get_viewport().set_input_as_handled()

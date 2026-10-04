@@ -88,7 +88,7 @@ func _process(delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if has_meta("ghost") or not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
 		return
-	if get_global_mouse_position().distance_to(global_position) < HALF:
+	if Pointer.world(self).distance_to(global_position) < HALF:
 		angle_deg += STEP
 		if angle_deg > 75:
 			angle_deg = -75

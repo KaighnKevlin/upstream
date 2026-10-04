@@ -288,7 +288,7 @@ func _burst(at: Vector2, kind: String, h: float) -> void:
 func _input(event: InputEvent) -> void:
 	if has_meta("ghost") or not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
 		return
-	if get_global_mouse_position().distance_to(global_position + Vector2(0, -10)) < 14:
+	if Pointer.world(self).distance_to(global_position + Vector2(0, -10)) < 14:
 		mode = (mode + 1) % FUSES.size()
 		SFX.play_small(self, SFX.sfx_clink(), -12.0, 1.6)
 		get_viewport().set_input_as_handled()

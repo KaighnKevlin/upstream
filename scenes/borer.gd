@@ -185,7 +185,7 @@ func _input(event: InputEvent) -> void:
 	if has_node("/root/BuildSystem") and get_node("/root/BuildSystem").current_build != 0:
 		return
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		if get_global_mouse_position().distance_to(global_position) < 20 and not _moving:
+		if Pointer.world(self).distance_to(global_position) < 20 and not _moving:
 			turn(((mode + 1) % 3) as Mode)
 			get_viewport().set_input_as_handled()
 

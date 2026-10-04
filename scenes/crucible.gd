@@ -172,7 +172,7 @@ func _input(event: InputEvent) -> void:
 		return
 	if has_node("/root/BuildSystem") and get_node("/root/BuildSystem").current_build != 0:
 		return
-	var p := to_local(get_global_mouse_position())
+	var p := to_local(Pointer.world(self))
 	if absf(p.x) < HALF + 3 and p.y > RIM - 3 and p.y < -14:
 		side = -side
 		_spr.flip_h = side < 0

@@ -52,14 +52,14 @@ func _input(event: InputEvent) -> void:
 	if has_meta("ghost"):
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed and get_global_mouse_position().distance_to(global_position + watch) < 18:
+		if event.pressed and Pointer.world(self).distance_to(global_position + watch) < 18:
 			_dragging = true
 			get_viewport().set_input_as_handled()
 		elif not event.pressed and _dragging:
 			_dragging = false
 			get_viewport().set_input_as_handled()
 	elif event is InputEventMouseMotion and _dragging:
-		watch = get_global_mouse_position() - global_position
+		watch = Pointer.world(self) - global_position
 		_place_pan()
 
 

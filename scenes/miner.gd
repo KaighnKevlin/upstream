@@ -252,7 +252,7 @@ func _input(event: InputEvent) -> void:
 		if _selected:
 			_set_selected(false)
 		return
-	var mouse := get_global_mouse_position()
+	var mouse := Pointer.world(self)
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
 			var over_body := absf(mouse.x - global_position.x) < 12 and mouse.y > global_position.y - 26 \

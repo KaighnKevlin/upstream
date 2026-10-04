@@ -75,7 +75,7 @@ func _input(event: InputEvent) -> void:
 		return
 	if has_node("/root/BuildSystem") and get_node("/root/BuildSystem").current_build != 0:
 		return
-	var m := to_local(get_global_mouse_position())
+	var m := to_local(Pointer.world(self))
 	if Rect2(minf(0, _end().x) - 4, -26, LEN + 8, 34).has_point(m):
 		mode = (mode + 1) % PERIODS.size()
 		_beat = mini(_beat, int(round(PERIODS[mode] * 60.0)))

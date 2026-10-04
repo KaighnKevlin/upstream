@@ -229,7 +229,7 @@ func _release(o, now: float) -> void:
 func _input(event: InputEvent) -> void:
 	if has_meta("ghost") or not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
 		return
-	if MOUTH.has_point(get_global_mouse_position() - global_position):
+	if MOUTH.has_point(Pointer.world(self) - global_position):
 		side = -_s()
 		_art.scale.x = _s()
 		_fit_lip()

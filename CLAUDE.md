@@ -18,6 +18,9 @@ sort, assemble and feed defences and research.
 - `scripts/*_works.gd` are the demo worlds (Marble Works and others).
 - `tools/playtest.gd` is the scenario harness. Scenarios live in
   `tools/scenarios/<name>_rec.gd` with `static func run(t)`.
+- `tools/agent_play.sh` runs `agent_rec`: an agent plays from screenshots,
+  one command file per turn (keys, screen clicks), off-screen and muted.
+  Reports go in `playtests/<date>-<goal>.md`.
 - `tools/art/gen_*.py` are the sprite generators.
 
 ## Running tests
@@ -48,6 +51,8 @@ drag list), `build_bar.gd` (PIECES, CATS, icon case, scn map, `ART_RECTS`),
 `scripts/manual.gd`, and `scripts/sandbox_save.gd` PROPS for any saved props.
 Build-bar icons are auto-fitted by `_bounds()`, so sprite pieces need an
 `ART_RECTS` entry. Create sprites before the ghost early-return in `_ready`.
+Read the mouse with `Pointer.world(self)` (`scripts/pointer.gd`), never
+`get_global_mouse_position()`: the agent playtester points through it.
 
 Parallel sub-agents work in worktrees (`.claude/worktrees/`) and only add
 files. The main session does the registration above at merge time.

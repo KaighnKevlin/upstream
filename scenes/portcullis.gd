@@ -240,7 +240,7 @@ func _pose() -> void:
 func _input(event: InputEvent) -> void:
 	if has_meta("ghost") or not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
 		return
-	if Rect2(-17, -110, 34, 110).has_point(get_global_mouse_position() - global_position):
+	if Rect2(-17, -110, 34, 110).has_point(Pointer.world(self) - global_position):
 		trigger()
 		get_viewport().set_input_as_handled()
 

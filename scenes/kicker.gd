@@ -107,7 +107,7 @@ func _physics_process(delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if has_meta("ghost") or not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
 		return
-	if get_global_mouse_position().distance_to(global_position + Vector2(-side * 16, 0)) < 10:
+	if Pointer.world(self).distance_to(global_position + Vector2(-side * 16, 0)) < 10:
 		mode = (mode + 1) % MODES.size()
 		get_viewport().set_input_as_handled()
 

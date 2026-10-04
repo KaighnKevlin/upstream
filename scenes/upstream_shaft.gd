@@ -97,7 +97,7 @@ func _input(event: InputEvent) -> void:
 		return
 	if has_meta("ghost") or (has_node("/root/BuildSystem") and get_node("/root/BuildSystem").current_build != 0):
 		return
-	var m := get_global_mouse_position()
+	var m := Pointer.world(self)
 	if absf(m.x - global_position.x) < 24.0 and absf(m.y - (top_y() + 8.0)) < 20.0:
 		spill = [0, 1, -1][([0, 1, -1].find(spill) + 1) % 3]   # hold -> right -> left -> hold
 		SFX.play(self, SFX.sfx_clink())

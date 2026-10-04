@@ -167,7 +167,7 @@ func _input(event: InputEvent) -> void:
 	if has_meta("ghost"):
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		var m := get_global_mouse_position() - global_position
+		var m := Pointer.world(self) - global_position
 		if event.pressed:
 			for i in 2:
 				var w: Vector2 = wire_l if i == 0 else wire_r
@@ -182,7 +182,7 @@ func _input(event: InputEvent) -> void:
 		elif _drag >= 0:
 			_drag = -1
 	elif event is InputEventMouseMotion and _drag >= 0:
-		var to := get_global_mouse_position() - global_position
+		var to := Pointer.world(self) - global_position
 		if _drag == 0:
 			wire_l = to
 		else:

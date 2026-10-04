@@ -531,7 +531,7 @@ func _remove_building_at_mouse() -> void:
 func _get_world_mouse_pos() -> Vector2:
 	var viewport := get_viewport()
 	var canvas := viewport.get_canvas_transform()
-	return canvas.affine_inverse() * viewport.get_mouse_position()
+	return canvas.affine_inverse() * Pointer.screen(viewport)
 
 
 func _disable_collisions(node: Node) -> void:

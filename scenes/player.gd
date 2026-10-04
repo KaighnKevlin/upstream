@@ -245,7 +245,7 @@ func _physics_process(delta: float) -> void:
 		_try_directional_mine()
 	elif Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and _mine_timer <= 0:
 		if not has_node("/root/BuildSystem") or get_node("/root/BuildSystem").current_build == 0:
-			_try_mine_at(get_global_mouse_position())
+			_try_mine_at(Pointer.world(self))
 
 
 func _try_directional_mine() -> void:
@@ -512,7 +512,7 @@ func _pick_up() -> void:
 
 func _throw_velocity() -> Vector2:
 	var hand := global_position + HOLD_OFFSET
-	var v := get_global_mouse_position() - hand
+	var v := Pointer.world(self) - hand
 	var speed := clampf(v.length() * 3.2, THROW_MIN, THROW_MAX)
 	return v.normalized() * speed if v.length() > 1 else Vector2(0, -THROW_MIN)
 

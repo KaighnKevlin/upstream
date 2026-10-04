@@ -138,7 +138,7 @@ func _input(event: InputEvent) -> void:
 	if has_node("/root/BuildSystem") and get_node("/root/BuildSystem").current_build != 0:
 		return
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		if get_global_mouse_position().distance_to(global_position + Vector2(0, -12)) < 18:
+		if Pointer.world(self).distance_to(global_position + Vector2(0, -12)) < 18:
 			mode = (mode + 1) % HOLDS.size()
 			SFX.play(self, SFX.sfx_clink())
 			var scene := get_tree().current_scene

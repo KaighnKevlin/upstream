@@ -97,7 +97,7 @@ func _physics_process(delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if has_meta("ghost") or not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
 		return
-	var p := to_local(get_global_mouse_position())
+	var p := to_local(Pointer.world(self))
 	if absf(p.x) < 12 and p.y > -H and p.y < 6:
 		mode = (mode + 1) % MODES.size()
 		queue_redraw()

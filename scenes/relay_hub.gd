@@ -110,7 +110,7 @@ func _input(event: InputEvent) -> void:
 	if has_meta("ghost"):
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		var m := get_global_mouse_position() - global_position
+		var m := Pointer.world(self) - global_position
 		if event.pressed:
 			# nearest end (or parked hook) under the mouse
 			var best := -1
@@ -132,7 +132,7 @@ func _input(event: InputEvent) -> void:
 			_drag = -1
 			queue_redraw()
 	elif event is InputEventMouseMotion and _drag >= 0:
-		var m := get_global_mouse_position() - global_position
+		var m := Pointer.world(self) - global_position
 		# still over the box: it's parked until pulled clear
 		_set_wire(_drag, Vector2.ZERO if m.length() < PARK else m)
 		queue_redraw()

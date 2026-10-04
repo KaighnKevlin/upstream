@@ -49,7 +49,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey) or event.keycode != KEY_SHIFT or event.echo:
 		return
 	if event.pressed and state == State.IDLE and not _player.get("_dead"):
-		fire(_player.get_global_mouse_position())
+		fire(Pointer.world(_player))
 	elif not event.pressed and state in [State.FLYING, State.ANCHORED]:
 		release()
 

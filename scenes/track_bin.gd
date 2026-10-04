@@ -68,7 +68,7 @@ func _input(event: InputEvent) -> void:
 		return
 	if has_node("/root/BuildSystem") and get_node("/root/BuildSystem").current_build != 0:
 		return
-	if Rect2(-W * 0.5 - 2, -2, W + 4, H + 4).has_point(to_local(get_global_mouse_position())):
+	if Rect2(-W * 0.5 - 2, -2, W + 4, H + 4).has_point(to_local(Pointer.world(self))):
 		empty()
 		get_viewport().set_input_as_handled()
 

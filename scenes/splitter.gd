@@ -237,7 +237,7 @@ func _input(event: InputEvent) -> void:
 	if has_node("/root/BuildSystem") and get_node("/root/BuildSystem").current_build != 0:
 		return
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		if get_global_mouse_position().distance_to(global_position + Vector2(0, 2)) < 18:
+		if Pointer.world(self).distance_to(global_position + Vector2(0, 2)) < 18:
 			set_mode(((mode + 1) % 3) as Mode)
 			SFX.play_small(self, SFX.sfx_latch(), -10.0, 1.3)
 			get_viewport().set_input_as_handled()

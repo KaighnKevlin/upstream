@@ -141,7 +141,10 @@ func move_screen(sp: Vector2, button_mask := 0) -> void:
 	mv.global_position = sp
 	mv.button_mask = button_mask
 	Input.parse_input_event(mv)
-	root.warp_mouse(sp)
+	if Pointer.fake:   # the game reads Pointer: no need to move the real cursor
+		Pointer.screen_pos = sp
+	else:
+		root.warp_mouse(sp)
 	await physics_frame
 	await process_frame
 

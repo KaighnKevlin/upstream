@@ -72,7 +72,7 @@ func _input(event: InputEvent) -> void:
 		return
 	if has_node("/root/BuildSystem") and get_node("/root/BuildSystem").current_build != 0:
 		return
-	if Rect2(-12, -34, 24, 30).has_point(to_local(get_global_mouse_position())):
+	if Rect2(-12, -34, 24, 30).has_point(to_local(Pointer.world(self))):
 		mode = (mode + 1) % PERIODS.size()
 		get_viewport().set_input_as_handled()
 

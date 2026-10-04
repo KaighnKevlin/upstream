@@ -229,7 +229,7 @@ func _input(event: InputEvent) -> void:
 		if _selected:
 			_set_selected(false)
 		return
-	var mouse := get_global_mouse_position()
+	var mouse := Pointer.world(self)
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
 			if _selected and mouse.distance_to(to_global(_handle.position)) < 10:

@@ -90,7 +90,7 @@ func _on_leave(b) -> void:
 func _input(event: InputEvent) -> void:
 	if has_meta("ghost") or not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
 		return
-	var p := get_global_mouse_position()
+	var p := Pointer.world(self)
 	if p.distance_to(global_position) < 16 or p.distance_to(global_position + LEVER_AT + Vector2(0, -5)) < 12:
 		trigger()
 		get_viewport().set_input_as_handled()

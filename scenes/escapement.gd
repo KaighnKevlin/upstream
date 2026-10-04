@@ -225,7 +225,7 @@ func _input(event: InputEvent) -> void:
 	if has_node("/root/BuildSystem") and get_node("/root/BuildSystem").current_build != 0:
 		return
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		var p := get_global_mouse_position()
+		var p := Pointer.world(self)
 		if p.distance_to(global_position + Vector2(PIVOT.x * side, -40)) < 14 or p.distance_to(global_position + Vector2(0, -18)) < 12:
 			mode = (mode + 1) % PERIODS.size()   # slide the weight up a notch (from the top, back to the bottom)
 			_pose()

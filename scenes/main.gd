@@ -1574,11 +1574,11 @@ func _god_pour(delta: float) -> void:
 	_pour_t += delta
 	if _pour_t >= POUR_EVERY:
 		_pour_t = 0.0
-		_drop_ore(get_global_mouse_position())
+		_drop_ore(Pointer.world(self))
 
 
 func _god_key(event: InputEventKey) -> void:
-	var at := get_global_mouse_position()
+	var at := Pointer.world(self)
 	match event.keycode:
 		KEY_O:
 			if not event.echo:
