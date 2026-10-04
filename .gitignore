@@ -13,3 +13,7 @@ Thumbs.db
 
 # sub-agent worktrees
 .claude/worktrees/
+
+# blind playtest runs: keep only the written reports
+playtests/*
+!playtests/*.md

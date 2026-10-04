@@ -131,22 +131,50 @@ func world_to_screen(world: Vector2) -> Vector2:
 
 
 func click_world(world: Vector2, button := MOUSE_BUTTON_LEFT) -> void:
-	var sp := world_to_screen(world)
+	await click_screen(world_to_screen(world), button)
+
+
+## Screen-space input (viewport pixels): what a player's mouse does.
+func move_screen(sp: Vector2, button_mask := 0) -> void:
 	var mv := InputEventMouseMotion.new()
 	mv.position = sp
 	mv.global_position = sp
+	mv.button_mask = button_mask
 	Input.parse_input_event(mv)
 	root.warp_mouse(sp)
 	await physics_frame
 	await process_frame
+
+
+func _mouse_button(sp: Vector2, button: MouseButton, pressed: bool) -> void:
+	var ev := InputEventMouseButton.new()
+	ev.button_index = button
+	ev.position = sp
+	ev.global_position = sp
+	ev.pressed = pressed
+	if pressed and button <= MOUSE_BUTTON_MIDDLE:
+		ev.button_mask = 1 << (button - 1)
+	Input.parse_input_event(ev)
+
+
+func click_screen(sp: Vector2, button := MOUSE_BUTTON_LEFT) -> void:
+	await move_screen(sp)
 	for pressed in [true, false]:
-		var ev := InputEventMouseButton.new()
-		ev.button_index = button
-		ev.position = sp
-		ev.global_position = sp
-		ev.pressed = pressed
-		Input.parse_input_event(ev)
+		_mouse_button(sp, button, pressed)
 		await physics_frame
+
+
+## Press at a, glide to b over sec, release at b.
+func drag_screen(a: Vector2, b: Vector2, button := MOUSE_BUTTON_LEFT, sec := 0.4) -> void:
+	await move_screen(a)
+	_mouse_button(a, button, true)
+	await physics_frame
+	var steps := maxi(2, int(sec * 30.0))
+	for i in range(1, steps + 1):
+		await move_screen(a.lerp(b, float(i) / steps), 1 << (button - 1))
+		await wait(sec / steps)
+	_mouse_button(b, button, false)
+	await physics_frame
 
 
 func zoom(z: float) -> void:
