@@ -22,6 +22,9 @@ const RECIPES := [
 	{"name": "Springsteel", "in": {"iron_ingot": 2}, "out": "spring", "count": 3, "time": 1.6},
 	{"name": "Blast shell", "in": {"iron_ingot": 1, "grit": 3}, "out": "shell", "count": 2, "time": 2.2},
 	{"name": "Reclaimed flask", "in": {"scrap": 3}, "out": "flask", "count": 1, "time": 2.5},
+	# tier 2 and 3 science (Factory): a gear and shot line, then a crucible
+	{"name": "Clockwork flask", "in": {"gear": 1, "shot": 2}, "out": "flask_clock", "count": 1, "time": 2.5},
+	{"name": "Bronze flask", "in": {"bronze_ingot": 1, "gear": 1}, "out": "flask_bronze", "count": 1, "time": 3.0},
 ]
 const HOLD := 3            # keeps up to this many batches of each ingredient
 const SPOUT := Vector2(23, -16)
@@ -179,8 +182,10 @@ func _finish() -> void:
 func _show_recipe() -> void:
 	var rec: Dictionary = RECIPES[recipe]
 	var tex := load({"shot": "res://assets/sprites/iron_shot.png", "gear": "res://assets/sprites/gear_item.png",
-		"flask": "res://assets/sprites/flask.png", "spring": "res://assets/sprites/spring_item.png", "shell": "res://assets/sprites/shell.png"}[rec["out"]]) as Texture2D
+		"flask": "res://assets/sprites/flask.png", "flask_clock": "res://assets/sprites/flask.png", "flask_bronze": "res://assets/sprites/flask.png",
+		"spring": "res://assets/sprites/spring_item.png", "shell": "res://assets/sprites/shell.png"}[rec["out"]]) as Texture2D
 	_icon.texture = tex
+	_icon.modulate = preload("res://scenes/ore.gd").KINDS.get(rec["out"], {}).get("tint", Color.WHITE)
 	var k := minf(8.0 / tex.get_width(), 5.0 / tex.get_height()) * 1.0
 	_icon.scale = Vector2(k, k) if tex.get_width() > 8 else Vector2.ONE * 0.75
 	queue_redraw()

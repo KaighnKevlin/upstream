@@ -246,9 +246,9 @@ func _show_title() -> void:
 	sub.size = Vector2(1280, 30)
 	sub.position = Vector2(0, 150 + sz.y + 18)
 	root.add_child(sub)
-	# two ways in: the sandbox (showcase + god tools) or survival (waves)
+	# two ways in: Factory (the game) or the sandbox (showcase + god tools)
 	for i in 13:
-		var spec: Array = [["1  SANDBOX", "a working showcase, god tools, no waves until you ask"],
+		var spec: Array = [["1  SANDBOX", "every piece built and running, god tools"],
 			["2  SURVIVAL", "a bare world: get an ingot into the dome and the waves begin"],
 			["3  MARBLE WORKS", "the Beam and a marble machine, under the dome"],
 			["4  COUNTER", "marbles counting in binary on six flip-flops"],
@@ -260,10 +260,15 @@ func _show_title() -> void:
 			["0  MUSIC BOX", "every marble plays the tune on the way down"],
 			["-  PACHINKO", "hold and release the plunger: aim for the 200"],
 			["=  MARBLE SIEGE", "the machine re-arms the traps: hold 7 waves"],
-			["F  FACTORY", "start with the basics: the lab unlocks the rest"]][i]
-		# rows of five
-		var x := 20.0 + (i % 5) * 250.0
-		var y := 378.0 + (i / 5) * 58.0
+			["F  FACTORY", "the game: one Beam, research unlocks the rest"]][i]
+		# the game is Factory; the sandbox is the dev's. The demo worlds keep
+		# their keys but are off the screen (an empty rect: never clicked)
+		var shown := TITLE_SHOWN.find(i)
+		if shown < 0:
+			_title_opts.append(Rect2())
+			continue
+		var x := 640.0 - 260.0 + shown * 280.0
+		var y := 400.0
 		var opt := _hud_label(spec[0], 18, Color(0.55, 0.88, 0.92))
 		opt.size = Vector2(240, 40)
 		opt.position = Vector2(x, y + 5)
@@ -274,7 +279,7 @@ func _show_title() -> void:
 		root.add_child(d)
 		_title_opts.append(Rect2(Vector2(x, y), Vector2(240, 60)))
 		var blink := opt.create_tween().set_loops()
-		blink.tween_interval(i * 0.6)
+		blink.tween_interval(shown * 0.6)
 		blink.tween_property(opt, "modulate:a", 0.45, 0.6)
 		blink.tween_property(opt, "modulate:a", 1.0, 0.6)
 	# logo drops in
@@ -292,6 +297,8 @@ func _show_title() -> void:
 
 
 var _title: Control
+## Title options on screen, by index in the spec list: Factory, then Sandbox.
+const TITLE_SHOWN := [12, 0]
 var _title_cam_zoom := Vector2.ONE
 var _title_drift: Tween
 var _title_opts: Array[Rect2] = []
@@ -566,7 +573,27 @@ func enter_factory() -> void:
 		_god_label = null
 	_waves_started = false
 	_wave_label.text = "FACTORY - research unlocks pieces (F5 save, F9 load)"
+	_ensure_factory_beam()
 	refresh_unlocks()
+
+
+## Factory's one lift: the Beam, standing in the starter pit with its crown at
+## the surface. Everything runs downhill to its foot; it lifts FACTORY_BEAM_RATE
+## pieces a second and spills them over its crown to the right.
+const FACTORY_BEAM_AT := Vector2(1240, 100)   # crown
+const FACTORY_BEAM_RATE := 2.0
+
+func _ensure_factory_beam() -> void:
+	if has_node("FactoryBeam"):
+		return
+	var floor_y := float((WorldGen.SURFACE_ROWS + 12) * WorldGen.TILE_SIZE)   # world_gen's starter shaft
+	var bm: Node2D = preload("res://scenes/beam.tscn").instantiate()
+	bm.name = "FactoryBeam"
+	bm.depth = floor_y - FACTORY_BEAM_AT.y
+	bm.spill = 1
+	bm.per_second = FACTORY_BEAM_RATE
+	bm.global_position = FACTORY_BEAM_AT
+	add_child(bm)
 
 
 ## Back to the sandbox's full bar and god tools (loading a sandbox save).
@@ -575,6 +602,8 @@ func leave_factory() -> void:
 		return
 	factory = false
 	sandbox = true
+	if has_node("FactoryBeam"):
+		get_node("FactoryBeam").free()
 	_wave_label.text = "SANDBOX - god tools top right"
 	if _god_label == null:
 		_make_god_label()

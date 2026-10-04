@@ -12,7 +12,7 @@ static var path := PATH
 ## science kind). Version 1 saves still load (as sandbox).
 const VERSION := 2
 ## Settings worth keeping, on whichever pieces have them.
-const PROPS := ["bounce_angle", "bounce_force", "eject_angle", "eject_force", "aim_angle", "aim", "wire_l", "wire_r", "upper", "lower",
+const PROPS := ["bounce_angle", "bounce_force", "eject_angle", "eject_interval", "eject_force", "aim_angle", "aim", "wire_l", "wire_r", "upper", "lower",
 	"throw_speed", "end_offset", "mode", "plate_offset_x", "lift_speed", "wind_speed", "mirrored", "recipe", "research", "segments", "spill",
 	"fuel", "charge", "ammo",   # what's loaded: flamer / steam engine fuel, tesla charge, harpoon ammo
 	# the marble pieces: which way they face or lean, springs, notes, wires, targets

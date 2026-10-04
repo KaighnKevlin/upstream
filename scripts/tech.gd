@@ -55,7 +55,6 @@ static func maxed(id: String) -> bool:
 const START := [
 	2,    # Vein tapper
 	132,  # Track rail
-	4,    # Upstream lift
 	38,   # Beam tap
 	75,   # Furnace rail
 	16,   # Assembler
@@ -110,10 +109,11 @@ const TREE := [
 ]
 
 ## Not in Factory mode at all (still in the sandbox). The core set is the
-## 35 above, by four rules: nothing lifts but the beam, the only power is
+## 34 above (plus the Beam), by four rules: nothing lifts but the beam, the only power is
 ## falling marbles (gravity wheel), one piece per job (the track-native one),
 ## and every defence eats marbles.
 const CUT := [
+	4,    # Upstream lift (the buildable one: Factory has its one Beam)
 	1,    # Trampoline
 	3,    # Laser smelter
 	5,    # Drop hopper

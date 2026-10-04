@@ -38,6 +38,9 @@ const KINDS := {
 	# everyone near, the dome too.
 	"bomb": {"mass": 1.6, "bounce": 0.55, "friction": 0.35, "tex": "res://assets/sprites/bomb.png", "size": 10, "h": 12, "frames": 1, "radius": 4.5, "fuse": 2.6},
 	"flask": {"mass": 0.6, "bounce": 0.15, "friction": 0.6, "tex": "res://assets/sprites/flask.png", "size": 12, "h": 14, "frames": 1, "radius": 5.0, "fragile": 300.0},
+	# tier 2 and 3 science: the same glass, a different tincture
+	"flask_clock": {"mass": 0.6, "bounce": 0.15, "friction": 0.6, "tex": "res://assets/sprites/flask.png", "size": 12, "h": 14, "frames": 1, "radius": 5.0, "fragile": 300.0, "tint": Color(0.55, 1.0, 0.6)},
+	"flask_bronze": {"mass": 0.6, "bounce": 0.15, "friction": 0.6, "tex": "res://assets/sprites/flask.png", "size": 12, "h": 14, "frames": 1, "radius": 5.0, "fragile": 300.0, "tint": Color(1.0, 0.75, 0.4)},
 }
 static var _shapes := {}
 static var _materials := {}
@@ -101,6 +104,7 @@ func _ready() -> void:
 	atlas.region = Rect2(randi() % int(spec.frames) * sz, 0, sz, spec.get("h", sz))
 	spr.texture = atlas
 	spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	spr.modulate = spec.get("tint", Color.WHITE)
 	add_child(spr)
 
 	# dusty streak while it flies, a puff when it lands hard
