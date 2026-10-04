@@ -219,6 +219,11 @@ var _touching := false        # resting on something (ground or track) this tick
 ## spinning in place with the light on-track damping. Rolling isn't touched.
 const REST_SPEED := 4.0
 const REST_SPIN_KEEP := 0.6
+## Lying still on the cave floor this long, it's spent: it fades away rather
+## than sitting out its whole lifetime as a body (spills add up to hundreds).
+const GROUND_REST_TIME := 4.0
+var _grounded := false
+var _rest := 0.0
 
 
 func _roll_on_track() -> void:
@@ -234,6 +239,7 @@ func _roll_on_track() -> void:
 			elif b is CollisionObject2D and b.collision_layer & TRACK_LAYER:
 				track = true
 		_touching = ground or track
+		_grounded = ground
 		if ground:
 			want = false
 		elif track:
@@ -267,9 +273,26 @@ func _physics_process(delta: float) -> void:
 	_timer += delta
 	if _timer >= lifetime:
 		queue_free()
+	_settle(delta)
 	# Despawn if fallen way below the map
 	if global_position.y > 1400:
 		queue_free()
+
+
+## Count the time it lies still on the ground (a mortal piece, loose, nobody
+## holding it) and fade it away once it's been there GROUND_REST_TIME.
+func _settle(delta: float) -> void:
+	if lifetime > 1.0e6 or freeze or not _grounded or has_meta("store_material") or has_meta(Hold.META) \
+			or linear_velocity.length_squared() > REST_SPEED * REST_SPEED:
+		_rest = 0.0
+		return
+	_rest += delta
+	if _rest >= GROUND_REST_TIME and not has_meta("fading"):
+		set_meta("fading", true)
+		remove_from_group("ore")   # no machine reaches for it now
+		var t := create_tween()
+		t.tween_property(self, "modulate:a", 0.0, 0.4)
+		t.tween_callback(queue_free)
 
 
 ## A lit bomb: sparks from the fuse, a faster flicker near the end, then

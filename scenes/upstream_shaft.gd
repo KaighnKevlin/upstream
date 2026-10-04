@@ -195,9 +195,10 @@ func _on_body_entered(body: Node2D) -> void:
 
 func _on_body_exited(body: Node2D) -> void:
 	if body is RigidBody2D:
-		if body in _held_items:
-			body.set_physics_process(true)  # resume despawn timer
-			body.gravity_scale = 1
+		# resume the despawn timer paused on entry, held or not: one that only
+		# brushed the column (or was turned away full) would lie there for ever
+		body.set_physics_process(true)
+		body.gravity_scale = 1
 		_held_items.erase(body)
 	elif body is CharacterBody2D:
 		if "in_shaft" in body:
