@@ -13,6 +13,7 @@ rm -f "$out/done" "$out/cmd.json" "$out/state.json"
 python3 tools/manual_text.py > "$out/manual.txt"
 cp tools/agent_step.sh "$out/step.sh"
 (
+  set +e   # a kill of an already-gone game must not end the watchdog
   SEED=1 godot --path . --audio-driver Dummy --windowed --resolution 1280x720 \
     --position 4000,4000 --script tools/playtest.gd -- agent_rec "$out" > "$out/godot.log" 2>&1 &
   p=$!
@@ -20,11 +21,13 @@ cp tools/agent_step.sh "$out/step.sh"
   started=$(date +%s)
   while kill -0 $p 2>/dev/null; do
     sleep 5
+    # it can hang on exit after the scenario is done: give it 5 s
+    if grep -q '\] done$' "$out/godot.log"; then sleep 5; kill $p 2>/dev/null; break; fi
     if grep -qE 'SCRIPT ERROR|Parse Error' "$out/godot.log"; then echo "script error" >> "$out/godot.log"; kill $p; break; fi
     last=$(stat -f %m "$out/state.json" 2>/dev/null || echo "$started")
     if [ $(( $(date +%s) - last )) -gt 660 ]; then echo "watchdog: no step for 11 min" >> "$out/godot.log"; kill $p; break; fi
   done
-  wait $p 2>/dev/null
+  wait $p 2>/dev/null || true
   touch "$out/done"
 ) > /dev/null 2>&1 &
 echo "started; log $out/godot.log"

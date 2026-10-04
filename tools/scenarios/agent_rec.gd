@@ -8,7 +8,8 @@ extends RefCounted
 ## runs, cmd.json is deleted, the game runs on for the command's "then"
 ## seconds (default 0.5), and the loop repeats. Every step is appended to
 ## <out>/steps.jsonl; REPLAY=<steps.jsonl> plays a logged run back instead of
-## polling. No cmd for 10 minutes: the scenario quits.
+## polling (and REPLAY_THEN=poll carries on live from where it ends). No cmd
+## for 10 minutes: the scenario quits.
 ##
 ## The window is one small 1280x720-pixel window in the screen's bottom right
 ## corner, not off-screen: placing pieces reads the real OS cursor, which
@@ -18,6 +19,7 @@ extends RefCounted
 ## Only what a person can do (screen pixels, 1280x720, origin top left):
 ##   {"action":"key",    "key":"D"}                     tap a key by name
 ##   {"action":"hold",   "key":"D", "sec":1.5}          hold a key down
+##   ("D+J": a chord, the keys pressed together)
 ##   {"action":"click",  "x":640, "y":360, "button":"left"|"right"}
 ##   {"action":"drag",   "x":100, "y":100, "x2":300, "y2":200, "button":"left", "sec":0.4}
 ##   {"action":"move",   "x":640, "y":360}              hover the mouse
@@ -97,7 +99,7 @@ static func run(t) -> void:
 		var waited := 0.0
 		if not replay.is_empty():
 			cmd = replay.pop_front()
-		elif OS.has_environment("REPLAY"):
+		elif OS.has_environment("REPLAY") and OS.get_environment("REPLAY_THEN") != "poll":
 			cmd = {"action": "quit"}
 		while cmd.is_empty():
 			if FileAccess.file_exists(cmd_path):
@@ -184,13 +186,24 @@ static func _do(t, cmd: Dictionary) -> String:
 	var at := Vector2(float(cmd.get("x", 640)), float(cmd.get("y", 360)))
 	match a:
 		"key", "hold":
-			var k := _keycode(str(cmd.get("key", "")))
-			if k == KEY_NONE:
-				return "unknown key '%s'" % cmd.get("key", "")
+			var keys: Array[Key] = []
+			for n in str(cmd.get("key", "")).split("+", false):
+				var k := _keycode(n.strip_edges())
+				if k == KEY_NONE:
+					return "unknown key '%s'" % n
+				keys.append(k)
+			if keys.is_empty():
+				return "no key given"
+			for k in keys:
+				t.key(k, true)
 			if a == "key":
-				await t.tap(k)
+				await t.physics_frame
+				await t.physics_frame
 			else:
-				await t.hold(k, sec)
+				await t.wait(sec)
+			for k in keys:
+				t.key(k, false)
+			await t.physics_frame
 			return "ok"
 		"click":
 			await t.click_screen(at, _button(cmd))

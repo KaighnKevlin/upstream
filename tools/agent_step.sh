@@ -6,6 +6,7 @@
 d="${PT_DIR:-$(cd "$(dirname "$0")" && pwd)}"
 before=$(sed -n 's/.*"step": \([0-9]*\).*/\1/p' "$d/state.json" 2>/dev/null)
 printf '%s' "$1" > "$d/cmd.json.tmp" && mv "$d/cmd.json.tmp" "$d/cmd.json"
+case "$1" in *'"quit"'*) echo "quit sent"; exit 0;; esac
 i=0
 while :; do
   now=$(sed -n 's/.*"step": \([0-9]*\).*/\1/p' "$d/state.json" 2>/dev/null)
