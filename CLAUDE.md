@@ -44,7 +44,8 @@ long solo bouts while he's out.
   throttling there, not courtesy. Still one window at a time and muted.
 - The Mini's display sleeps after 10 min, which throttles the window. Prefix
   long runs with `(caffeinate -dimsu -t <secs> &) ;`.
-- The music pipeline (Surge XT, `.venv`) is Air-only.
+- Both machines can render music: Surge XT, ffmpeg and the `.venv` (from
+  `tools/audio/surge/requirements.txt`) are installed on each.
 - Show progress in the chat: screenshots and reports as files. Don't text
   attachments; those sends are unreliable.
 
