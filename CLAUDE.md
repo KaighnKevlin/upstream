@@ -33,6 +33,21 @@ sort, assemble and feed defences and research.
   for sieges. Send him each render and keep every version. `.gdignore` keeps
   Godot from importing it.
 
+## Two machines
+Kaighn pairs on the MacBook Air (`~/Documents/upstream`) and hands off to the
+always-on Mac Mini (`~/upstream`, Remote Control chat `kaighnbot-upstream`) for
+long solo bouts while he's out.
+- On the Mini, work on a `mini/<date>` branch and push as you go. Kaighn
+  playtests on the Air before anything merges to `main`.
+- Only one machine works at a time: pull before starting, push before stopping.
+- Nobody is at the Mini, so the "Kaighn uses this laptop" rules below are about
+  throttling there, not courtesy. Still one window at a time and muted.
+- The Mini's display sleeps after 10 min, which throttles the window. Prefix
+  long runs with `(caffeinate -dimsu -t <secs> &) ;`.
+- The music pipeline (Surge XT, `.venv`) is Air-only.
+- Show progress in the chat: screenshots and reports as files. Don't text
+  attachments; those sends are unreliable.
+
 ## Running tests
 Kaighn uses this laptop while tests run, so:
 - **Always mute:** `--audio-driver Dummy`.
