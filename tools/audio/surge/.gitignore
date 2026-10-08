@@ -1,0 +1,3 @@
+.venv/
+renders/*.wav
+__pycache__/
