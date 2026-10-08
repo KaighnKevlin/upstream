@@ -22,6 +22,16 @@ sort, assemble and feed defences and research.
   one command file per turn (keys, screen clicks), off-screen and muted.
   Reports go in `playtests/<date>-<goal>.md`.
 - `tools/art/gen_*.py` are the sprite generators.
+- `tools/audio/gen_music.py` made the current loop, `assets/audio/nocturne.wav`.
+- `tools/audio/surge/` is the newer music pipeline: `render.py` (notes,
+  structure, mix) plays parts through the free Surge XT synth via `pedalboard`,
+  with sound designs in `sounds.py`, and writes `renders/<name>.mp3`. Run it with
+  `tools/audio/surge/.venv/bin/python tools/audio/surge/render.py <name>`.
+  Kaighn is not a musician: Claude does all the composing, and he gives
+  feedback by ear. The target is the Dungeon of the Endless soundtrack (FlybyNo):
+  retro synths, ticking arpeggios, minor-key pads, calm building that intensifies
+  for sieges. Send him each render and keep every version. `.gdignore` keeps
+  Godot from importing it.
 
 ## Running tests
 Kaighn uses this laptop while tests run, so:
