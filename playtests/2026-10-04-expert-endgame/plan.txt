@@ -1,0 +1,27 @@
+UPSTREAM FACTORY PLAN (summary of the design doc, decisions of 3 Oct 2026)
+
+The design: a vertical factory where height is the only currency and your machine visibly defends you.
+A run is about an hour: start with a short Beam and a few pieces, research upward, hold off waves that
+grow with your digging (not in Factory yet), and win by growing the Beam to the surface (the lens: not built yet).
+
+Rules for what stays in Factory:
+1. Nothing lifts except the Beam (the Upstream, a magic tractor beam). It takes in 2 pieces/s; the rest wait
+   at its foot; a gauge shows use and queue. "Faster current" raises it.
+2. The only power is falling marbles (gravity wheel); machines run at 35% without it.
+3. One piece per job, and the track-native one wins.
+4. Every defence eats marbles.
+
+Core set (scripts/tech.gd):
+- Start: the Beam (fixed), vein tapper, track rail, beam tap, furnace rail, assembler, research lab, funnel turret.
+- Tier 1 (red flask = gear + copper ingot): Routing, Buffers, Sorting, Processing, Power & haul, Defence I.
+- Tier 2 (+ clockwork flask = gear + 2 shot): Forging, Trajectory, Signals, Defence II, Long haul.
+- Tier 3 (+ bronze flask = bronze + gear): Beam optics (the lens, "coming"), Heavy defence.
+
+Intended loop: miners reach along tunnels for ore; it is hauled to the Beam's foot, rises, is tapped off at
+chosen heights (beam tap), and falls back down through your machine: sorted, smelted (furnace rail), forged
+and timed into ammo, repairs, science and (later) new Beam segments.
+Hot metal: ingots cool over 8 s; the crucible fuses a hot copper and a hot iron ingot into bronze.
+Veins run dry (6 ore per tile in Factory).
+Pillars: height is the currency; every Beam slot is a decision; latency panic; the machine is the defence.
+Open questions the designer has: is 2 pieces/s on the Beam tight or starved? are 6 defences too many?
+does Factory feel sterile without bouncers? should the crucible's patience be short?
