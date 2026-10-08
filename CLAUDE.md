@@ -46,6 +46,8 @@ long solo bouts while he's out.
   long runs with `(caffeinate -dimsu -t <secs> &) ;`.
 - Both machines can render music: Surge XT, ffmpeg and the `.venv` (from
   `tools/audio/surge/requirements.txt`) are installed on each.
+- Commit every MP3 render (that is how a Mini render reaches Kaighn). WAVs stay
+  local and are gitignored.
 - Show progress in the chat: screenshots and reports as files. Don't text
   attachments; those sends are unreliable.
 
